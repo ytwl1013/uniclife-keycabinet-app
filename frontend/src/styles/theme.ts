@@ -27,6 +27,26 @@ export const Colors = {
   },
 };
 
+export const AppColors = {
+  blue: '#2f67f5',
+  blueDark: '#0c1b3f',
+  blueSoft: '#eef4ff',
+  green: '#18c987',
+  greenSoft: '#e9fbf2',
+  orange: '#ff9f2d',
+  orangeSoft: '#fff4e7',
+  red: '#ee4b3e',
+  redSoft: '#fff0ee',
+  purple: '#8a4ff7',
+  purpleSoft: '#f2eaff',
+  ink: '#0c1533',
+  text: '#27324f',
+  muted: '#7c879d',
+  line: '#e6ebf5',
+  surface: '#ffffff',
+  appBackground: '#f7f9fe',
+};
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

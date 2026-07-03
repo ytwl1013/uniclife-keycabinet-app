@@ -1,5 +1,5 @@
 import { KeysDashboardPage } from '@/pages/keys-dashboard';
 
-export default function KeysTab() {
+export default function HomeTab() {
   return <KeysDashboardPage />;
 }

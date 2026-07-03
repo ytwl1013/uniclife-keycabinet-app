@@ -1,88 +1,182 @@
-import { StyleSheet, View } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Link } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { AppScreen } from '@/components/app-screen';
+import { SearchBox } from '@/components/ui/search-box';
+import { AppColors } from '@/styles/theme';
 
-const demoKeys = [
-  { code: 'K-001', name: '总控室钥匙', cabinetCode: 'CAB-A', slotCode: 'A-01', status: 'available' },
-  { code: 'K-002', name: '设备间钥匙', cabinetCode: 'CAB-A', slotCode: 'A-02', status: 'borrowed' },
-  { code: 'K-003', name: '档案室钥匙', cabinetCode: 'CAB-B', slotCode: 'B-01', status: 'available' },
+const summary = [
+  { label: 'Cabinets', value: '3', icon: 'kitchen' },
+  { label: 'Available', value: '90', icon: 'vpn-key' },
+  { label: 'Overdue', value: '10', icon: 'error-outline' },
 ] as const;
-
-const statusLabel = {
-  available: '可领取',
-  borrowed: '已借出',
-  lost: '遗失',
-  disabled: '停用',
-} as const;
 
 export function KeysDashboardPage() {
   return (
-    <ThemedView style={styles.screen}>
+    <AppScreen>
       <View style={styles.header}>
-        <ThemedText type="title">钥匙管理</ThemedText>
-        <ThemedText>所有领取、归还和异常开柜操作都需要后端权限校验与审计记录。</ThemedText>
+        <View>
+          <Text style={styles.eyebrow}>UnicLife</Text>
+          <Text style={styles.title}>Key Cabinet</Text>
+        </View>
+        <View style={styles.avatar}>
+          <MaterialIcons color={AppColors.blue} name="person" size={28} />
+        </View>
       </View>
+
+      <SearchBox placeholder="Search keys, cabinets, or slots" />
 
       <View style={styles.summaryRow}>
-        <Summary label="可领取" value="2" />
-        <Summary label="已借出" value="1" />
-        <Summary label="异常" value="0" />
-      </View>
-
-      <View style={styles.list}>
-        {demoKeys.map((item) => (
-          <ThemedView key={item.code} style={styles.row}>
-            <View>
-              <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
-              <ThemedText>
-                {item.cabinetCode} / {item.slotCode} / {item.code}
-              </ThemedText>
-            </View>
-            <ThemedText type="defaultSemiBold">{statusLabel[item.status]}</ThemedText>
-          </ThemedView>
+        {summary.map((item) => (
+          <View key={item.label} style={styles.summaryCard}>
+            <MaterialIcons color={AppColors.blue} name={item.icon} size={25} />
+            <Text style={styles.summaryValue}>{item.value}</Text>
+            <Text style={styles.summaryLabel}>{item.label}</Text>
+          </View>
         ))}
       </View>
-    </ThemedView>
+
+      <View style={styles.primaryCard}>
+        <View style={styles.primaryIcon}>
+          <MaterialIcons color="#ffffff" name="kitchen" size={34} />
+        </View>
+        <View style={styles.primaryCopy}>
+          <Text style={styles.primaryTitle}>Main Office Cabinet</Text>
+          <Text style={styles.primaryText}>60 key slots · 3 overdue · online</Text>
+        </View>
+        <Link asChild href={{ pathname: '/cabinets/[cabinetId]', params: { cabinetId: 'main-office' } }}>
+          <Pressable style={styles.openButton}>
+            <MaterialIcons color="#ffffff" name="arrow-forward" size={22} />
+          </Pressable>
+        </Link>
+      </View>
+
+      <View style={styles.quickGrid}>
+        <QuickAction icon="qr-code-scanner" label="Scan key" />
+        <QuickAction icon="assignment-return" label="Return" />
+        <QuickAction icon="manage-accounts" label="Authorize" />
+        <QuickAction icon="fact-check" label="Audit" />
+      </View>
+    </AppScreen>
   );
 }
 
-function Summary({ label, value }: { label: string; value: string }) {
+function QuickAction({ icon, label }: { icon: keyof typeof MaterialIcons.glyphMap; label: string }) {
   return (
-    <ThemedView style={styles.summary}>
-      <ThemedText type="subtitle">{value}</ThemedText>
-      <ThemedText>{label}</ThemedText>
-    </ThemedView>
+    <View style={styles.quickAction}>
+      <MaterialIcons color={AppColors.blue} name={icon} size={27} />
+      <Text style={styles.quickText}>{label}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    gap: 16,
-    padding: 20,
-  },
   header: {
-    gap: 8,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  eyebrow: {
+    color: AppColors.blue,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  title: {
+    color: AppColors.ink,
+    fontSize: 34,
+    fontWeight: '900',
+  },
+  avatar: {
+    alignItems: 'center',
+    backgroundColor: AppColors.blueSoft,
+    borderRadius: 24,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
   },
   summaryRow: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  summary: {
-    flex: 1,
-    gap: 4,
-    padding: 12,
-    borderRadius: 8,
-  },
-  list: {
     gap: 10,
   },
-  row: {
+  summaryCard: {
     alignItems: 'center',
+    backgroundColor: AppColors.surface,
+    borderColor: AppColors.line,
     borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    borderWidth: 1,
+    flex: 1,
+    gap: 5,
     padding: 14,
+  },
+  summaryValue: {
+    color: AppColors.ink,
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  summaryLabel: {
+    color: AppColors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  primaryCard: {
+    alignItems: 'center',
+    backgroundColor: AppColors.surface,
+    borderColor: AppColors.line,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 14,
+    padding: 16,
+  },
+  primaryIcon: {
+    alignItems: 'center',
+    backgroundColor: AppColors.blue,
+    borderRadius: 30,
+    height: 60,
+    justifyContent: 'center',
+    width: 60,
+  },
+  primaryCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  primaryTitle: {
+    color: AppColors.ink,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  primaryText: {
+    color: AppColors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  openButton: {
+    alignItems: 'center',
+    backgroundColor: AppColors.blue,
+    borderRadius: 21,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  quickAction: {
+    alignItems: 'center',
+    backgroundColor: AppColors.surface,
+    borderColor: AppColors.line,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+    padding: 18,
+    width: '47%',
+  },
+  quickText: {
+    color: AppColors.text,
+    fontSize: 14,
+    fontWeight: '900',
   },
 });
