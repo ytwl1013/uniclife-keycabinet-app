@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB locally}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER locally}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD locally}
+    ports:
+      - "5432:5432"
+    volumes:
+      - keycabinet_pg_data:/var/lib/postgresql/data
+
+volumes:
+  keycabinet_pg_data:

@@ -1,0 +1,19 @@
+{
+  "name": "@uniclife/shared",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "tsc --build --noEmit",
+    "typecheck": "tsc --build --noEmit",
+    "test": "echo \"shared: no runtime tests yet\""
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

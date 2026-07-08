@@ -1,0 +1,60 @@
+import { ActivityEntry } from './types';
+
+export const demoActivity: ActivityEntry[] = [
+  {
+    id: 'act-001',
+    kind: 'checkOut',
+    day: 'Today',
+    time: '09:15 AM',
+    title: 'Emma checked out Storage Room Key',
+    detail: 'Storage Room',
+  },
+  {
+    id: 'act-002',
+    kind: 'return',
+    day: 'Today',
+    time: '10:42 AM',
+    title: 'David returned Mailbox Key',
+    detail: 'Mailbox',
+  },
+  {
+    id: 'act-003',
+    kind: 'overdue',
+    day: 'Yesterday',
+    time: '06:20 PM',
+    title: 'Back Door Key marked overdue',
+    detail: 'Checked out by Michael · Due May 12, 5:00 PM',
+  },
+  {
+    id: 'act-004',
+    kind: 'checkOut',
+    day: 'Yesterday',
+    time: '03:33 PM',
+    title: 'Sophia checked out Meeting Room Key',
+    detail: 'Meeting Room',
+  },
+  {
+    id: 'act-005',
+    kind: 'return',
+    day: 'Yesterday',
+    time: '11:08 AM',
+    title: 'James returned Parking Gate Key',
+    detail: 'Parking',
+  },
+  {
+    id: 'act-006',
+    kind: 'admin',
+    day: 'May 12',
+    time: '04:09 PM',
+    title: 'Admin updated Cabinet 2 settings',
+    detail: 'Auto-lock enabled · Access restricted to 5 users',
+  },
+  {
+    id: 'act-007',
+    kind: 'admin',
+    day: 'May 12',
+    time: '09:21 AM',
+    title: 'Olivia added a new key',
+    detail: 'Front Door Key · Front Office',
+  },
+];

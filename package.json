@@ -1,0 +1,21 @@
+{
+  "name": "uniclife-keycabinet-app",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.5.2",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel --filter @uniclife/backend --filter @uniclife/frontend dev",
+    "dev:frontend": "pnpm --filter @uniclife/frontend dev",
+    "dev:backend": "pnpm --filter @uniclife/backend dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "check": "pnpm lint && pnpm typecheck && pnpm test"
+  }
+}

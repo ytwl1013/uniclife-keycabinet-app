@@ -1,16 +1,43 @@
 # uniclife-keycabinet-app
 
-UnicLife 钥匙柜应用仓库。
+UnicLife 钥匙柜应用单仓库，统一维护 Expo 前端、Node.js 后端、共享契约、文档、部署模板和自动化脚本。
 
-当前仓库处于初始化规划阶段，暂未放入业务代码。请先审核根目录 `AGENTS.md` 中的单仓库前后端目录规划和自动化 Agent 工作规范。
+## 技术栈
 
-后续确认后再创建前端、后端、共享契约、文档、脚本和部署目录。
+- 包管理：pnpm workspace
+- 前端：Expo SDK 54、React Native、Expo Router、TypeScript
+- 后端：Node.js、Fastify、Drizzle ORM、postgres.js、Zod
+- 共享契约：TypeScript + Zod schema
 
-## 协作与 CI/CD
+## 目录
 
-- 日常实现工作通过 Merge Request 合入 `dev`。
-- `dev` 禁止直接推送，MR 需要通过 GitLab CI。
-- Codex review bot 会自动审核非 draft 的 `dev` 目标 MR，审核通过后按 GitLab 分支保护和 CI 状态自动合并。
-- 当前初始化阶段的 CI 先执行仓库规范和敏感信息检查；新增前端、后端或共享契约代码时必须扩展对应 lint、类型检查、测试和构建任务。
+```text
+frontend/         Expo React Native 前端
+backend/          Fastify API、业务模块、数据库和设备集成适配
+shared/           前后端共享类型、枚举、权限码和 schema
+docs/             产品、接口、数据库、权限、部署和模块说明
+scripts/          本地开发、检查、生成、迁移和维护脚本
+deploy/           Docker、环境模板和部署说明
+tests/            跨端契约测试和集成测试预留
+```
 
-更多细节见 `docs/ci-cd-review-bot.md`。
+## 本地开发
+
+```bash
+pnpm install
+pnpm dev:backend
+pnpm dev:frontend
+```
+
+后端环境变量从 `backend/.env.example` 复制到本地 `.env` 后填写。不要提交真实 `.env`、数据库密码、设备密钥、Token、Cookie 或证书。
+
+## 验证
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm check
+```
+
+前后端接口字段变更时，先更新 `shared/`，再更新接口文档和测试。
