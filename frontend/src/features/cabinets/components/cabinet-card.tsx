@@ -1,160 +1,76 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { AppIcon } from '@/components/ui/app-icon';
+import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
-import { AppColors } from '@/styles/theme';
+import { CabinetListItem, CabinetStatus } from '@/features/cabinets/types';
+import { TranslationKey, useTranslation } from '@/i18n';
 
-import { CabinetListItem } from '../types';
+const statusKeys: Record<CabinetStatus, TranslationKey> = {
+  online: 'common.online',
+  offline: 'common.offline',
+  maintenance: 'common.maintenance',
+};
+
+const metricDotClasses = {
+  green: 'bg-success',
+  orange: 'bg-warning',
+  red: 'bg-danger',
+} as const;
 
 export function CabinetCard({ cabinet }: { cabinet: CabinetListItem }) {
+  const { t } = useTranslation();
   const total = cabinet.metrics.available + cabinet.metrics.checkedOut + cabinet.metrics.overdue;
-  const statusTone = cabinet.status === 'online' ? 'green' : 'gray';
+  const location = t(cabinet.locationKey);
+  const floor = t(cabinet.floorKey);
 
   return (
     <Link asChild href={{ pathname: '/cabinets/[cabinetId]', params: { cabinetId: cabinet.id } }}>
-      <Pressable style={styles.card}>
-        <View style={styles.header}>
-          <View style={styles.iconCircle}>
-            <MaterialIcons color="#ffffff" name="kitchen" size={30} />
+      <Pressable className="gap-card rounded-card border border-line bg-surface p-card shadow-card active:opacity-70">
+        <View className="flex-row items-center gap-3.5">
+          <View className="h-14 w-14 items-center justify-center rounded-pill bg-brand">
+            <AppIcon name="cabinet" size={30} tone="onBrand" />
           </View>
-          <View style={styles.titleBlock}>
-            <Text style={styles.name}>{cabinet.name}</Text>
-            <View style={styles.locationRow}>
-              <MaterialIcons color={AppColors.blue} name="location-on" size={15} />
-              <Text style={styles.location}>
-                {cabinet.location} · {cabinet.floor}
-              </Text>
+          <View className="flex-1 gap-1">
+            <AppText variant="title" tone="foreground">{t(cabinet.nameKey)}</AppText>
+            <View className="flex-row items-center gap-1">
+              <AppIcon name="location" size={15} tone="brand" />
+              <AppText variant="caption" tone="content">{t('common.locationFloor', { location, floor })}</AppText>
             </View>
-            <Text style={styles.meta}>
-              Model: {cabinet.model} · Capacity: {cabinet.capacity} Keys
-            </Text>
+            <AppText variant="caption" tone="muted">
+              {t('common.modelCapacity', { model: cabinet.model, count: cabinet.capacity })}
+            </AppText>
           </View>
-          <View style={styles.statusArea}>
-            <Pill tone={statusTone}>{cabinet.status === 'online' ? 'Online' : 'Offline'}</Pill>
-            <MaterialIcons color={AppColors.muted} name="chevron-right" size={26} />
+          <View className="flex-row items-center gap-0.5">
+            <Pill tone={cabinet.status === 'online' ? 'green' : 'gray'}>{t(statusKeys[cabinet.status])}</Pill>
+            <AppIcon name="chevronRight" size={26} tone="muted" />
           </View>
         </View>
 
-        <View style={styles.metrics}>
-          <Metric label="Available" value={cabinet.metrics.available} percent={total ? Math.round((cabinet.metrics.available / total) * 100) : 0} tone="green" />
-          <View style={styles.divider} />
-          <Metric label="Checked Out" value={cabinet.metrics.checkedOut} percent={total ? Math.round((cabinet.metrics.checkedOut / total) * 100) : 0} tone="orange" />
-          <View style={styles.divider} />
-          <Metric label="Overdue" value={cabinet.metrics.overdue} percent={total ? Math.round((cabinet.metrics.overdue / total) * 100) : 0} tone="red" />
+        <View className="flex-row border-t border-line pt-3.5">
+          <Metric label={t('cabinets.available')} percent={total ? Math.round((cabinet.metrics.available / total) * 100) : 0} tone="green" value={cabinet.metrics.available} />
+          <View className="w-px bg-line" />
+          <Metric label={t('cabinets.checkedOut')} percent={total ? Math.round((cabinet.metrics.checkedOut / total) * 100) : 0} tone="orange" value={cabinet.metrics.checkedOut} />
+          <View className="w-px bg-line" />
+          <Metric label={t('cabinets.overdue')} percent={total ? Math.round((cabinet.metrics.overdue / total) * 100) : 0} tone="red" value={cabinet.metrics.overdue} />
         </View>
       </Pressable>
     </Link>
   );
 }
 
-function Metric({ label, value, percent, tone }: { label: string; value: number; percent: number; tone: 'green' | 'orange' | 'red' }) {
-  const dotColor = tone === 'green' ? AppColors.green : tone === 'orange' ? AppColors.orange : AppColors.red;
+function Metric({ label, value, percent, tone }: { label: string; value: number; percent: number; tone: keyof typeof metricDotClasses }) {
+  const { formatNumber } = useTranslation();
 
   return (
-    <View style={styles.metric}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
-      <View style={styles.percentRow}>
-        <View style={[styles.dot, { backgroundColor: dotColor }]} />
-        <Text style={styles.percent}>{percent}%</Text>
+    <View className="flex-1 items-center gap-1">
+      <AppText className="text-center" variant="caption" tone="muted">{label}</AppText>
+      <AppText variant="metric" tone="foreground">{formatNumber(value)}</AppText>
+      <View className="flex-row items-center gap-1.5">
+        <View className={`h-2 w-2 rounded-pill ${metricDotClasses[tone]}`} />
+        <AppText variant="caption" tone="muted">{formatNumber(percent)}%</AppText>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: AppColors.surface,
-    borderColor: AppColors.line,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 16,
-    padding: 16,
-    shadowColor: '#274060',
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 14,
-  },
-  iconCircle: {
-    alignItems: 'center',
-    backgroundColor: AppColors.blue,
-    borderRadius: 28,
-    height: 56,
-    justifyContent: 'center',
-    width: 56,
-  },
-  titleBlock: {
-    flex: 1,
-    gap: 4,
-  },
-  name: {
-    color: AppColors.ink,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  locationRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 3,
-  },
-  location: {
-    color: AppColors.text,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  meta: {
-    color: AppColors.muted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  statusArea: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 2,
-  },
-  metrics: {
-    borderTopColor: AppColors.line,
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    paddingTop: 14,
-  },
-  metric: {
-    alignItems: 'center',
-    flex: 1,
-    gap: 4,
-  },
-  metricLabel: {
-    color: AppColors.muted,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  metricValue: {
-    color: AppColors.ink,
-    fontSize: 25,
-    fontWeight: '900',
-  },
-  percentRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 5,
-  },
-  dot: {
-    borderRadius: 4,
-    height: 8,
-    width: 8,
-  },
-  percent: {
-    color: AppColors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  divider: {
-    backgroundColor: AppColors.line,
-    width: 1,
-  },
-});

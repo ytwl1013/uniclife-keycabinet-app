@@ -1,39 +1,28 @@
 import { PropsWithChildren } from 'react';
-import { ScrollView, StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { AppColors } from '@/styles/theme';
 
 type AppScreenProps = PropsWithChildren<{
   scroll?: boolean;
-  contentStyle?: StyleProp<ViewStyle>;
+  contentClassName?: string;
 }>;
 
-export function AppScreen({ children, scroll = true, contentStyle }: AppScreenProps) {
+const baseContentClassName = 'mx-auto w-full max-w-content gap-section px-screen pt-screen pb-tabBarBottom';
+
+export function AppScreen({ children, scroll = true, contentClassName = '' }: AppScreenProps) {
   if (!scroll) {
-    return <SafeAreaView style={[styles.safeArea, contentStyle]}>{children}</SafeAreaView>;
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <View className={`${baseContentClassName} flex-1 ${contentClassName}`}>{children}</View>
+      </SafeAreaView>
+    );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={[styles.content, contentStyle]} showsVerticalScrollIndicator={false}>
+    <SafeAreaView className="flex-1 bg-background">
+      <ScrollView className="flex-1" contentContainerClassName={`${baseContentClassName} ${contentClassName}`} showsVerticalScrollIndicator={false}>
         {children}
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: AppColors.appBackground,
-    flex: 1,
-  },
-  content: {
-    alignSelf: 'center',
-    gap: 18,
-    maxWidth: 480,
-    padding: 20,
-    paddingBottom: 110,
-    width: '100%',
-  },
-});

@@ -6,6 +6,7 @@ UnicLife 钥匙柜应用单仓库，统一维护 Expo 前端、Node.js 后端、
 
 - 包管理：pnpm workspace
 - 前端：Expo SDK 54、React Native、Expo Router、TypeScript
+- 前端样式与本地化：NativeWind、统一设计令牌、expo-localization + i18n-js
 - 后端：Node.js、Fastify、Drizzle ORM、postgres.js、Zod
 - 共享契约：TypeScript + Zod schema
 
@@ -20,6 +21,8 @@ scripts/          本地开发、检查、生成、迁移和维护脚本
 deploy/           Docker、环境模板和部署说明
 tests/            跨端契约测试和集成测试预留
 ```
+
+前端页面实现和布局直接放在 `src/app`，较大的业务组件放在 `src/features/<domain>/components`，共享 UI 放在 `src/components/ui`。Stack 和 Tab 的路由选项由最近的 `_layout.tsx` 统一声明；国际化文案和设计令牌分别集中在 `src/i18n` 与 `design-tokens.json`。
 
 ## 本地开发
 

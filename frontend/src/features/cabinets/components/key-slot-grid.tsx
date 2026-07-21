@@ -1,159 +1,73 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { AppColors } from '@/styles/theme';
+import { AppIcon, AppIconTone } from '@/components/ui/app-icon';
+import { AppText, AppTextTone } from '@/components/ui/app-text';
+import { KeySlot, KeySlotStatus } from '@/features/cabinets/types';
+import { TranslationKey, useTranslation } from '@/i18n';
 
-import { KeySlot, KeySlotStatus } from '../types';
-
-const statusColor: Record<KeySlotStatus, string> = {
-  available: AppColors.blue,
-  checkedOut: AppColors.orange,
-  overdue: AppColors.red,
-  empty: '#9aa2af',
+const statusConfig: Record<KeySlotStatus, { borderClass: string; dotClass: string; iconTone: AppIconTone; textTone: AppTextTone; labelKey: TranslationKey }> = {
+  available: { borderClass: 'border-brand', dotClass: 'bg-brand', iconTone: 'brand', textTone: 'brand', labelKey: 'cabinetDetail.available' },
+  checkedOut: { borderClass: 'border-warning', dotClass: 'bg-warning', iconTone: 'warning', textTone: 'warning', labelKey: 'cabinetDetail.checkedOut' },
+  overdue: { borderClass: 'border-danger', dotClass: 'bg-danger', iconTone: 'danger', textTone: 'danger', labelKey: 'cabinetDetail.overdue' },
+  empty: { borderClass: 'border-muted', dotClass: 'bg-muted', iconTone: 'muted', textTone: 'muted', labelKey: 'cabinetDetail.empty' },
 };
 
-export function KeySlotGrid({ slots }: { slots: KeySlot[] }) {
+export function KeySlotGrid({ slots, totalSlots }: { slots: KeySlot[]; totalSlots: number }) {
+  const { formatNumber, t } = useTranslation();
+  const hiddenStart = slots.length + 1;
+
   return (
-    <View style={styles.section}>
-      <Text style={styles.title}>Key Slots (60)</Text>
-      <View style={styles.grid}>
-        {slots.map((slot) => (
-          <SlotCell key={slot.number} slot={slot} />
-        ))}
+    <View className="gap-3.5">
+      <AppText variant="title" tone="foreground">{t('cabinetDetail.slotsTitle', { count: totalSlots })}</AppText>
+      <View className="flex-row flex-wrap gap-3.5">
+        {slots.map((slot) => <SlotCell key={slot.number} slot={slot} />)}
       </View>
-      <View style={styles.moreButton}>
-        <Text style={styles.moreText}>View more (41-60)</Text>
-        <MaterialIcons color={AppColors.blue} name="keyboard-arrow-down" size={20} />
-      </View>
-      <View style={styles.legend}>
-        <LegendItem label="Available" status="available" />
-        <LegendItem label="Checked Out" status="checkedOut" />
-        <LegendItem label="Overdue" status="overdue" />
-        <LegendItem label="Empty" status="empty" />
+      {hiddenStart <= totalSlots ? (
+        <View className="self-center flex-row items-center gap-1 rounded-control border border-line px-4 py-2">
+          <AppText variant="label" tone="brand">{t('cabinetDetail.viewMore', { range: `${formatNumber(hiddenStart)}–${formatNumber(totalSlots)}` })}</AppText>
+          <AppIcon name="expand" size={20} tone="brand" />
+        </View>
+      ) : null}
+      <View className="flex-row flex-wrap gap-4 border-t border-line pt-3.5">
+        {(Object.keys(statusConfig) as KeySlotStatus[]).map((status) => <LegendItem key={status} status={status} />)}
       </View>
     </View>
   );
 }
 
 function SlotCell({ slot }: { slot: KeySlot }) {
-  const color = statusColor[slot.status];
-  const isEmpty = slot.status === 'empty';
+  const { formatNumber, t } = useTranslation();
+  const config = statusConfig[slot.status];
 
   return (
-    <View style={[styles.slot, { borderColor: color, borderStyle: isEmpty ? 'dashed' : 'solid' }]}>
-      <Text style={[styles.slotNumber, { color }]}>{String(slot.number).padStart(2, '0')}</Text>
+    <View className={`h-[78px] w-[17.6%] items-center justify-center gap-1.5 rounded-card border-[1.5px] bg-surface ${config.borderClass} ${slot.status === 'empty' ? 'border-dashed' : 'border-solid'}`}>
+      <AppText variant="title" tone={config.textTone}>{formatNumber(slot.number).padStart(2, '0')}</AppText>
       {slot.status === 'checkedOut' ? (
-        <View style={styles.holderRow}>
-          <MaterialIcons color={color} name="person" size={13} />
-          <Text style={[styles.holder, { color }]} numberOfLines={1}>
-            {slot.holder}
-          </Text>
+        <View className="max-w-[58px] flex-row items-center">
+          <AppIcon name="person" size={13} tone={config.iconTone} />
+          <AppText className="shrink" numberOfLines={1} variant="caption" tone={config.textTone}>{slot.holder}</AppText>
         </View>
       ) : null}
       {slot.status === 'overdue' ? (
-        <View style={styles.overdueRow}>
-          <MaterialIcons color={color} name="error" size={15} />
-          <Text style={[styles.holder, { color }]}>Overdue</Text>
+        <View className="items-center gap-0.5">
+          <AppIcon name="error" size={15} tone={config.iconTone} />
+          <AppText variant="caption" tone={config.textTone}>{t(config.labelKey)}</AppText>
         </View>
       ) : null}
-      {slot.status === 'available' ? <View style={[styles.slotDot, { backgroundColor: color }]} /> : null}
-      {slot.status === 'empty' ? <MaterialIcons color={color} name="remove-circle-outline" size={17} /> : null}
+      {slot.status === 'available' ? <View className={`h-2.5 w-2.5 rounded-pill ${config.dotClass}`} /> : null}
+      {slot.status === 'empty' ? <AppIcon name="empty" size={17} tone={config.iconTone} /> : null}
     </View>
   );
 }
 
-function LegendItem({ label, status }: { label: string; status: KeySlotStatus }) {
+function LegendItem({ status }: { status: KeySlotStatus }) {
+  const { t } = useTranslation();
+  const config = statusConfig[status];
+
   return (
-    <View style={styles.legendItem}>
-      <View style={[styles.legendDot, { backgroundColor: statusColor[status] }]} />
-      <Text style={styles.legendText}>{label}</Text>
+    <View className="flex-row items-center gap-1.5">
+      <View className={`h-2.5 w-2.5 rounded-pill ${config.dotClass}`} />
+      <AppText variant="caption" tone="muted">{t(config.labelKey)}</AppText>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: {
-    gap: 14,
-  },
-  title: {
-    color: AppColors.ink,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-  },
-  slot: {
-    alignItems: 'center',
-    backgroundColor: AppColors.surface,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    gap: 7,
-    height: 78,
-    justifyContent: 'center',
-    width: '17.6%',
-  },
-  slotNumber: {
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  holderRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    maxWidth: 58,
-  },
-  overdueRow: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  holder: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  slotDot: {
-    borderRadius: 5,
-    height: 9,
-    width: 9,
-  },
-  moreButton: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    borderColor: AppColors.line,
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-  },
-  moreText: {
-    color: AppColors.blue,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  legend: {
-    borderTopColor: AppColors.line,
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    paddingTop: 14,
-  },
-  legendItem: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  legendDot: {
-    borderRadius: 5,
-    height: 10,
-    width: 10,
-  },
-  legendText: {
-    color: AppColors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-});

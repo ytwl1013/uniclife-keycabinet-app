@@ -1,73 +1,77 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+import { DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
+import { vars } from 'nativewind';
+import { useColorScheme } from 'react-native';
 
-import { Platform } from 'react-native';
+import tokens from '../../design-tokens.json';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+export type ThemeMode = 'light' | 'dark';
+export type ThemePalette = { [K in keyof typeof tokens.colors.light]: string };
 
-export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+const colorVariableNames: Record<keyof ThemePalette, string> = {
+  background: '--color-background',
+  surface: '--color-surface',
+  foreground: '--color-foreground',
+  content: '--color-content',
+  muted: '--color-muted',
+  line: '--color-line',
+  brand: '--color-brand',
+  brandSoft: '--color-brand-soft',
+  success: '--color-success',
+  successSoft: '--color-success-soft',
+  warning: '--color-warning',
+  warningSoft: '--color-warning-soft',
+  danger: '--color-danger',
+  dangerSoft: '--color-danger-soft',
+  accent: '--color-accent',
+  accentSoft: '--color-accent-soft',
+  onBrand: '--color-on-brand',
 };
 
-export const AppColors = {
-  blue: '#2f67f5',
-  blueDark: '#0c1b3f',
-  blueSoft: '#eef4ff',
-  green: '#18c987',
-  greenSoft: '#e9fbf2',
-  orange: '#ff9f2d',
-  orangeSoft: '#fff4e7',
-  red: '#ee4b3e',
-  redSoft: '#fff0ee',
-  purple: '#8a4ff7',
-  purpleSoft: '#f2eaff',
-  ink: '#0c1533',
-  text: '#27324f',
-  muted: '#7c879d',
-  line: '#e6ebf5',
-  surface: '#ffffff',
-  appBackground: '#f7f9fe',
+function hexToRgbChannels(hex: string) {
+  const value = hex.replace('#', '');
+  return `${Number.parseInt(value.slice(0, 2), 16)} ${Number.parseInt(value.slice(2, 4), 16)} ${Number.parseInt(value.slice(4, 6), 16)}`;
+}
+
+function createThemeVariables(palette: ThemePalette) {
+  return vars(
+    Object.fromEntries(
+      Object.entries(colorVariableNames).map(([name, variable]) => [variable, hexToRgbChannels(palette[name as keyof ThemePalette])]),
+    ),
+  );
+}
+
+export const themeVariables = {
+  light: createThemeVariables(tokens.colors.light),
+  dark: createThemeVariables(tokens.colors.dark),
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});
+export const navigationMetrics = tokens.navigation;
+
+export function getNavigationTheme(mode: ThemeMode): Theme {
+  const palette = tokens.colors[mode];
+  const baseTheme = mode === 'dark' ? DarkTheme : DefaultTheme;
+
+  return {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      primary: palette.brand,
+      background: palette.background,
+      card: palette.surface,
+      text: palette.foreground,
+      border: palette.line,
+      notification: palette.danger,
+    },
+  };
+}
+
+export function useAppTheme() {
+  const mode: ThemeMode = useColorScheme() === 'dark' ? 'dark' : 'light';
+
+  return {
+    mode,
+    palette: tokens.colors[mode] as ThemePalette,
+    variables: themeVariables[mode],
+    navigationTheme: getNavigationTheme(mode),
+  };
+}

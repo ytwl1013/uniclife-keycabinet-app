@@ -1,40 +1,25 @@
 import { PropsWithChildren } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { AppColors } from '@/styles/theme';
+import { AppText, AppTextTone } from './app-text';
 
-type PillTone = 'blue' | 'green' | 'orange' | 'red' | 'gray' | 'purple';
+export type PillTone = 'blue' | 'green' | 'orange' | 'red' | 'gray' | 'purple';
 
-const toneStyles = {
-  blue: { backgroundColor: AppColors.blue, color: '#ffffff', borderColor: AppColors.blue },
-  green: { backgroundColor: AppColors.greenSoft, color: '#13a66f', borderColor: '#c9f4df' },
-  orange: { backgroundColor: AppColors.orangeSoft, color: '#d97809', borderColor: '#ffe1b7' },
-  red: { backgroundColor: AppColors.redSoft, color: AppColors.red, borderColor: '#ffd0ca' },
-  gray: { backgroundColor: '#f4f6fa', color: AppColors.muted, borderColor: AppColors.line },
-  purple: { backgroundColor: AppColors.purpleSoft, color: AppColors.purple, borderColor: '#e4d4ff' },
+const toneClasses: Record<PillTone, { container: string; textTone: AppTextTone }> = {
+  blue: { container: 'border-brand bg-brand', textTone: 'onBrand' },
+  green: { container: 'border-success/25 bg-success-soft', textTone: 'success' },
+  orange: { container: 'border-warning/25 bg-warning-soft', textTone: 'warning' },
+  red: { container: 'border-danger/25 bg-danger-soft', textTone: 'danger' },
+  gray: { container: 'border-line bg-background', textTone: 'muted' },
+  purple: { container: 'border-accent/25 bg-accent-soft', textTone: 'accent' },
 };
 
 export function Pill({ children, tone = 'gray' }: PropsWithChildren<{ tone?: PillTone }>) {
-  const toneStyle = toneStyles[tone];
+  const classes = toneClasses[tone];
 
   return (
-    <View style={[styles.pill, { backgroundColor: toneStyle.backgroundColor, borderColor: toneStyle.borderColor }]}>
-      <Text style={[styles.text, { color: toneStyle.color }]}>{children}</Text>
+    <View className={`min-h-8 items-center rounded-pill border px-controlX py-1.5 ${classes.container}`}>
+      <AppText tone={classes.textTone} variant="label">{children}</AppText>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  pill: {
-    alignItems: 'center',
-    borderRadius: 18,
-    borderWidth: 1,
-    minHeight: 32,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  text: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});

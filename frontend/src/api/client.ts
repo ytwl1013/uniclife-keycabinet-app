@@ -1,3 +1,5 @@
+import { translate } from '@/i18n';
+
 export type ApiClientResult<T> =
   | { state: 'success'; data: T; message: string }
   | { state: 'unauthorized'; message: string }
@@ -24,21 +26,21 @@ export async function requestApi<T>(path: string, init?: RequestInit): Promise<A
     });
 
     if (response.status === 401) {
-      return { state: 'unauthorized', message: '登录已过期，请重新登录' };
+      return { state: 'unauthorized', message: translate('errors.sessionExpired') };
     }
 
     if (response.status === 403) {
-      return { state: 'forbidden', message: '权限不足，无法执行该操作' };
+      return { state: 'forbidden', message: translate('errors.forbidden') };
     }
 
     const body = (await response.json()) as ApiEnvelope<T>;
 
     if (!response.ok || body.code !== 'OK' || body.data === null) {
-      return { state: 'error', message: body.message || '请求失败' };
+      return { state: 'error', message: body.message || translate('errors.requestFailed') };
     }
 
     return { state: 'success', data: body.data, message: body.message };
   } catch {
-    return { state: 'error', message: '网络异常，请稍后重试' };
+    return { state: 'error', message: translate('errors.network') };
   }
 }

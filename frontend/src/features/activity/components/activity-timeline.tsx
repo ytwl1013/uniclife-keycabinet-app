@@ -1,108 +1,47 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { Pill } from '@/components/ui/pill';
-import { AppColors } from '@/styles/theme';
+import { AppIcon, AppIconName, AppIconTone } from '@/components/ui/app-icon';
+import { AppText } from '@/components/ui/app-text';
+import { Pill, PillTone } from '@/components/ui/pill';
+import { ActivityEntry, ActivityKind } from '@/features/activity/types';
+import { TranslationKey, useTranslation } from '@/i18n';
 
-import { ActivityEntry, ActivityKind } from '../types';
-
-const kindConfig: Record<ActivityKind, { icon: keyof typeof MaterialIcons.glyphMap; color: string; soft: string; label: string; tone: 'blue' | 'green' | 'red' | 'purple' }> = {
-  checkOut: { icon: 'logout', color: AppColors.blue, soft: AppColors.blueSoft, label: 'Check-Out', tone: 'blue' },
-  return: { icon: 'keyboard-return', color: '#18aa63', soft: AppColors.greenSoft, label: 'Return', tone: 'green' },
-  overdue: { icon: 'error', color: AppColors.red, soft: AppColors.redSoft, label: 'Overdue', tone: 'red' },
-  admin: { icon: 'settings', color: AppColors.purple, soft: AppColors.purpleSoft, label: 'Admin', tone: 'purple' },
+const kindConfig: Record<ActivityKind, { icon: AppIconName; iconTone: AppIconTone; markerClass: string; labelKey: TranslationKey; pillTone: PillTone }> = {
+  checkOut: { icon: 'checkOut', iconTone: 'brand', markerClass: 'bg-brand-soft', labelKey: 'activity.checkOut', pillTone: 'blue' },
+  return: { icon: 'return', iconTone: 'success', markerClass: 'bg-success-soft', labelKey: 'activity.return', pillTone: 'green' },
+  overdue: { icon: 'error', iconTone: 'danger', markerClass: 'bg-danger-soft', labelKey: 'activity.overdue', pillTone: 'red' },
+  admin: { icon: 'settings', iconTone: 'accent', markerClass: 'bg-accent-soft', labelKey: 'activity.admin', pillTone: 'purple' },
 };
 
 export function ActivityTimeline({ entries }: { entries: ActivityEntry[] }) {
   return (
-    <View style={styles.timeline}>
-      {entries.map((entry, index) => (
-        <ActivityRow entry={entry} isLast={index === entries.length - 1} key={entry.id} />
-      ))}
+    <View>
+      {entries.map((entry, index) => <ActivityRow entry={entry} isLast={index === entries.length - 1} key={entry.id} />)}
     </View>
   );
 }
 
 function ActivityRow({ entry, isLast }: { entry: ActivityEntry; isLast: boolean }) {
+  const { t } = useTranslation();
   const config = kindConfig[entry.kind];
 
   return (
-    <View style={styles.row}>
-      <View style={styles.markerColumn}>
-        <View style={[styles.marker, { backgroundColor: config.soft }]}>
-          <MaterialIcons color={config.color} name={config.icon} size={25} />
+    <View className="min-h-[100px] flex-row gap-3.5">
+      <View className="w-[46px] items-center">
+        <View className={`h-[46px] w-[46px] items-center justify-center rounded-pill ${config.markerClass}`}>
+          <AppIcon name={config.icon} size={25} tone={config.iconTone} />
         </View>
-        {!isLast ? <View style={styles.line} /> : null}
+        {!isLast ? <View className="w-0.5 flex-1 bg-line" /> : null}
       </View>
-      <View style={styles.content}>
-        <View style={styles.metaRow}>
-          <Text style={styles.day}>{entry.day}</Text>
-          <Text style={styles.time}>{entry.time}</Text>
-          <Pill tone={config.tone}>{config.label}</Pill>
+      <View className="flex-1 gap-1.5 pb-6">
+        <View className="flex-row items-center gap-2.5">
+          <AppText variant="caption" tone="muted">{t(entry.dayKey)}</AppText>
+          <AppText className="flex-1" variant="caption" tone="muted">{entry.time}</AppText>
+          <Pill tone={config.pillTone}>{t(config.labelKey)}</Pill>
         </View>
-        <Text style={styles.title}>{entry.title}</Text>
-        <Text style={styles.detail}>{entry.detail}</Text>
+        <AppText variant="title" tone="foreground">{t(entry.titleKey)}</AppText>
+        <AppText variant="caption" tone="muted">{t(entry.detailKey)}</AppText>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  timeline: {
-    gap: 0,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 14,
-    minHeight: 100,
-  },
-  markerColumn: {
-    alignItems: 'center',
-    width: 46,
-  },
-  marker: {
-    alignItems: 'center',
-    borderRadius: 23,
-    height: 46,
-    justifyContent: 'center',
-    width: 46,
-  },
-  line: {
-    backgroundColor: AppColors.line,
-    flex: 1,
-    width: 2,
-  },
-  content: {
-    flex: 1,
-    gap: 5,
-    paddingBottom: 24,
-  },
-  metaRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  day: {
-    color: AppColors.muted,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  time: {
-    color: AppColors.muted,
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  title: {
-    color: AppColors.ink,
-    fontSize: 16,
-    fontWeight: '900',
-    lineHeight: 21,
-  },
-  detail: {
-    color: AppColors.muted,
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
-  },
-});
