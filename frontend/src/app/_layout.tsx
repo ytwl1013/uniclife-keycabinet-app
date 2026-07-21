@@ -6,10 +6,11 @@ import 'react-native-reanimated';
 import '../../global.css';
 
 import { I18nProvider, useTranslation } from '@/i18n';
+import { MockAppProvider } from '@/mocks';
 import { useAppTheme } from '@/styles/theme';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: 'index',
 };
 
 function AppNavigation() {
@@ -20,8 +21,12 @@ function AppNavigation() {
     <View className="flex-1 bg-background" style={variables}>
       <NavigationThemeProvider value={navigationTheme}>
         <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="cabinets/[cabinetId]" options={{ headerShown: false }} />
+          <Stack.Screen name="cabinets" options={{ headerShown: false }} />
+          <Stack.Screen name="account" options={{ headerShown: false }} />
           <Stack.Screen
             name="modal"
             options={{ presentation: 'modal', title: t('navigation.actionModal') }}
@@ -36,7 +41,9 @@ function AppNavigation() {
 export default function RootLayout() {
   return (
     <I18nProvider>
-      <AppNavigation />
+      <MockAppProvider>
+        <AppNavigation />
+      </MockAppProvider>
     </I18nProvider>
   );
 }

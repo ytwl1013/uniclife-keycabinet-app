@@ -1,0 +1,26 @@
+[
+  {
+    "id": "qr-hq",
+    "code": "UL-DEMO-UC24-A7F4-N1Q9",
+    "skuId": "sku-uc24-white",
+    "cabinetId": "cabinet-hq",
+    "status": "active",
+    "createdAt": "2026-05-05T08:00:00.000Z"
+  },
+  {
+    "id": "qr-loft",
+    "code": "UL-DEMO-UC48-K8P2-R6M3",
+    "skuId": "sku-uc48-navy",
+    "cabinetId": "cabinet-loft",
+    "status": "active",
+    "createdAt": "2026-05-06T08:00:00.000Z"
+  },
+  {
+    "id": "qr-studio",
+    "code": "UL-DEMO-UC12-V5T7-X2C8",
+    "skuId": "sku-uc12-blue",
+    "cabinetId": "cabinet-studio",
+    "status": "active",
+    "createdAt": "2026-05-07T08:00:00.000Z"
+  }
+]

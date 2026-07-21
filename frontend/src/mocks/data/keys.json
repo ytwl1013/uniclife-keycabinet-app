@@ -1,0 +1,62 @@
+[
+  {
+    "id": "key-front-door",
+    "cabinetId": "cabinet-hq",
+    "slotId": "slot-hq-01",
+    "name": "Front entrance",
+    "note": "Main entrance cylinder",
+    "status": "available",
+    "createdAt": "2026-05-05T08:15:00.000Z",
+    "updatedAt": "2026-07-21T07:30:00.000Z"
+  },
+  {
+    "id": "key-mailroom",
+    "cabinetId": "cabinet-hq",
+    "slotId": "slot-hq-02",
+    "name": "Mailroom",
+    "note": "Parcel cage and mailroom",
+    "status": "borrowed",
+    "createdAt": "2026-05-05T08:20:00.000Z",
+    "updatedAt": "2026-07-21T07:45:00.000Z"
+  },
+  {
+    "id": "key-server-room",
+    "cabinetId": "cabinet-hq",
+    "slotId": "slot-hq-03",
+    "name": "Server room",
+    "note": "Authorized facilities staff only",
+    "status": "available",
+    "createdAt": "2026-05-05T08:25:00.000Z",
+    "updatedAt": "2026-07-20T15:05:00.000Z"
+  },
+  {
+    "id": "key-flat-101",
+    "cabinetId": "cabinet-loft",
+    "slotId": "slot-loft-01",
+    "name": "Apartment 101",
+    "note": "Resident handover set",
+    "status": "available",
+    "createdAt": "2026-05-06T08:15:00.000Z",
+    "updatedAt": "2026-07-19T13:00:00.000Z"
+  },
+  {
+    "id": "key-plant-room",
+    "cabinetId": "cabinet-loft",
+    "slotId": "slot-loft-02",
+    "name": "Plant room",
+    "note": "Basement mechanical room",
+    "status": "available",
+    "createdAt": "2026-05-06T08:20:00.000Z",
+    "updatedAt": "2026-07-18T09:30:00.000Z"
+  },
+  {
+    "id": "key-camera-locker",
+    "cabinetId": "cabinet-studio",
+    "slotId": "slot-studio-01",
+    "name": "Camera locker",
+    "note": "Equipment cage",
+    "status": "available",
+    "createdAt": "2026-05-07T08:15:00.000Z",
+    "updatedAt": "2026-07-17T10:00:00.000Z"
+  }
+]

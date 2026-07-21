@@ -15,5 +15,5 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
-, "src/i18n/translations/zh-CN.ts-先忽略"  ]
+  ]
 }

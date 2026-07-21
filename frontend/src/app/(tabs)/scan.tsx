@@ -1,13 +1,11 @@
-import { AppScreen } from '@/components/app-screen';
-import { FeaturePlaceholder } from '@/components/ui/feature-placeholder';
-import { useTranslation } from '@/i18n';
+import { useLocalSearchParams } from 'expo-router';
+
+import { ScanFlow, ScanMode } from '@/features/scan/components/scan-flow';
 
 export default function ScanRoute() {
-  const { t } = useTranslation();
+  const { mode: modeParam } = useLocalSearchParams<{ mode?: string | string[] }>();
+  const rawMode = Array.isArray(modeParam) ? modeParam[0] : modeParam;
+  const mode: ScanMode = rawMode === 'initialize' ? 'initialize' : 'join';
 
-  return (
-    <AppScreen contentClassName="justify-center" scroll={false}>
-      <FeaturePlaceholder description={t('scan.description')} icon="scan" title={t('scan.title')} />
-    </AppScreen>
-  );
+  return <ScanFlow mode={mode} />;
 }

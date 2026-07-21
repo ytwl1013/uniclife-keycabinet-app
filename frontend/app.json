@@ -29,11 +29,17 @@
     "plugins": [
       "expo-router",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow UnicLife to scan a product QR code. Camera frames are not stored or uploaded by this app."
+        }
+      ],
+      [
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": ["en", "zh-Hans", "ja", "ko", "de", "fr", "es", "pt"],
-            "android": ["en", "zh-CN", "ja", "ko", "de", "fr", "es", "pt"]
+            "ios": ["en-US", "en-GB", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-PT", "nl-NL", "pl-PL"],
+            "android": ["en-US", "en-GB", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-PT", "nl-NL", "pl-PL"]
           }
         }
       ],
