@@ -28,3 +28,7 @@ web-build
 .vscode
 .idea
 .DS_Store
+
+.agents
+.claude
+.codex-logs

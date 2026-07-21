@@ -3,9 +3,9 @@ import { CabinetDetail, CabinetListItem, KeySlot } from './types';
 export const demoCabinets: CabinetListItem[] = [
   {
     id: 'main-office',
-    name: 'Main Office Cabinet',
-    location: 'Headquarters',
-    floor: '1st Floor',
+    nameKey: 'demo.cabinets.mainOffice',
+    locationKey: 'demo.cabinets.headquarters',
+    floorKey: 'demo.cabinets.firstFloor',
     model: 'UC-3000',
     capacity: 60,
     status: 'online',
@@ -13,9 +13,9 @@ export const demoCabinets: CabinetListItem[] = [
   },
   {
     id: 'property-a',
-    name: 'Property A Key Cabinet',
-    location: 'Property A',
-    floor: 'Building 1',
+    nameKey: 'demo.cabinets.propertyAName',
+    locationKey: 'demo.cabinets.propertyA',
+    floorKey: 'demo.cabinets.buildingOne',
     model: 'UC-2000',
     capacity: 40,
     status: 'online',
@@ -23,9 +23,9 @@ export const demoCabinets: CabinetListItem[] = [
   },
   {
     id: 'garage',
-    name: 'Garage Key Cabinet',
-    location: 'Headquarters',
-    floor: 'Basement',
+    nameKey: 'demo.cabinets.garage',
+    locationKey: 'demo.cabinets.headquarters',
+    floorKey: 'demo.cabinets.basement',
     model: 'UC-1000',
     capacity: 20,
     status: 'offline',

@@ -1,29 +1,25 @@
 import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Pressable, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { AppIcon } from '@/components/ui/app-icon';
+import { AppText } from '@/components/ui/app-text';
+import { useTranslation } from '@/i18n';
 
-export default function ModalScreen() {
+export default function ActionModalRoute() {
+  const { t } = useTranslation();
+
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">Go to home screen</ThemedText>
+    <View className="flex-1 items-center justify-center gap-section bg-background p-screen">
+      <View className="h-16 w-16 items-center justify-center rounded-pill bg-brand-soft">
+        <AppIcon name="audit" size={34} tone="brand" />
+      </View>
+      <AppText className="text-center" variant="pageTitle" tone="foreground">{t('modal.title')}</AppText>
+      <AppText className="max-w-sm text-center" tone="muted">{t('modal.description')}</AppText>
+      <Link asChild dismissTo href="/">
+        <Pressable className="rounded-control bg-brand px-5 py-3 active:opacity-70">
+          <AppText variant="label" tone="onBrand">{t('modal.goHome')}</AppText>
+        </Pressable>
       </Link>
-    </ThemedView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-});

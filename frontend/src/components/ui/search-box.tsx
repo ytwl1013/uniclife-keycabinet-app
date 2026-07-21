@@ -1,35 +1,22 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { StyleSheet, Text, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
-import { AppColors } from '@/styles/theme';
+import { useAppTheme } from '@/styles/theme';
 
-export function SearchBox({ placeholder, trailingIcon }: { placeholder: string; trailingIcon?: keyof typeof MaterialIcons.glyphMap }) {
+import { AppIcon, AppIconName } from './app-icon';
+
+export function SearchBox({ placeholder, trailingIcon }: { placeholder: string; trailingIcon?: AppIconName }) {
+  const { palette } = useAppTheme();
+
   return (
-    <View style={styles.searchBox}>
-      <MaterialIcons color={AppColors.muted} name="search" size={23} />
-      <Text style={styles.placeholder}>{placeholder}</Text>
-      {trailingIcon ? <MaterialIcons color={AppColors.muted} name={trailingIcon} size={22} /> : null}
+    <View className="min-h-[52px] flex-1 flex-row items-center gap-2.5 rounded-control border border-line bg-surface px-controlX">
+      <AppIcon name="search" size={23} tone="muted" />
+      <TextInput
+        accessibilityLabel={placeholder}
+        className="flex-1 text-body text-content"
+        placeholder={placeholder}
+        placeholderTextColor={palette.muted}
+      />
+      {trailingIcon ? <AppIcon name={trailingIcon} size={22} tone="muted" /> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  searchBox: {
-    alignItems: 'center',
-    backgroundColor: AppColors.surface,
-    borderColor: AppColors.line,
-    borderRadius: 14,
-    borderWidth: 1,
-    flex: 1,
-    flexDirection: 'row',
-    gap: 10,
-    minHeight: 52,
-    paddingHorizontal: 14,
-  },
-  placeholder: {
-    color: AppColors.muted,
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-});

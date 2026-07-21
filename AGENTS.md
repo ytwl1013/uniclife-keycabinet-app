@@ -33,9 +33,8 @@ tests/            跨端到端测试、契约测试和集成测试
 前端目录建议按职责拆分：
 
 ```text
-frontend/src/app/          应用入口、路由、全局 providers
-frontend/src/pages/        页面级组件
-frontend/src/features/     业务功能模块
+frontend/src/app/          Expo Router 页面、布局和全局 providers
+frontend/src/features/     业务功能模块及较大业务组件
 frontend/src/components/   可复用 UI 组件
 frontend/src/api/          请求客户端、接口封装、错误归一化
 frontend/src/stores/       前端状态管理
@@ -45,6 +44,9 @@ frontend/tests/            前端单测、组件测试和页面流程测试
 
 前端规则：
 
+- 页面实现直接放在 `frontend/src/app` 的对应路由文件中；该目录不得放置非路由 helper、hook、数据或工具文件。
+- 较大的业务组件放在 `frontend/src/features/<domain>/components`，共享 UI 组件放在 `frontend/src/components/ui`。
+- Stack 和 Tab 的页面选项统一在最近的 `_layout.tsx` 注册，不得再创建与文件路由重复的独立路由注册表。
 - 所有后端调用必须通过 `frontend/src/api` 的统一请求层。
 - 页面必须处理加载、空数据、异常、权限不足和会话过期状态。
 - 涉及钥匙领取、归还、盘点、授权、异常开柜等关键动作时，前端必须展示明确的确认、结果和失败原因。

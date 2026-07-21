@@ -1,8 +1,10 @@
+import { TranslationKey } from '@/i18n';
+
 export type CabinetListItem = {
   id: string;
-  name: string;
-  location: string;
-  floor: string;
+  nameKey: TranslationKey;
+  locationKey: TranslationKey;
+  floorKey: TranslationKey;
   model: string;
   capacity: number;
   status: CabinetStatus;
