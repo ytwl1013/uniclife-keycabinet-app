@@ -68,4 +68,5 @@ pnpm --filter @uniclife/frontend exec expo export --platform web
 The export service creates CSV, XLSX and PDF files. Web uses a Blob download;
 iOS and Android use the file cache and system share sheet. Member exports mask
 borrower contact details, while Owner/Admin full-detail exports require an
-additional confirmation.
+additional confirmation. PDF generation lazily embeds Noto Sans so Latin
+Extended names remain readable across the nine supported locales.
