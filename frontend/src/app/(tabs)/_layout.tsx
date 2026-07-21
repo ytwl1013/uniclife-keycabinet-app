@@ -1,9 +1,10 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { TranslationKey, useTranslation } from '@/i18n';
+import { useMockApp } from '@/mocks';
 import { navigationMetrics, useAppTheme } from '@/styles/theme';
 
 const tabRoutes = [
@@ -11,7 +12,7 @@ const tabRoutes = [
   { id: 'cabinets', screen: 'cabinets', titleKey: 'navigation.cabinets', icon: 'cabinet' },
   { id: 'scan', screen: 'scan', titleKey: 'navigation.scan', icon: 'scan' },
   { id: 'activity', screen: 'activity', titleKey: 'navigation.activity', icon: 'activity' },
-  { id: 'team', screen: 'team', titleKey: 'navigation.team', icon: 'team' },
+  { id: 'account', screen: 'account', titleKey: 'navigation.account', icon: 'person' },
 ] as const satisfies readonly {
   id: string;
   screen: string;
@@ -21,7 +22,12 @@ const tabRoutes = [
 
 export default function TabLayout() {
   const { t } = useTranslation();
+  const { state } = useMockApp();
   const { palette } = useAppTheme();
+
+  if (state.hydrated && state.sessionStatus !== 'authenticated') {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
 
   return (
     <Tabs

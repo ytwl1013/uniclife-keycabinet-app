@@ -1,0 +1,11 @@
+[
+  { "id": "consent-owner-terms", "userId": "user-owner", "kind": "terms", "granted": true, "policyVersion": "legal-draft-2026-07", "locale": "en-US", "recordedAt": "2026-05-01T08:00:00.000Z" },
+  { "id": "consent-owner-privacy", "userId": "user-owner", "kind": "privacy", "granted": true, "policyVersion": "legal-draft-2026-07", "locale": "en-US", "recordedAt": "2026-05-01T08:00:00.000Z" },
+  { "id": "consent-owner-marketing", "userId": "user-owner", "kind": "marketing", "granted": false, "policyVersion": "marketing-draft-2026-07", "locale": "en-US", "recordedAt": "2026-05-01T08:00:00.000Z" },
+  { "id": "consent-admin-terms", "userId": "user-admin", "kind": "terms", "granted": true, "policyVersion": "legal-draft-2026-07", "locale": "de-DE", "recordedAt": "2026-05-02T08:00:00.000Z" },
+  { "id": "consent-admin-privacy", "userId": "user-admin", "kind": "privacy", "granted": true, "policyVersion": "legal-draft-2026-07", "locale": "de-DE", "recordedAt": "2026-05-02T08:00:00.000Z" },
+  { "id": "consent-member-terms", "userId": "user-member", "kind": "terms", "granted": true, "policyVersion": "legal-draft-2026-07", "locale": "fr-FR", "recordedAt": "2026-05-03T08:00:00.000Z" },
+  { "id": "consent-member-privacy", "userId": "user-member", "kind": "privacy", "granted": true, "policyVersion": "legal-draft-2026-07", "locale": "fr-FR", "recordedAt": "2026-05-03T08:00:00.000Z" },
+  { "id": "consent-demo-terms", "userId": "user-demo", "kind": "terms", "granted": true, "policyVersion": "legal-draft-2026-07", "locale": "it-IT", "recordedAt": "2026-05-04T08:00:00.000Z" },
+  { "id": "consent-demo-privacy", "userId": "user-demo", "kind": "privacy", "granted": true, "policyVersion": "legal-draft-2026-07", "locale": "it-IT", "recordedAt": "2026-05-04T08:00:00.000Z" }
+]

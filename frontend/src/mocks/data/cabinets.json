@@ -1,0 +1,38 @@
+[
+  {
+    "id": "cabinet-hq",
+    "skuId": "sku-uc24-white",
+    "qrId": "qr-hq",
+    "name": "Headquarters",
+    "location": "Ground floor reception",
+    "timeZone": "America/New_York",
+    "status": "online",
+    "lastSyncedAt": "2026-07-21T08:14:00.000Z",
+    "createdAt": "2026-05-05T08:00:00.000Z",
+    "version": 8
+  },
+  {
+    "id": "cabinet-loft",
+    "skuId": "sku-uc48-navy",
+    "qrId": "qr-loft",
+    "name": "Riverside Property",
+    "location": "Building A service desk",
+    "timeZone": "Europe/Berlin",
+    "status": "online",
+    "lastSyncedAt": "2026-07-21T08:12:00.000Z",
+    "createdAt": "2026-05-06T08:00:00.000Z",
+    "version": 5
+  },
+  {
+    "id": "cabinet-studio",
+    "skuId": "sku-uc12-blue",
+    "qrId": "qr-studio",
+    "name": "Creative Studio",
+    "location": "Equipment room",
+    "timeZone": "Europe/Paris",
+    "status": "offline",
+    "lastSyncedAt": "2026-07-20T18:20:00.000Z",
+    "createdAt": "2026-05-07T08:00:00.000Z",
+    "version": 3
+  }
+]
