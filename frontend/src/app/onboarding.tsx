@@ -4,7 +4,6 @@ import { View } from 'react-native';
 
 import {
   AuthErrorNotice,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
   AuthTextButton,
@@ -82,11 +81,6 @@ export default function OnboardingRoute() {
         />
       }
       title={t('onboarding.title')}>
-      <AuthNotice
-        icon="person"
-        text={t('onboarding.signedInAs', { email: currentUser.email })}
-      />
-
       <View className="gap-3">
         <OnboardingChoice
           description={t('onboarding.initializeDescription')}
@@ -101,15 +95,8 @@ export default function OnboardingRoute() {
           onPress={() => openScanner('join')}
           title={t('onboarding.joinTitle')}
         />
-        <OnboardingChoice
-          description={t('onboarding.laterDescription')}
-          icon="home"
-          onPress={() => router.replace(homeRoute)}
-          title={t('onboarding.laterTitle')}
-        />
+        <AuthTextButton label={t('onboarding.laterTitle')} onPress={() => router.replace(homeRoute)} />
       </View>
-
-      <AuthNotice icon="shield" text={t('onboarding.qrSafetyNotice')} />
       {requestError ? <AuthErrorNotice text={requestError} /> : null}
     </AuthScreen>
   );

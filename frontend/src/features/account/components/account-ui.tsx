@@ -195,14 +195,14 @@ export function ChoiceChip({
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, selected }}
-      className={`min-h-11 flex-row items-center gap-2 rounded-pill border px-4 py-2 active:opacity-70 ${
-        selected ? 'border-brand bg-brand' : 'border-line bg-background'
+      className={`min-h-12 flex-row items-center justify-between rounded-control border px-4 py-3 active:opacity-70 ${
+        selected ? 'border-brand bg-brand-soft' : 'border-line bg-background'
       }`}
       onPress={onPress}>
-      <View className={`h-2.5 w-2.5 rounded-pill ${selected ? 'bg-on-brand' : 'bg-line'}`} />
-      <AppText variant="caption" tone={selected ? 'onBrand' : 'content'}>
+      <AppText variant="label" tone={selected ? 'brand' : 'content'}>
         {label}
       </AppText>
+      {selected ? <AppIcon name="check" size={18} tone="brand" /> : <View className="h-[18px] w-[18px]" />}
     </Pressable>
   );
 }

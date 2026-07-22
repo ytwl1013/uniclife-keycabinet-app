@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
   AuthTextButton,
@@ -31,7 +30,7 @@ export default function VerifyResetRoute() {
   const params = useLocalSearchParams<{ challengeId?: string }>();
   const challengeId = typeof params.challengeId === 'string' ? params.challengeId : '';
   const challenge = challengeId ? getResetChallenge(challengeId) : undefined;
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(challenge?.demoCode ?? '');
   const [codeError, setCodeError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,10 +78,6 @@ export default function VerifyResetRoute() {
       title={t('auth.verifyReset.title')}>
       {challenge ? (
         <>
-          <AuthNotice
-            icon="notification"
-            text={t('auth.verifyReset.demoCode', { code: challenge.demoCode })}
-          />
           <AuthField
             autoCapitalize="none"
             autoComplete="one-time-code"

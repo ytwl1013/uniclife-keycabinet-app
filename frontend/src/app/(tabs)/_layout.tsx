@@ -57,11 +57,11 @@ export default function TabLayout() {
           name={route.screen}
           options={{
             title: t(route.titleKey),
-            tabBarIcon: ({ color, focused }) => {
-              const isPrimaryAction = route.id === 'scan' && focused;
+            tabBarIcon: ({ color }) => {
+              const isPrimaryAction = route.id === 'scan';
 
               return (
-                <View className={isPrimaryAction ? 'rounded-pill bg-brand p-3' : ''}>
+                <View className={isPrimaryAction ? '-mt-2 rounded-pill bg-brand p-3 shadow-card' : ''}>
                   <AppIcon
                     color={isPrimaryAction ? palette.onBrand : color}
                     name={route.icon}

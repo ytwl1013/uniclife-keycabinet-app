@@ -1,7 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { ScrollView } from 'react-native';
 
 import { AppScreen } from '@/components/app-screen';
+import { DateTimeField } from '@/components/ui/date-time-field';
+import { isExpectedReturnAfter } from '@/components/ui/date-time';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
 import { ActionButton, FormField, Notice, ScreenHeader, SectionCard, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
@@ -47,7 +50,7 @@ export default function CheckOutKeyRoute() {
     if (!borrowerName.trim()) next.borrowerName = t(trKey('loan.borrowerRequired'));
     if (Number.isNaN(checkedOut.getTime())) next.checkedOutAt = t(trKey('loan.invalidDate'));
     if (Number.isNaN(due.getTime())) next.expectedReturnAt = t(trKey('loan.invalidDate'));
-    if (!next.checkedOutAt && !next.expectedReturnAt && due.getTime() <= checkedOut.getTime()) next.expectedReturnAt = t(trKey('loan.dueAfterCheckout'));
+    if (!next.checkedOutAt && !next.expectedReturnAt && !isExpectedReturnAfter(checkedOutAt, expectedReturnAt)) next.expectedReturnAt = t(trKey('loan.dueAfterCheckout'));
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -83,41 +86,41 @@ export default function CheckOutKeyRoute() {
   };
 
   return (
-    <AppScreen>
+    <AppScreen contentClassName="gap-4 pb-screen" keyboardAware scroll={false}>
       <ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />
-      {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
-      <Notice description={t(trKey('loan.personalDataDescription'))} title={t(trKey('loan.personalDataTitle'))} tone="warning" />
-      <SectionCard>
-        <FormField
-          error={errors.borrowerName}
-          label={t(trKey('loan.borrowerName'))}
-          onChangeText={(value) => { setBorrowerName(value); setErrors((current) => ({ ...current, borrowerName: '' })); }}
-          placeholder={t(trKey('loan.borrowerNamePlaceholder'))}
-          value={borrowerName}
-        />
-        <FormField
-          label={t(trKey('loan.borrowerContactOptional'))}
-          onChangeText={setBorrowerContact}
-          placeholder={t(trKey('loan.borrowerContactPlaceholder'))}
-          value={borrowerContact}
-        />
-        <FormField
-          error={errors.checkedOutAt}
-          label={t(trKey('loan.checkedOutAt'))}
-          onChangeText={(value) => { setCheckedOutAt(value); setErrors((current) => ({ ...current, checkedOutAt: '' })); }}
-          placeholder={t(trKey('loan.datePlaceholder'))}
-          value={checkedOutAt}
-        />
-        <FormField
-          error={errors.expectedReturnAt}
-          label={t(trKey('loan.expectedReturnAt'))}
-          onChangeText={(value) => { setExpectedReturnAt(value); setErrors((current) => ({ ...current, expectedReturnAt: '' })); }}
-          placeholder={t(trKey('loan.datePlaceholder'))}
-          value={expectedReturnAt}
-        />
-        <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />
-      </SectionCard>
-      <Notice description={t(trKey('loan.auditNoticeDescription'))} title={t(trKey('loan.auditNoticeTitle'))} />
+      <ScrollView contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
+        <SectionCard>
+          <FormField
+            error={errors.borrowerName}
+            label={t(trKey('loan.borrowerName'))}
+            onChangeText={(value) => { setBorrowerName(value); setErrors((current) => ({ ...current, borrowerName: '' })); }}
+            placeholder={t(trKey('loan.borrowerNamePlaceholder'))}
+            value={borrowerName}
+          />
+          <FormField
+            label={t(trKey('loan.borrowerContactOptional'))}
+            onChangeText={setBorrowerContact}
+            placeholder={t(trKey('loan.borrowerContactPlaceholder'))}
+            value={borrowerContact}
+          />
+          <DateTimeField
+            error={errors.checkedOutAt}
+            label={t(trKey('loan.checkedOutAt'))}
+            onChange={(value) => { setCheckedOutAt(value); setErrors((current) => ({ ...current, checkedOutAt: '' })); }}
+            timeZone={cabinet.timezone}
+            value={checkedOutAt}
+          />
+          <DateTimeField
+            error={errors.expectedReturnAt}
+            label={t(trKey('loan.expectedReturnAt'))}
+            onChange={(value) => { setExpectedReturnAt(value); setErrors((current) => ({ ...current, expectedReturnAt: '' })); }}
+            timeZone={cabinet.timezone}
+            value={expectedReturnAt}
+          />
+        </SectionCard>
+      </ScrollView>
+      <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />
       {confirmation.dialog}
     </AppScreen>
   );

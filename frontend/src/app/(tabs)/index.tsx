@@ -1,17 +1,12 @@
 import { Href, router } from 'expo-router';
-import { Image, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { AppScreen } from '@/components/app-screen';
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
+import { ProductImage } from '@/components/ui/product-image';
 import { useTranslation } from '@/i18n';
-import { Cabinet, ProductSku, useMockApp } from '@/mocks';
-
-const productImages = {
-  'sku-uc12-blue': require('@/assets/images/keycabinet-k12.png'),
-  'sku-uc24-white': require('@/assets/images/keycabinet-k24.png'),
-  'sku-uc48-navy': require('@/assets/images/keycabinet-k48.png'),
-};
+import { Cabinet, Key, ProductSku, useMockApp } from '@/mocks';
 
 export default function HomeRoute() {
   const { formatNumber, t } = useTranslation();
@@ -22,7 +17,7 @@ export default function HomeRoute() {
     (summary, item) => ({ available: summary.available + item.available, overdue: summary.overdue + item.overdue }),
     { available: 0, overdue: 0 },
   );
-  const activeLoans = selectors.borrowedKeys().length;
+  const borrowedKeys = selectors.borrowedKeys();
   const firstName = currentUser?.displayName.split(' ')[0] ?? currentUser?.email.split('@')[0] ?? '';
 
   if (!state.hydrated) {
@@ -36,26 +31,20 @@ export default function HomeRoute() {
   }
 
   return (
-    <AppScreen contentClassName="gap-7">
-      <View className="gap-5 overflow-hidden rounded-[28px] bg-foreground p-6">
-        <View className="flex-row items-start justify-between gap-4">
-          <View className="flex-1 gap-1">
-            <AppText variant="caption" tone="onBrand">{t('home.eyebrow')}</AppText>
-            <AppText className="text-[30px] leading-9 text-white" variant="display">
-              {t('home.greeting', { name: firstName })}
-            </AppText>
-          </View>
-          <Pressable
-            accessibilityLabel={t('navigation.account')}
-            className="h-12 w-12 items-center justify-center rounded-pill bg-white/10 active:opacity-70"
-            onPress={() => router.push('/(tabs)/account' as Href)}>
-            <AppIcon color="#FFFFFF" name="person" size={26} />
-          </Pressable>
+    <AppScreen contentClassName="gap-6">
+      <View className="flex-row items-center gap-4 rounded-card border border-line bg-surface p-4 shadow-card">
+        <View className="min-w-0 flex-1 gap-1">
+          <AppText variant="caption" tone="brand">{t('home.eyebrow')}</AppText>
+          <AppText numberOfLines={2} variant="pageTitle" tone="foreground">
+            {t('home.greeting', { name: firstName })}
+          </AppText>
         </View>
-        <View className="gap-2">
-          <AppText className="text-white" variant="pageTitle">{t('home.title')}</AppText>
-          <AppText className="max-w-xl text-white/70">{t('home.description')}</AppText>
-        </View>
+        <Pressable
+          accessibilityLabel={t('navigation.account')}
+          className="h-12 w-12 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
+          onPress={() => router.push('/(tabs)/account' as Href)}>
+          <AppIcon name="person" size={25} tone="brand" />
+        </Pressable>
       </View>
 
       <View className="flex-row gap-2.5">
@@ -66,9 +55,32 @@ export default function HomeRoute() {
 
       <View className="gap-3">
         <View className="flex-row items-end justify-between gap-4 px-1">
+          <View className="min-w-0 flex-1 gap-1">
+            <AppText variant="title" tone="foreground">{t('home.activeLoansTitle')}</AppText>
+            <AppText variant="caption" tone="muted">{t('home.activeLoansDescription', { count: borrowedKeys.length })}</AppText>
+          </View>
+          {borrowedKeys.length ? (
+            <Pressable accessibilityRole="button" className="px-2 py-2" onPress={() => router.push({ pathname: '/(tabs)/activity', params: { filter: 'borrowed' } } as Href)}>
+              <AppText variant="label" tone="brand">{t('home.viewAll')}</AppText>
+            </Pressable>
+          ) : null}
+        </View>
+        {borrowedKeys.length ? borrowedKeys.slice(0, 2).map((key) => (
+          <BorrowedKeyRow key={key.id} item={key} />
+        )) : (
+          <View className="flex-row items-center gap-3 rounded-card border border-line bg-surface px-4 py-3.5">
+            <View className="h-10 w-10 items-center justify-center rounded-pill bg-success-soft">
+              <AppIcon name="key" size={20} tone="success" />
+            </View>
+            <AppText className="flex-1" variant="label" tone="content">{t('loan.noneDescription')}</AppText>
+          </View>
+        )}
+      </View>
+
+      <View className="gap-3">
+        <View className="flex-row items-end justify-between gap-4 px-1">
           <View className="flex-1 gap-1">
             <AppText variant="title" tone="foreground">{t('home.cabinetsTitle')}</AppText>
-            <AppText variant="caption" tone="muted">{t('home.cabinetsDescription')}</AppText>
           </View>
           <Pressable accessibilityRole="button" className="rounded-control px-2 py-2" onPress={() => router.push('/(tabs)/cabinets' as Href)}>
             <AppText variant="label" tone="brand">{t('home.viewAll')}</AppText>
@@ -90,10 +102,7 @@ export default function HomeRoute() {
       </View>
 
       <View className="gap-3">
-        <View className="gap-1 px-1">
-          <AppText variant="title" tone="foreground">{t('home.activeLoansTitle')}</AppText>
-          <AppText variant="caption" tone="muted">{t('home.activeLoansDescription', { count: activeLoans })}</AppText>
-        </View>
+        <AppText className="px-1" variant="title" tone="foreground">{t('home.quickActionsTitle')}</AppText>
         <View className="flex-row flex-wrap gap-3">
           <QuickAction icon="scan" label={t('home.scanKey')} onPress={() => router.push('/(tabs)/scan' as Href)} />
           <QuickAction icon="return" label={t('home.returnKey')} onPress={() => router.push({ pathname: '/(tabs)/activity', params: { filter: 'borrowed' } } as Href)} />
@@ -109,15 +118,14 @@ function CabinetCard({ cabinet, sku }: { cabinet: Cabinet; sku?: ProductSku }) {
   const { t } = useTranslation();
   const { selectors } = useMockApp();
   const metrics = selectors.cabinetMetrics(cabinet.id);
-  const image = productImages[cabinet.skuId as keyof typeof productImages] ?? productImages['sku-uc24-white'];
 
   return (
     <Pressable
       accessibilityRole="button"
       className="flex-row items-center gap-4 overflow-hidden rounded-card border border-line bg-surface p-3 active:opacity-75"
       onPress={() => router.push({ pathname: '/cabinets/[cabinetId]', params: { cabinetId: cabinet.id } } as Href)}>
-      <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-[18px] bg-background">
-        <Image accessibilityLabel={sku?.name ?? cabinet.name} className="h-24 w-24" resizeMode="contain" source={image} />
+      <View className="h-[88px] w-[88px] items-center justify-center rounded-[18px] bg-background">
+        <ProductImage accessibilityLabel={sku?.name ?? cabinet.name} assetKey={sku?.imageAsset} variant="thumbnail" />
       </View>
       <View className="flex-1 gap-1.5">
         <View className="flex-row items-center gap-2">
@@ -129,6 +137,31 @@ function CabinetCard({ cabinet, sku }: { cabinet: Cabinet; sku?: ProductSku }) {
         <AppText variant="caption" tone="content">{t('common.cabinetMeta', { slots: metrics.capacity, overdue: metrics.overdue, status: t(`cabinet.status.${cabinet.status}`) })}</AppText>
       </View>
       <AppIcon name="chevronRight" size={23} tone="muted" />
+    </Pressable>
+  );
+}
+
+function BorrowedKeyRow({ item }: { item: Key }) {
+  const { formatDateTime, t } = useTranslation();
+  const { state } = useMockApp();
+  const loan = state.loans.find((candidate) => candidate.keyId === item.id && candidate.status === 'active');
+  const cabinet = state.cabinets.find((candidate) => candidate.id === item.cabinetId);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      className="flex-row items-center gap-3 rounded-card border border-line bg-surface px-4 py-3.5 active:opacity-70"
+      onPress={() => router.push({ pathname: '/cabinets/[cabinetId]/keys/[keyId]', params: { cabinetId: item.cabinetId, keyId: item.id } } as Href)}>
+      <View className="h-10 w-10 items-center justify-center rounded-pill bg-warning-soft">
+        <AppIcon name="key" size={20} tone="warning" />
+      </View>
+      <View className="min-w-0 flex-1 gap-0.5">
+        <AppText numberOfLines={1} variant="label" tone="foreground">{item.name}</AppText>
+        <AppText numberOfLines={1} variant="caption" tone="muted">
+          {loan ? t('home.loanDue', { cabinet: cabinet?.name ?? '', date: formatDateTime(loan.expectedReturnAt) }) : cabinet?.name}
+        </AppText>
+      </View>
+      <AppIcon name="chevronRight" size={21} tone="muted" />
     </Pressable>
   );
 }

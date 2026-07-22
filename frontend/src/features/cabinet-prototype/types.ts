@@ -17,7 +17,7 @@ export type CabinetView = {
   color: string;
   capacity: number;
   manualUrl?: string;
-  imageUri?: string;
+  imageAsset?: string;
   role: CabinetRole;
   availableCount: number;
   checkedOutCount: number;

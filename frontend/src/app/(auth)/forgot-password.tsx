@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
   AuthTextButton,
@@ -74,8 +73,6 @@ export default function ForgotPasswordRoute() {
       }
       onBack={goBack}
       title={t('auth.forgotPassword.title')}>
-      <AuthNotice icon="notification" text={t('auth.forgotPassword.emailNotice')} />
-
       <AuthField
         autoCapitalize="none"
         autoComplete="email"

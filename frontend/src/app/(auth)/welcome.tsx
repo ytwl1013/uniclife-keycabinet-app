@@ -1,11 +1,11 @@
 import { Href, router } from 'expo-router';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 
 import { AppScreen } from '@/components/app-screen';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
+import { ProductImage } from '@/components/ui/product-image';
 import {
-  AuthNotice,
   AuthPrimaryButton,
   AuthSecondaryButton,
 } from '@/features/auth/components/auth-ui';
@@ -18,7 +18,7 @@ export default function WelcomeRoute() {
   const { t } = useTranslation();
 
   return (
-    <AppScreen contentClassName="min-h-full gap-6 pb-screen">
+    <AppScreen contentClassName="min-h-full gap-5 pb-screen">
       <View className="flex-row items-center gap-3">
         <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand">
           <AppIcon name="cabinet" size={25} tone="onBrand" />
@@ -33,12 +33,11 @@ export default function WelcomeRoute() {
         </View>
       </View>
 
-      <View className="h-64 items-center justify-center overflow-hidden rounded-card border border-line bg-brand-soft px-4 md:h-80">
-        <Image
+      <View className="h-[236px] items-center justify-center overflow-hidden rounded-card bg-brand-soft">
+        <ProductImage
           accessibilityLabel={t('auth.welcome.heroAlt')}
-          className="h-64 w-full max-w-sm"
-          resizeMode="contain"
-          source={require('@/assets/images/keycabinet-hero.png')}
+          assetKey="cabinet-24-white"
+          variant="hero"
         />
       </View>
 
@@ -49,9 +48,7 @@ export default function WelcomeRoute() {
         <AppText tone="muted">{t('auth.welcome.description')}</AppText>
       </View>
 
-      <AuthNotice icon="shield" text={t('auth.common.demoPrivacyNotice')} />
-
-      <View className="gap-3">
+      <View className="mt-auto gap-3">
         <AuthPrimaryButton
           busyLabel={t('auth.common.working')}
           label={t('auth.welcome.signIn')}

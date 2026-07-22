@@ -1,10 +1,12 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Linking, Pressable, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
 
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { Pill, PillTone } from '@/components/ui/pill';
+import { ProductImage } from '@/components/ui/product-image';
 import { TranslationKey, useTranslation } from '@/i18n';
 
 import { CabinetEventKind, CabinetView, ExportFormat, PrototypeApp } from '../types';
@@ -17,6 +19,7 @@ const trKey = (key: string) => key as TranslationKey;
 
 export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: CabinetView }) {
   const { locale, t } = useTranslation();
+  const [showProductInfo, setShowProductInfo] = useState(false);
   const cabinetKeys = app.keys.filter((key) => key.cabinetId === cabinet.id);
   const activeLoans = cabinetKeys.filter((key) => key.activeLoan);
   const latestEvents = app.events.filter((event) => event.cabinetId === cabinet.id).slice(0, 3);
@@ -25,24 +28,21 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
   return (
     <View className="gap-section">
       <SectionCard className="overflow-hidden">
-        <View className="flex-row items-start gap-4">
-          <View className="h-[92px] w-[92px] items-center justify-center rounded-[24px] bg-brand-soft">
-            <View className="h-[72px] w-12 items-center justify-center rounded-[12px] border-2 border-brand bg-surface shadow-card">
-              <AppIcon name="key" size={25} tone="brand" />
-              <View className="mt-2 h-1.5 w-7 rounded-pill bg-line" />
-              <View className="mt-1 h-1.5 w-7 rounded-pill bg-line" />
-            </View>
+        <View className="items-center gap-2 rounded-card bg-background py-2">
+          <ProductImage
+            accessibilityLabel={`${cabinet.model} ${cabinet.color}`}
+            assetKey={cabinet.imageAsset}
+            variant="detail"
+          />
+        </View>
+        <View className="flex-row items-start gap-3">
+          <View className="min-w-0 flex-1 gap-1">
+            <AppText variant="title" tone="foreground">{cabinet.model}</AppText>
+            <AppText variant="caption" tone="muted">{cabinet.skuCode} · {cabinet.color}</AppText>
           </View>
-          <View className="min-w-0 flex-1 gap-2">
-            <View className="flex-row flex-wrap items-center gap-2">
-              <Pill tone={statusTone}>{t(trKey(`cabinet.status.${cabinet.status}`))}</Pill>
-              <Pill tone="purple">{t(trKey(`cabinet.role.${cabinet.role}`))}</Pill>
-            </View>
-            <AppText variant="title" tone="foreground">{cabinet.skuCode}</AppText>
-            <AppText variant="caption" tone="content">{cabinet.model} · {cabinet.color}</AppText>
-            <AppText variant="caption" tone="muted">
-              {t(trKey('cabinet.lastSynced'), { time: new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(cabinet.lastSyncedAt)) })}
-            </AppText>
+          <View className="items-end gap-2">
+            <Pill tone={statusTone}>{t(trKey(`cabinet.status.${cabinet.status}`))}</Pill>
+            <Pill tone="purple">{t(trKey(`cabinet.role.${cabinet.role}`))}</Pill>
           </View>
         </View>
         <View className="flex-row gap-2 border-t border-line pt-3.5">
@@ -53,19 +53,7 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
       </SectionCard>
 
       <SectionCard>
-        <SectionTitle description={t(trKey('cabinet.productDescription'))} title={t(trKey('cabinet.productTitle'))} />
-        <DataRow label={t(trKey('cabinet.sku'))} value={cabinet.skuCode} />
-        <DataRow label={t(trKey('cabinet.model'))} value={cabinet.model} />
-        <DataRow label={t(trKey('cabinet.color'))} value={cabinet.color} />
-        <DataRow label={t(trKey('cabinet.capacity'))} value={t(trKey('cabinet.capacityValue'), { count: cabinet.capacity })} />
-        <DataRow label={t(trKey('cabinet.timezone'))} value={cabinet.timezone} />
-        {cabinet.manualUrl ? (
-          <ActionButton icon="download" label={t(trKey('cabinet.openManual'))} onPress={() => void Linking.openURL(cabinet.manualUrl!)} tone="neutral" />
-        ) : null}
-      </SectionCard>
-
-      <SectionCard>
-        <SectionTitle description={t(trKey('activity.borrowedSummaryDescription'))} title={t(trKey('activity.borrowedSummary'), { count: activeLoans.length })} />
+        <SectionTitle title={t(trKey('activity.borrowedSummary'), { count: activeLoans.length })} />
         {activeLoans.length ? activeLoans.map((key) => (
           <Pressable
             accessibilityRole="button"
@@ -81,7 +69,43 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
             </View>
             <AppIcon name="chevronRight" size={22} tone="muted" />
           </Pressable>
-        )) : <StatePanel description={t(trKey('loan.noneDescription'))} icon="key" title={t(trKey('loan.noneTitle'))} />}
+        )) : (
+          <View className="flex-row items-center gap-3 rounded-control bg-success-soft px-3.5 py-3">
+            <AppIcon name="key" size={20} tone="success" />
+            <AppText className="flex-1" variant="label" tone="content">{t(trKey('loan.noneDescription'))}</AppText>
+          </View>
+        )}
+      </SectionCard>
+
+      <SectionCard>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showProductInfo }}
+          className="flex-row items-center gap-3 active:opacity-70"
+          onPress={() => setShowProductInfo((value) => !value)}>
+          <View className="min-w-0 flex-1">
+            <AppText variant="title" tone="foreground">{t(trKey('cabinet.productTitle'))}</AppText>
+            <AppText variant="caption" tone="muted">{t(trKey('cabinet.lastSynced'), { time: new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(cabinet.lastSyncedAt)) })}</AppText>
+          </View>
+          <View style={{ transform: [{ rotate: showProductInfo ? '180deg' : '0deg' }] }}>
+            <AppIcon name="chevronDown" size={22} tone="muted" />
+          </View>
+        </Pressable>
+        {showProductInfo ? (
+          <View className="gap-2 pt-1">
+            <View className="flex-row gap-2">
+              <DataRow label={t(trKey('cabinet.sku'))} value={cabinet.skuCode} />
+              <DataRow label={t(trKey('cabinet.capacity'))} value={t(trKey('cabinet.capacityValue'), { count: cabinet.capacity })} />
+            </View>
+            <View className="flex-row gap-2">
+              <DataRow label={t(trKey('cabinet.color'))} value={cabinet.color} />
+              <DataRow label={t(trKey('cabinet.timezone'))} value={cabinet.timezone} />
+            </View>
+            {cabinet.manualUrl ? (
+              <ActionButton icon="download" label={t(trKey('cabinet.openManual'))} onPress={() => void Linking.openURL(cabinet.manualUrl!)} tone="neutral" />
+            ) : null}
+          </View>
+        ) : null}
       </SectionCard>
 
       <SectionCard>
@@ -110,11 +134,11 @@ export function CabinetKeys({ app, cabinet }: { app: PrototypeApp; cabinet: Cabi
     <View className="gap-section">
       <View className="gap-3">
         <SearchInput onChangeText={setQuery} placeholder={t(trKey('key.searchPlaceholder'))} value={query} />
-        <View className="flex-row flex-wrap gap-2">
+        <ScrollView contentContainerClassName="gap-2 pr-2" horizontal showsHorizontalScrollIndicator={false}>
           {(['all', 'available', 'checkedOut', 'overdue', 'empty'] as const).map((value) => (
             <FilterChip key={value} label={t(trKey(`key.filter.${value}`))} onPress={() => setStatus(value)} selected={status === value} />
           ))}
-        </View>
+        </ScrollView>
       </View>
       <SectionCard>
         <SectionTitle description={t(trKey('key.slotCount'), { count: slots.length })} title={t(trKey('key.gridTitle'))} />
@@ -132,6 +156,8 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
   const [time, setTime] = useState<'all' | 'week' | 'month'>('all');
   const [actorId, setActorId] = useState('all');
   const [busy, setBusy] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const confirmation = usePrototypeDialog();
   const cabinetEvents = app.events.filter((event) => event.cabinetId === cabinet.id);
   const operators = useMemo(() => {
@@ -203,20 +229,38 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
 
   return (
     <View className="gap-section">
-      <SectionCard>
-        <SectionTitle description={t(trKey('activity.exportDescription'))} title={t(trKey('activity.exportTitle'))} />
-        <View className="flex-row flex-wrap gap-2">
-          {(['csv', 'xlsx', 'pdf'] as const).map((format) => (
-            <View className="min-w-[104px] flex-1" key={format}>
-              <ActionButton compact disabled={busy || app.isOffline} icon="download" label={format.toUpperCase()} onPress={() => void exportLog(format)} tone="neutral" />
-            </View>
-          ))}
-        </View>
-        <Notice description={t(trKey('activity.exportMaskDescription'))} title={t(trKey('activity.exportMaskTitle'))} />
-      </SectionCard>
+      <View className="flex-row gap-2">
+        <Pressable
+          accessibilityRole="button"
+          className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-control border border-line bg-surface px-4 active:opacity-70"
+          onPress={() => setFiltersOpen(true)}>
+          <AppIcon name="filter" size={19} tone="brand" />
+          <AppText variant="label" tone="foreground">{t(trKey('activity.filtersTitle'))}</AppText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-control border border-line bg-surface px-4 active:opacity-70"
+          onPress={() => setExportOpen(true)}>
+          <AppIcon name="download" size={19} tone="brand" />
+          <AppText variant="label" tone="foreground">{t(trKey('activity.exportTitle'))}</AppText>
+        </Pressable>
+      </View>
+
+      {kind !== 'all' || actorId !== 'all' || time !== 'all' ? (
+        <ScrollView contentContainerClassName="gap-2 pr-2" horizontal showsHorizontalScrollIndicator={false}>
+          {kind !== 'all' ? <FilterChip label={t(trKey(`activity.filter.${kind}`))} onPress={() => setKind('all')} selected /> : null}
+          {actorId !== 'all' ? <FilterChip label={operators.find((operator) => operator.id === actorId)?.name ?? actorId} onPress={() => setActorId('all')} selected /> : null}
+          {time !== 'all' ? <FilterChip label={t(trKey(`activity.time.${time}`))} onPress={() => setTime('all')} selected /> : null}
+        </ScrollView>
+      ) : null}
 
       <SectionCard>
-        <SectionTitle description={t(trKey('activity.filtersDescription'))} title={t(trKey('activity.filtersTitle'))} />
+        <SectionTitle description={t(trKey('activity.resultCount'), { count: events.length })} title={t(trKey('activity.timelineTitle'))} />
+        <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('activity.emptyFiltered'))} events={events} onUndo={(event) => void executeUndo(event.id)} />
+      </SectionCard>
+
+      <BottomSheet closeLabel={t(trKey('common.done'))} onClose={() => setFiltersOpen(false)} title={t(trKey('activity.filtersTitle'))} visible={filtersOpen}>
+        <AppText variant="label" tone="foreground">{t(trKey('activity.filter.all'))}</AppText>
         <View className="flex-row flex-wrap gap-2">
           {(['all', 'checkOut', 'return', 'keyUpdated', 'admin'] as const).map((value) => <FilterChip key={value} label={t(trKey(`activity.filter.${value}`))} onPress={() => setKind(value)} selected={kind === value} />)}
         </View>
@@ -229,12 +273,15 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
         <View className="flex-row flex-wrap gap-2">
           {(['all', 'week', 'month'] as const).map((value) => <FilterChip key={value} label={t(trKey(`activity.time.${value}`))} onPress={() => setTime(value)} selected={time === value} />)}
         </View>
-      </SectionCard>
+      </BottomSheet>
 
-      <SectionCard>
-        <SectionTitle description={t(trKey('activity.resultCount'), { count: events.length })} title={t(trKey('activity.timelineTitle'))} />
-        <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('activity.emptyFiltered'))} events={events} onUndo={(event) => void executeUndo(event.id)} />
-      </SectionCard>
+      <BottomSheet closeLabel={t(trKey('common.done'))} onClose={() => setExportOpen(false)} title={t(trKey('activity.exportTitle'))} visible={exportOpen}>
+        <View className="gap-2">
+          {(['csv', 'xlsx', 'pdf'] as const).map((format) => (
+            <ActionButton disabled={busy || app.isOffline} icon="download" key={format} label={format.toUpperCase()} onPress={() => void exportLog(format)} tone="neutral" />
+          ))}
+        </View>
+      </BottomSheet>
       {confirmation.dialog}
     </View>
   );
@@ -243,6 +290,7 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
 export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: CabinetView }) {
   const { locale, t } = useTranslation();
   const [busyId, setBusyId] = useState<string>();
+  const [openMemberMenu, setOpenMemberMenu] = useState<string>();
   const visibleMembers = app.members.filter((member) => member.cabinetId === cabinet.id);
   const configuredKeys = app.keys.filter((key) => key.cabinetId === cabinet.id);
   const activeLoans = app.keys.filter((key) => key.cabinetId === cabinet.id && key.activeLoan);
@@ -302,17 +350,12 @@ export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: 
     <View className="gap-section">
       <SectionCard>
         <SectionTitle description={t(trKey('cabinet.membersDescription'))} title={t(trKey('cabinet.membersTitle'), { count: visibleMembers.length })} />
-        <Notice
-          description={t(trKey(`cabinet.permission.${cabinet.role}`))}
-          title={`${t(trKey('cabinet.yourRole'))}: ${t(trKey(`cabinet.role.${cabinet.role}`))}`}
-          tone={canManage ? 'brand' : 'warning'}
-        />
         <View className="gap-2.5">
           {visibleMembers.map((member) => {
             const canChangeRole = isOwner && member.role !== 'owner' && member.userId !== app.currentUserId;
             const canRemove = canManage && member.role === 'member' && member.userId !== app.currentUserId;
             return (
-              <View className="gap-3 rounded-control border border-line bg-background p-3.5" key={member.id}>
+              <View className="gap-2 rounded-control border border-line bg-background p-3" key={member.id}>
                 <View className="flex-row items-center gap-3">
                   <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
                     <AppText variant="title" tone="brand">{member.name.slice(0, 1).toUpperCase()}</AppText>
@@ -321,9 +364,20 @@ export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: 
                     <AppText numberOfLines={1} variant="label" tone="foreground">{member.name}</AppText>
                     <AppText numberOfLines={1} variant="caption" tone="muted">{member.email}</AppText>
                   </View>
-                  <Pill tone={member.role === 'owner' ? 'purple' : member.role === 'admin' ? 'blue' : 'gray'}>{t(trKey(`cabinet.role.${member.role}`))}</Pill>
+                  <View className="items-end gap-1">
+                    <Pill tone={member.role === 'owner' ? 'purple' : member.role === 'admin' ? 'blue' : 'gray'}>{t(trKey(`cabinet.role.${member.role}`))}</Pill>
+                    {(canChangeRole || canRemove) ? (
+                      <Pressable
+                        accessibilityLabel={t(trKey('cabinet.memberActions'))}
+                        accessibilityRole="button"
+                        className="h-9 w-9 items-center justify-center rounded-pill active:opacity-70"
+                        onPress={() => setOpenMemberMenu((value) => value === member.id ? undefined : member.id)}>
+                        <AppIcon name="more" size={22} tone="muted" />
+                      </Pressable>
+                    ) : null}
+                  </View>
                 </View>
-                {(canChangeRole || canRemove) ? (
+                {openMemberMenu === member.id ? (
                   <View className="flex-row flex-wrap items-center justify-end gap-3 border-t border-line pt-2">
                     {canChangeRole ? (
                       <InlineButton
@@ -362,7 +416,6 @@ export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: 
         ) : (
           <Notice description={t(trKey('cabinet.managePermissionRequiredDescription'))} title={t(trKey('cabinet.managePermissionRequiredTitle'))} tone="warning" />
         )}
-        <AppText variant="caption" tone="muted">{t(trKey('cabinet.backendRestoreOnly'))}</AppText>
       </SectionCard>
       {confirmation.dialog}
     </View>
@@ -371,9 +424,9 @@ export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: 
 
 function DataRow({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-row items-start justify-between gap-4 border-b border-line pb-3 last:border-b-0 last:pb-0">
-      <AppText className="flex-1" variant="body" tone="muted">{label}</AppText>
-      <AppText className="max-w-[60%] text-right" variant="label" tone="foreground">{value}</AppText>
+    <View className="min-w-0 flex-1 gap-1 rounded-control bg-background px-3 py-2.5">
+      <AppText variant="caption" tone="muted">{label}</AppText>
+      <AppText numberOfLines={2} variant="label" tone="foreground">{value}</AppText>
     </View>
   );
 }

@@ -1,10 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
 
 import { AppScreen } from '@/components/app-screen';
-import { AppIcon } from '@/components/ui/app-icon';
-import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
 import { CabinetActivity, CabinetKeys, CabinetOverview, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
 import { ActionButton, Notice, ScreenHeader, SegmentControl, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
@@ -63,11 +60,6 @@ export default function CabinetDetailRoute() {
       {app.sessionExpired ? <Notice description={t(trKey('cabinet.sessionExpiredDescription'))} title={t(trKey('cabinet.sessionExpiredTitle'))} tone="danger" /> : null}
 
       <SegmentControl items={segments} onChange={setSegment} value={segment} />
-
-      <View className="flex-row items-center gap-2 px-1">
-        <AppIcon name={segment === 'overview' ? 'cabinet' : segment === 'keys' ? 'key' : segment === 'activity' ? 'activity' : 'settings'} size={19} tone="brand" />
-        <AppText variant="label" tone="foreground">{t(trKey(`cabinet.sectionTitle.${segment}`))}</AppText>
-      </View>
 
       {segment === 'overview' ? <CabinetOverview app={app} cabinet={cabinet} /> : null}
       {segment === 'keys' ? <CabinetKeys app={app} cabinet={cabinet} /> : null}

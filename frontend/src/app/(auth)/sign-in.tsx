@@ -6,7 +6,6 @@ import { AppText } from '@/components/ui/app-text';
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
   AuthSecondaryButton,
@@ -29,7 +28,7 @@ const onboardingRoute = '/onboarding' as Href;
 export default function SignInRoute() {
   const { t } = useTranslation();
   const { actions } = useAuthActions();
-  const { actions: demoActions, state } = useMockApp();
+  const { actions: workspaceActions, state } = useMockApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -86,8 +85,6 @@ export default function SignInRoute() {
       }
       onBack={goBack}
       title={t('auth.signIn.title')}>
-      <AuthNotice icon="shield" text={t('auth.common.demoPrivacyNotice')} />
-
       <AuthField
         autoCapitalize="none"
         autoComplete="email"
@@ -137,23 +134,17 @@ export default function SignInRoute() {
       />
 
       {demoOwner ? (
-        <View className="gap-3 rounded-card border border-line bg-brand-soft p-card">
-          <View className="gap-1">
-            <AppText variant="label" tone="foreground">{t('auth.signIn.demoTitle')}</AppText>
-            <AppText variant="caption" tone="muted">{t('auth.signIn.demoDescription')}</AppText>
-          </View>
-          <AuthSecondaryButton
-            icon="cabinet"
-            label={t('auth.signIn.useDemo')}
-            onPress={() => {
-              setIsSubmitting(true);
-              void demoActions.switchAccount({ userId: demoOwner.id })
-                .then(() => router.replace(onboardingRoute))
-                .catch((error) => setRequestError(t(authErrorKey(error))))
-                .finally(() => setIsSubmitting(false));
-            }}
-          />
-        </View>
+        <AuthSecondaryButton
+          icon="cabinet"
+          label={t('auth.signIn.useDemo')}
+          onPress={() => {
+            setIsSubmitting(true);
+            void workspaceActions.switchAccount({ userId: demoOwner.id })
+              .then(() => router.replace(onboardingRoute))
+              .catch((error) => setRequestError(t(authErrorKey(error))))
+              .finally(() => setIsSubmitting(false));
+          }}
+        />
       ) : null}
     </AuthScreen>
   );

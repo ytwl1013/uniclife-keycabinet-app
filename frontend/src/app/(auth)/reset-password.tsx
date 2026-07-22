@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
 } from '@/features/auth/components/auth-ui';
@@ -63,7 +62,6 @@ export default function ResetPasswordRoute() {
       <AuthScreen
         description={t('auth.resetPassword.successDescription')}
         title={t('auth.resetPassword.successTitle')}>
-        <AuthNotice icon="shield" text={t('auth.resetPassword.successNotice')} />
         <AuthPrimaryButton
           busyLabel={t('auth.common.working')}
           label={t('auth.resetPassword.backToSignIn')}

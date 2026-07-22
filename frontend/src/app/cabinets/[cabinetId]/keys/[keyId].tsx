@@ -1,9 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 
 import { AppScreen } from '@/components/app-screen';
-import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
 import { PrototypeEventList } from '@/features/cabinet-prototype/components/event-list';
@@ -110,54 +109,42 @@ export default function KeyDetailRoute() {
   };
 
   return (
-    <AppScreen>
+    <AppScreen contentClassName="gap-4 pb-screen" scroll={false}>
       <ScreenHeader
         action={<Pill tone={statusTone}>{t(trKey(`key.status.${key.status}`))}</Pill>}
         onBack={() => router.back()}
         subtitle={t(trKey('key.slotNumber'), { number: key.slotNumber })}
         title={key.name}
       />
-      {app.isOffline ? <Notice description={t(trKey('key.offlineDescription'))} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
+      <ScrollView contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        {app.isOffline ? <Notice description={t(trKey('key.offlineDescription'))} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
+        {key.activeLoan ? (
+          <SectionCard>
+            <SectionTitle title={t(trKey('loan.activeDetailTitle'))} />
+            <DetailRow label={t(trKey('loan.borrowerName'))} value={key.activeLoan.borrowerName} />
+            <DetailRow label={t(trKey('loan.borrowerContact'))} value={maskContact(key.activeLoan.borrowerContact) || t(trKey('loan.notProvided'))} />
+            <DetailRow label={t(trKey('loan.checkedOutAt'))} value={formatDate(locale, key.activeLoan.checkedOutAt)} />
+            <DetailRow label={t(trKey('loan.expectedReturnAt'))} value={formatDate(locale, key.activeLoan.expectedReturnAt)} />
+          </SectionCard>
+        ) : null}
 
-      <SectionCard>
-        <View className="flex-row items-center gap-3">
-          <View className={`h-14 w-14 items-center justify-center rounded-[18px] ${key.status === 'available' ? 'bg-success-soft' : key.status === 'overdue' ? 'bg-danger-soft' : 'bg-warning-soft'}`}>
-            <AppIcon name="key" size={27} tone={key.status === 'available' ? 'success' : key.status === 'overdue' ? 'danger' : 'warning'} />
-          </View>
-          <View className="flex-1 gap-1">
-            <AppText variant="title" tone="foreground">{t(trKey('key.currentStatus'))}</AppText>
-            <AppText variant="body" tone="muted">{t(trKey(`key.statusDescription.${key.status}`))}</AppText>
-          </View>
-        </View>
-        {key.status === 'available' ? (
-          <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={t(trKey('loan.checkOutAction'))} onPress={() => router.push({ pathname: '/cabinets/[cabinetId]/loans/[keyId]', params: { cabinetId, keyId } } as never)} />
-        ) : (
-          <ActionButton disabled={busy || app.isOffline} icon="return" label={t(trKey('loan.returnAction'))} onPress={() => void returnKey()} />
-        )}
-      </SectionCard>
-
-      {key.activeLoan ? (
         <SectionCard>
-          <SectionTitle description={t(trKey('loan.activeDetailDescription'))} title={t(trKey('loan.activeDetailTitle'))} />
-          <DetailRow label={t(trKey('loan.borrowerName'))} value={key.activeLoan.borrowerName} />
-          <DetailRow label={t(trKey('loan.borrowerContact'))} value={maskContact(key.activeLoan.borrowerContact) || t(trKey('loan.notProvided'))} />
-          <DetailRow label={t(trKey('loan.checkedOutAt'))} value={formatDate(locale, key.activeLoan.checkedOutAt)} />
-          <DetailRow label={t(trKey('loan.expectedReturnAt'))} value={formatDate(locale, key.activeLoan.expectedReturnAt)} />
-          <Notice description={t(trKey('loan.contactMaskedDescription'))} title={t(trKey('loan.contactMaskedTitle'))} />
+          <SectionTitle title={t(trKey('key.detailsTitle'))} />
+          <FormField label={t(trKey('key.nameLabel'))} onChangeText={setName} placeholder={t(trKey('key.namePlaceholder'))} value={name} />
+          <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
+          <ActionButton disabled={!dirty || busy || app.isOffline} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
         </SectionCard>
-      ) : null}
 
-      <SectionCard>
-        <SectionTitle description={t(trKey('key.editDescription'))} title={t(trKey('key.detailsTitle'))} />
-        <FormField label={t(trKey('key.nameLabel'))} onChangeText={setName} placeholder={t(trKey('key.namePlaceholder'))} value={name} />
-        <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
-        <ActionButton disabled={!dirty || busy || app.isOffline} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
-      </SectionCard>
-
-      <SectionCard>
-        <SectionTitle description={t(trKey('key.historyDescription'))} title={t(trKey('key.historyTitle'))} />
-        <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('key.historyEmpty'))} events={history} onUndo={(event) => void undo(event.id)} />
-      </SectionCard>
+        <SectionCard>
+          <SectionTitle title={t(trKey('key.historyTitle'))} />
+          <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('key.historyEmpty'))} events={history} onUndo={(event) => void undo(event.id)} />
+        </SectionCard>
+      </ScrollView>
+      {key.status === 'available' ? (
+        <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={t(trKey('loan.checkOutAction'))} onPress={() => router.push({ pathname: '/cabinets/[cabinetId]/loans/[keyId]', params: { cabinetId, keyId } } as never)} />
+      ) : (
+        <ActionButton disabled={busy || app.isOffline} icon="return" label={t(trKey('loan.returnAction'))} onPress={() => void returnKey()} />
+      )}
       {confirmation.dialog}
     </AppScreen>
   );
