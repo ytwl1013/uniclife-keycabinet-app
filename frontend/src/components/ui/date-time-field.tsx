@@ -6,6 +6,8 @@ import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { useTranslation } from '@/i18n';
 
+import { mergeDateTimePickerPart } from './date-time';
+
 export type DateTimeFieldProps = {
   label: string;
   value: string;
@@ -28,15 +30,31 @@ export function DateTimeField({ error, label, onChange, timeZone, value }: DateT
       return;
     }
     if (Platform.OS === 'android' && androidStage === 'date') {
-      const next = new Date(selected);
-      next.setHours(draft.getHours(), draft.getMinutes(), 0, 0);
+      const nextIso = mergeDateTimePickerPart(
+        draft.toISOString(),
+        selected.toISOString(),
+        timeZone,
+        'date',
+      );
+      if (!nextIso) {
+        setOpen(false);
+        setAndroidStage('date');
+        return;
+      }
+      const next = new Date(nextIso);
       setDraft(next);
       setAndroidStage('time');
       return;
     }
-    const next = Platform.OS === 'android'
-      ? new Date(draft.getFullYear(), draft.getMonth(), draft.getDate(), selected.getHours(), selected.getMinutes())
-      : selected;
+    const androidIso = Platform.OS === 'android'
+      ? mergeDateTimePickerPart(draft.toISOString(), selected.toISOString(), timeZone, 'time')
+      : undefined;
+    if (Platform.OS === 'android' && !androidIso) {
+      setOpen(false);
+      setAndroidStage('date');
+      return;
+    }
+    const next = androidIso ? new Date(androidIso) : selected;
     setDraft(next);
     onChange(next.toISOString());
     setOpen(false);

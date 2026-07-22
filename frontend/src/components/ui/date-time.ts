@@ -41,7 +41,27 @@ export function fromDateTimeLocalValue(value: string, timeZone: string) {
   let result = new Date(wallClockAsUtc);
   result = new Date(wallClockAsUtc - offsetAt(result, timeZone));
   result = new Date(wallClockAsUtc - offsetAt(result, timeZone));
-  return Number.isNaN(result.getTime()) ? undefined : result.toISOString();
+  if (Number.isNaN(result.getTime())) return undefined;
+
+  const iso = result.toISOString();
+  return toDateTimeLocalValue(iso, timeZone) === value ? iso : undefined;
+}
+
+export function mergeDateTimePickerPart(
+  currentIsoUtc: string,
+  selectedIsoUtc: string,
+  timeZone: string,
+  part: 'date' | 'time',
+) {
+  const current = toDateTimeLocalValue(currentIsoUtc, timeZone);
+  const selected = toDateTimeLocalValue(selectedIsoUtc, timeZone);
+  if (!current || !selected) return undefined;
+
+  const next = part === 'date'
+    ? `${selected.slice(0, 10)}T${current.slice(11, 16)}`
+    : `${current.slice(0, 10)}T${selected.slice(11, 16)}`;
+
+  return fromDateTimeLocalValue(next, timeZone);
 }
 
 export function isExpectedReturnAfter(checkedOutAt: string, expectedReturnAt: string) {
