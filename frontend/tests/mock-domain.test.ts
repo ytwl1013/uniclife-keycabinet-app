@@ -363,7 +363,8 @@ describe('filters, idempotency and persistence', () => {
 
   it('hydrates an AsyncStorage-compatible overlay without persisting passwords or reset codes', async () => {
     const storage = createMemoryStorage();
-    const first = createMockAppService({ storage, latencyMs: 0 });
+    const resetCode = '583920';
+    const first = createMockAppService({ storage, latencyMs: 0, resetCodeFactory: () => resetCode });
     await first.actions.register({
       email: 'new.user@example.com',
       password: 'DemoSecret123!',
@@ -376,7 +377,8 @@ describe('filters, idempotency and persistence', () => {
     const reset = await first.actions.requestPasswordReset({ email: 'new.user@example.com' });
     const raw = await storage.getItem(MOCK_STORAGE_KEY);
     expect(raw).not.toContain('DemoSecret123!');
-    expect(raw).not.toContain(reset.demoCode);
+    expect(raw).not.toContain(resetCode);
+    expect(reset).toEqual({ challengeId: expect.any(String) });
 
     await first.actions.signOut();
 

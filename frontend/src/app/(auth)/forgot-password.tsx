@@ -50,7 +50,6 @@ export default function ForgotPasswordRoute() {
       const challenge = await actions.requestPasswordReset(nextEmail);
       rememberResetChallenge({
         challengeId: challenge.challengeId,
-        demoCode: challenge.demoCode,
         email: nextEmail,
       });
       router.push({

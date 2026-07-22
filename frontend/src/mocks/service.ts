@@ -53,7 +53,7 @@ export type MockAppActions = {
   signIn(input: { email: string; password: string }): Promise<UserAccount>;
   register(input: RegisterInput): Promise<UserAccount>;
   signOut(): Promise<void>;
-  requestPasswordReset(input: { email: string }): Promise<{ challengeId: string; demoCode: string }>;
+  requestPasswordReset(input: { email: string }): Promise<{ challengeId: string }>;
   verifyReset(input: { challengeId: string; code: string }): Promise<{ resetToken: string }>;
   resetPassword(input: { resetToken: string; newPassword: string }): Promise<void>;
   changePassword(input: { currentPassword: string; newPassword: string }): Promise<void>;
@@ -98,6 +98,7 @@ export type CreateMockAppServiceOptions = {
   storage?: MockStorage;
   latencyMs?: number;
   initialState?: MockAppState;
+  resetCodeFactory?: () => string;
 };
 
 function clone<T>(value: T): T {
@@ -394,15 +395,17 @@ export function createMockAppService(
     );
     assertMock(user, 'USER_NOT_FOUND');
     const challengeId = id('reset-challenge');
-    const demoCode = String(100000 + Math.floor(Math.random() * 900000));
+    const resetCode =
+      options.resetCodeFactory?.() ?? String(100000 + Math.floor(Math.random() * 900000));
+    assertMock(/^\d{6}$/.test(resetCode), 'INVALID_INPUT');
     resetChallenges.set(challengeId, {
       id: challengeId,
       userId: user.id,
-      code: demoCode,
+      code: resetCode,
       expiresAt: Date.parse(state.now) + 10 * 60 * 1000,
       verified: false,
     });
-    return { challengeId, demoCode };
+    return { challengeId };
   };
 
   const verifyReset: MockAppActions['verifyReset'] = async ({ challengeId, code }) => {

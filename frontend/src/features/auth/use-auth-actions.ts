@@ -16,7 +16,6 @@ export type RegistrationInput = AuthCredentials & {
 type ResetFlow = {
   challengeId: string;
   email: string;
-  demoCode: string;
   resetToken?: string;
 };
 

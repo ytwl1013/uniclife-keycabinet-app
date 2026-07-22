@@ -11,6 +11,7 @@ function anonymousService() {
     storage: createMemoryStorage(),
     latencyMs: 0,
     initialState: createInitialMockState({ hydrated: true }),
+    resetCodeFactory: () => '583920',
   });
 }
 
@@ -53,14 +54,23 @@ describe('authentication and consent workflow', () => {
   it('uses a transient verification challenge only for password reset', async () => {
     const app = anonymousService();
     const challenge = await app.actions.requestPasswordReset({ email: 'alex.morgan@example.com' });
+    expect(challenge).toEqual({ challengeId: expect.any(String) });
+    await expect(app.actions.verifyReset({
+      challengeId: challenge.challengeId,
+      code: '',
+    })).rejects.toMatchObject({ code: 'RESET_CODE_INVALID' });
+    await expect(app.actions.verifyReset({
+      challengeId: challenge.challengeId,
+      code: '000000',
+    })).rejects.toMatchObject({ code: 'RESET_CODE_INVALID' });
     const verification = await app.actions.verifyReset({
       challengeId: challenge.challengeId,
-      code: challenge.demoCode,
+      code: '583920',
     });
     await expect(
       app.actions.verifyReset({
         challengeId: challenge.challengeId,
-        code: challenge.demoCode,
+        code: '583920',
       }),
     ).rejects.toMatchObject({ code: 'RESET_CHALLENGE_INVALID' });
     await app.actions.resetPassword({ resetToken: verification.resetToken, newPassword: 'ChangedDemo123!' });

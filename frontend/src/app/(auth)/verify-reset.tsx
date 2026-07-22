@@ -30,7 +30,7 @@ export default function VerifyResetRoute() {
   const params = useLocalSearchParams<{ challengeId?: string }>();
   const challengeId = typeof params.challengeId === 'string' ? params.challengeId : '';
   const challenge = challengeId ? getResetChallenge(challengeId) : undefined;
-  const [code, setCode] = useState(challenge?.demoCode ?? '');
+  const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
