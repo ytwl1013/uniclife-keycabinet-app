@@ -1,5 +1,10 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
+import { fireEvent, render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
+
+import { bottomTabIconTestIds, BottomTabIcon } from '../src/components/ui/bottom-tab-icon';
 import { ChoiceChip, ConfirmationPanel } from '../src/features/account/components/account-ui';
 import { allowSampleQrPreview } from '../src/mocks/developer-tools';
 
@@ -38,5 +43,48 @@ describe('mobile selection and confirmations', () => {
     fireEvent.press(getByRole('button', { name: 'Clear keys' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('uses icon-only tabs with translated accessibility names', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../src/app/(tabs)/_layout.tsx'),
+      'utf8',
+    );
+    const globalStyles = readFileSync(resolve(__dirname, '../global.css'), 'utf8');
+
+    expect(source).toContain('tabBarShowLabel: false');
+    expect(source).toContain('tabBarAccessibilityLabel: t(route.titleKey)');
+    expect(source).not.toContain('tabBarLabelStyle');
+    expect(globalStyles).toContain("[role='tab']:focus-visible");
+    expect(globalStyles).toContain('outline: 2px solid rgb(var(--color-brand))');
+  });
+
+  it('gives selected tabs a distinct icon surface without rendering a label', async () => {
+    const { getByTestId, queryByText } = await render(
+      <BottomTabIcon focused name="cabinetGrid" />,
+    );
+    const style = StyleSheet.flatten(
+      getByTestId(bottomTabIconTestIds.regular, { includeHiddenElements: true }).props.style,
+    );
+
+    expect(style.backgroundColor).toBe('#EEF4FF');
+    expect(style.width).toBeGreaterThanOrEqual(44);
+    expect(queryByText(/cabinet/i)).toBeNull();
+  });
+
+  it('keeps scan as the single prominent tab action', async () => {
+    const { getByTestId } = await render(
+      <BottomTabIcon focused name="scan" primary />,
+    );
+    const haloStyle = StyleSheet.flatten(
+      getByTestId(bottomTabIconTestIds.primaryHalo, { includeHiddenElements: true }).props.style,
+    );
+    const coreStyle = StyleSheet.flatten(
+      getByTestId(bottomTabIconTestIds.primaryCore, { includeHiddenElements: true }).props.style,
+    );
+
+    expect(haloStyle.backgroundColor).toBe('#EEF4FF');
+    expect(coreStyle.width).toBe(50);
+    expect(coreStyle.height).toBe(50);
   });
 });

@@ -68,12 +68,15 @@
     "card": "0 8px 24px rgba(39, 64, 96, 0.08)"
   },
   "navigation": {
-    "tabBarHeight": 76,
+    "tabBarHeight": 68,
     "tabBarMaxWidth": 480,
-    "tabBarPaddingBottom": 12,
-    "tabBarPaddingTop": 8,
-    "tabLabelSize": 11,
-    "tabIconSize": 27,
-    "scanIconSize": 29
+    "tabBarPaddingBottom": 9,
+    "tabBarPaddingTop": 7,
+    "tabIconFrameHeight": 42,
+    "tabIconFrameWidth": 50,
+    "tabIconSize": 24,
+    "scanButtonSize": 50,
+    "scanHaloSize": 58,
+    "scanIconSize": 27
   }
 }

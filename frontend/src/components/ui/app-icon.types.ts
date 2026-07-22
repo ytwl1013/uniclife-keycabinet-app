@@ -1,10 +1,13 @@
 export type AppIconName =
   | 'home'
   | 'cabinet'
+  | 'cabinetGrid'
   | 'scan'
   | 'activity'
+  | 'history'
   | 'team'
   | 'person'
+  | 'accountCircle'
   | 'key'
   | 'error'
   | 'arrowForward'
