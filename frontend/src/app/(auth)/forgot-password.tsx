@@ -1,4 +1,4 @@
-import { Href, router } from 'expo-router';
+import { Href, Redirect, router } from 'expo-router';
 import { useState } from 'react';
 
 import {
@@ -16,6 +16,7 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
+import { localPasswordResetEnabled } from '@/mocks';
 
 const signInRoute = '/(auth)/sign-in' as Href;
 
@@ -26,6 +27,8 @@ export default function ForgotPasswordRoute() {
   const [emailError, setEmailError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!localPasswordResetEnabled) return <Redirect href={signInRoute} />;
 
   function goBack() {
     if (router.canGoBack()) {

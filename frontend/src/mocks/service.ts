@@ -392,6 +392,7 @@ export function createMockAppService(
   };
 
   const requestPasswordReset: MockAppActions['requestPasswordReset'] = async ({ email }) => {
+    assertMock(developerToolsEnabled, 'PERMISSION_DENIED');
     assertOnline();
     await waitForNetwork();
     const user = state.users.find(

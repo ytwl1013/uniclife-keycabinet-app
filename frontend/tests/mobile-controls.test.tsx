@@ -1,8 +1,15 @@
 import { fireEvent, render } from '@testing-library/react-native';
 
 import { ChoiceChip, ConfirmationPanel } from '../src/features/account/components/account-ui';
+import { allowSampleQrPreview } from '../src/mocks/developer-tools';
 
 describe('mobile selection and confirmations', () => {
+  it('blocks sample QR deep links when developer tools are disabled', () => {
+    expect(allowSampleQrPreview(true, false)).toBe(false);
+    expect(allowSampleQrPreview(true, true)).toBe(true);
+    expect(allowSampleQrPreview(false, true)).toBe(false);
+  });
+
   it('exposes filter or language choices as an accessible radio control', async () => {
     const onSelect = jest.fn();
     const { getByRole } = await render(

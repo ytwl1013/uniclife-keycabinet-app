@@ -1,4 +1,4 @@
-import { Href, router, useLocalSearchParams } from 'expo-router';
+import { Href, Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import {
@@ -14,6 +14,7 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
+import { localPasswordResetEnabled } from '@/mocks';
 
 const signInRoute = '/(auth)/sign-in' as Href;
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
@@ -31,6 +32,8 @@ export default function ResetPasswordRoute() {
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+
+  if (!localPasswordResetEnabled) return <Redirect href={signInRoute} />;
 
   async function submit() {
     const nextPasswordError = password.length >= 8 ? '' : t('auth.validation.passwordLength');

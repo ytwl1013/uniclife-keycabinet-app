@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
 import { ScanFlow, ScanMode } from '@/features/scan/components/scan-flow';
+import { allowSampleQrPreview } from '@/mocks';
 
 export default function ScanRoute() {
   const { mode: modeParam, sample: sampleParam } = useLocalSearchParams<{ mode?: string | string[]; sample?: string | string[] }>();
@@ -8,5 +9,5 @@ export default function ScanRoute() {
   const rawSample = Array.isArray(sampleParam) ? sampleParam[0] : sampleParam;
   const mode: ScanMode = rawMode === 'initialize' ? 'initialize' : 'join';
 
-  return <ScanFlow mode={mode} sample={rawSample === '1'} />;
+  return <ScanFlow mode={mode} sample={allowSampleQrPreview(rawSample === '1')} />;
 }

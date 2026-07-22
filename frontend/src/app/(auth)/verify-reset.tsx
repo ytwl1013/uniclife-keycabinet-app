@@ -1,4 +1,4 @@
-import { Href, router, useLocalSearchParams } from 'expo-router';
+import { Href, Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import {
@@ -15,9 +15,10 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
-import { developerToolsEnabled } from '@/mocks';
+import { localPasswordResetEnabled } from '@/mocks';
 
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
+const signInRoute = '/(auth)/sign-in' as Href;
 
 function maskEmail(email: string) {
   const [name = '', domain = ''] = email.split('@');
@@ -35,6 +36,8 @@ export default function VerifyResetRoute() {
   const [codeError, setCodeError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!localPasswordResetEnabled) return <Redirect href={signInRoute} />;
 
   async function fillLocalCode() {
     if (!challenge) return;
@@ -108,7 +111,7 @@ export default function VerifyResetRoute() {
             textContentType="oneTimeCode"
             value={code}
           />
-          {developerToolsEnabled ? (
+          {localPasswordResetEnabled ? (
             <AuthTextButton
               label={t('auth.verifyReset.useLocalCode')}
               onPress={() => void fillLocalCode()}

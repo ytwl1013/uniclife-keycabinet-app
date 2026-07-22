@@ -90,12 +90,8 @@ describe('authentication and consent workflow', () => {
       resetCodeFactory: () => '583920',
       developerToolsEnabled: false,
     });
-    const challenge = await app.actions.requestPasswordReset({
+    await expect(app.actions.requestPasswordReset({
       email: 'alex.morgan@example.com',
-    });
-
-    await expect(app.actions.getPasswordResetPreview({
-      challengeId: challenge.challengeId,
     })).rejects.toMatchObject({ code: 'PERMISSION_DENIED' });
   });
 

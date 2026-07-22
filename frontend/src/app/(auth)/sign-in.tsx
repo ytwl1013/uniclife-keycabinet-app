@@ -18,7 +18,7 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
+import { localPasswordResetEnabled, useMockApp } from '@/mocks';
 
 const welcomeRoute = '/(auth)/welcome' as Href;
 const signUpRoute = '/(auth)/sign-up' as Href;
@@ -118,11 +118,13 @@ export default function SignInRoute() {
         value={password}
       />
 
-      <AuthTextButton
-        align="end"
-        label={t('auth.signIn.forgotPassword')}
-        onPress={() => router.push(forgotPasswordRoute)}
-      />
+      {localPasswordResetEnabled ? (
+        <AuthTextButton
+          align="end"
+          label={t('auth.signIn.forgotPassword')}
+          onPress={() => router.push(forgotPasswordRoute)}
+        />
+      ) : null}
 
       {requestError ? <AuthErrorNotice text={requestError} /> : null}
 
