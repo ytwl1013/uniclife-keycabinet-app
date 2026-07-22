@@ -54,6 +54,9 @@ describe('mobile selection and confirmations', () => {
 
     expect(source).toContain('tabBarShowLabel: false');
     expect(source).toContain('tabBarAccessibilityLabel: t(route.titleKey)');
+    expect(source).toContain("icon: 'cabinetGrid'");
+    expect(source).toContain("icon: 'history'");
+    expect(source).toContain("icon: 'accountCircle'");
     expect(source).not.toContain('tabBarLabelStyle');
     expect(globalStyles).toContain("[role='tab']:focus-visible");
     expect(globalStyles).toContain('outline: 2px solid rgb(var(--color-brand))');
