@@ -1,6 +1,7 @@
 import { Href, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
+import { AppScaffold } from '@/components/app-scaffold';
 import { AppScreen } from '@/components/app-screen';
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
@@ -31,11 +32,13 @@ export default function HomeRoute() {
   }
 
   return (
-    <AppScreen contentClassName="gap-6">
-      <View className="flex-row items-center gap-4 rounded-card border border-line bg-surface p-4 shadow-card">
+    <AppScaffold
+      contentClassName="gap-6"
+      header={(
+        <View className="flex-row items-center gap-4">
         <View className="min-w-0 flex-1 gap-1">
           <AppText variant="caption" tone="brand">{t('home.eyebrow')}</AppText>
-          <AppText numberOfLines={2} variant="pageTitle" tone="foreground">
+          <AppText numberOfLines={1} variant="title" tone="foreground">
             {t('home.greeting', { name: firstName })}
           </AppText>
         </View>
@@ -45,7 +48,8 @@ export default function HomeRoute() {
           onPress={() => router.push('/(tabs)/account' as Href)}>
           <AppIcon name="person" size={25} tone="brand" />
         </Pressable>
-      </View>
+        </View>
+      )}>
 
       <View className="flex-row gap-2.5">
         <SummaryCard icon="cabinet" label={t('home.summaryCabinets')} value={formatNumber(cabinets.length)} />
@@ -110,7 +114,7 @@ export default function HomeRoute() {
           <QuickAction icon="audit" label={t('home.audit')} onPress={() => router.push('/(tabs)/activity' as Href)} />
         </View>
       </View>
-    </AppScreen>
+    </AppScaffold>
   );
 }
 

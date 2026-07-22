@@ -24,51 +24,75 @@ const eventConfig: Record<CabinetEventKind, { icon: AppIconName; tone: AppIconTo
 };
 
 export function PrototypeEventList({ events, currentUserId, onUndo, emptyLabel }: { events: EventView[]; currentUserId: string; onUndo?: (event: EventView) => void; emptyLabel: string }) {
-  const { locale, t } = useTranslation();
-
   if (!events.length) {
-    return (
-      <View className="items-center gap-2 rounded-card border border-dashed border-line bg-background px-5 py-8">
-        <AppIcon name="activity" size={28} tone="muted" />
-        <AppText className="text-center" variant="body" tone="muted">{emptyLabel}</AppText>
-      </View>
-    );
+    return <PrototypeEventEmpty label={emptyLabel} />;
   }
 
   return (
     <View>
-      {events.map((event, index) => {
-        const style = eventConfig[event.kind];
-        const canUndo = Boolean(onUndo && event.reversible && event.actorUserId === currentUserId);
-        return (
-          <View className="min-h-[98px] flex-row gap-3" key={event.id}>
-            <View className="w-11 items-center">
-              <View className="h-11 w-11 items-center justify-center rounded-pill bg-background">
-                <AppIcon name={style.icon} size={22} tone={style.tone} />
-              </View>
-              {index < events.length - 1 ? <View className="w-px flex-1 bg-line" /> : null}
-            </View>
-            <View className="min-w-0 flex-1 gap-1.5 pb-5">
-              <View className="flex-row items-center gap-2">
-                <Pill tone={style.pill}>{t(trKey(`activity.kind.${event.kind}`))}</Pill>
-                <AppText className="flex-1 text-right" variant="caption" tone="muted">
-                  {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(event.createdAt))}
-                </AppText>
-              </View>
-              <AppText variant="label" tone="foreground">{event.title}</AppText>
-              {event.detail ? <AppText variant="caption" tone="content">{event.detail}</AppText> : null}
-              <View className="flex-row items-center justify-between gap-2">
-                <AppText variant="caption" tone="muted">{event.actorName}</AppText>
-                {canUndo ? (
-                  <Pressable accessibilityRole="button" className="min-h-9 justify-center rounded-control border border-line px-3 active:opacity-70" onPress={() => onUndo?.(event)}>
-                    <AppText variant="caption" tone="brand">{t(trKey('activity.undo'))}</AppText>
-                  </Pressable>
-                ) : null}
-              </View>
-            </View>
-          </View>
-        );
-      })}
+      {events.map((event, index) => (
+        <PrototypeEventRow
+          currentUserId={currentUserId}
+          event={event}
+          isLast={index === events.length - 1}
+          key={event.id}
+          onUndo={onUndo}
+        />
+      ))}
+    </View>
+  );
+}
+
+export function PrototypeEventEmpty({ label }: { label: string }) {
+  return (
+    <View className="items-center gap-2 rounded-card border border-dashed border-line bg-background px-5 py-8">
+      <AppIcon name="activity" size={28} tone="muted" />
+      <AppText className="text-center" variant="body" tone="muted">{label}</AppText>
+    </View>
+  );
+}
+
+export function PrototypeEventRow({
+  currentUserId,
+  event,
+  isLast,
+  onUndo,
+}: {
+  currentUserId: string;
+  event: EventView;
+  isLast: boolean;
+  onUndo?: (event: EventView) => void;
+}) {
+  const { locale, t } = useTranslation();
+  const style = eventConfig[event.kind];
+  const canUndo = Boolean(onUndo && event.reversible && event.actorUserId === currentUserId);
+
+  return (
+    <View className="min-h-[98px] flex-row gap-3">
+      <View className="w-11 items-center">
+        <View className="h-11 w-11 items-center justify-center rounded-pill bg-background">
+          <AppIcon name={style.icon} size={22} tone={style.tone} />
+        </View>
+        {!isLast ? <View className="w-px flex-1 bg-line" /> : null}
+      </View>
+      <View className="min-w-0 flex-1 gap-1.5 pb-5">
+        <View className="flex-row items-center gap-2">
+          <Pill tone={style.pill}>{t(trKey(`activity.kind.${event.kind}`))}</Pill>
+          <AppText className="flex-1 text-right" variant="caption" tone="muted">
+            {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(event.createdAt))}
+          </AppText>
+        </View>
+        <AppText variant="label" tone="foreground">{event.title}</AppText>
+        {event.detail ? <AppText variant="caption" tone="content">{event.detail}</AppText> : null}
+        <View className="flex-row items-center justify-between gap-2">
+          <AppText variant="caption" tone="muted">{event.actorName}</AppText>
+          {canUndo ? (
+            <Pressable accessibilityRole="button" className="min-h-9 justify-center rounded-control border border-line px-3 active:opacity-70" onPress={() => onUndo?.(event)}>
+              <AppText variant="caption" tone="brand">{t(trKey('activity.undo'))}</AppText>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
     </View>
   );
 }

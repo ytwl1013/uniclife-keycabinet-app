@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { MockAppError } from './errors';
+import { parseCabinetQrPayload } from './qr-payload';
 import {
   cabinetEventTypes,
   MockAppState,
@@ -35,7 +36,7 @@ export const productSkuSchema = z.object({
 
 export const cabinetQrSchema = z.object({
   id,
-  code: z.string().trim().min(12),
+  code: z.string().trim().refine((value) => parseCabinetQrPayload(value) !== null, 'Invalid cabinet QR payload'),
   skuId: id,
   cabinetId: id,
   status: z.enum(['active', 'disabled']),

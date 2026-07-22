@@ -1,7 +1,7 @@
 [
   {
     "id": "qr-hq",
-    "code": "UL-DEMO-UC24-A7F4-N1Q9",
+    "code": "uniclife://cabinet/u24_a7f4_n1q9_c8v2",
     "skuId": "sku-uc24-white",
     "cabinetId": "cabinet-hq",
     "status": "active",
@@ -9,7 +9,7 @@
   },
   {
     "id": "qr-loft",
-    "code": "UL-DEMO-UC48-K8P2-R6M3",
+    "code": "uniclife://cabinet/u48_k8p2_r6m3_t4w9",
     "skuId": "sku-uc48-navy",
     "cabinetId": "cabinet-loft",
     "status": "active",
@@ -17,7 +17,7 @@
   },
   {
     "id": "qr-studio",
-    "code": "UL-DEMO-UC12-V5T7-X2C8",
+    "code": "uniclife://cabinet/u12_v5t7_x2c8_b6h1",
     "skuId": "sku-uc12-blue",
     "cabinetId": "cabinet-studio",
     "status": "active",

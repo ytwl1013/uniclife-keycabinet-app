@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
+import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
 import { useAppTheme } from '@/styles/theme';
 
 export function ScreenHeader({ title, subtitle, onBack, action }: { title: string; subtitle?: string; onBack?: () => void; action?: ReactNode }) {
@@ -24,20 +25,22 @@ export function ScreenHeader({ title, subtitle, onBack, action }: { title: strin
 
 export function SegmentControl<T extends string>({ items, value, onChange }: { items: readonly { value: T; label: string }[]; value: T; onChange: (value: T) => void }) {
   return (
-    <View className="flex-row rounded-control border border-line bg-surface p-1">
-      {items.map((item) => {
-        const selected = item.value === value;
-        return (
+    <View className="min-w-0 w-full overflow-hidden rounded-control border border-line bg-surface p-1">
+      <ScrollableChipRow
+        getKey={(item) => item.value}
+        items={items}
+        renderItem={(item, selected) => (
           <Pressable
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            className={`min-h-10 flex-1 items-center justify-center rounded-[10px] px-2 ${selected ? 'bg-brand' : 'bg-transparent'} active:opacity-70`}
-            key={item.value}
+            className={`min-h-11 min-w-[78px] items-center justify-center rounded-[10px] px-3 ${selected ? 'bg-brand' : 'bg-transparent'} active:opacity-70`}
             onPress={() => onChange(item.value)}>
             <AppText className="text-center" variant="caption" tone={selected ? 'onBrand' : 'muted'}>{item.label}</AppText>
           </Pressable>
-        );
-      })}
+        )}
+        selectedValue={items.find((item) => item.value === value)}
+        testID="cabinet-segment-scroll"
+      />
     </View>
   );
 }
@@ -69,7 +72,7 @@ export function ActionButton({ label, icon, onPress, tone = 'brand', disabled = 
   return (
     <Pressable
       accessibilityRole="button"
-      className={`${compact ? 'min-h-10 px-3' : 'min-h-[50px] px-4'} flex-row items-center justify-center gap-2 rounded-control border ${buttonClass} ${disabled ? 'opacity-40' : 'active:opacity-75'}`}
+      className={`${compact ? 'min-h-11 px-3' : 'min-h-[50px] px-4'} flex-row items-center justify-center gap-2 rounded-control border ${buttonClass} ${disabled ? 'opacity-40' : 'active:opacity-75'}`}
       disabled={disabled}
       onPress={onPress}>
       {icon ? <AppIcon name={icon} size={compact ? 18 : 21} tone={tone === 'neutral' ? 'foreground' : 'onBrand'} /> : null}
@@ -80,7 +83,7 @@ export function ActionButton({ label, icon, onPress, tone = 'brand', disabled = 
 
 export function InlineButton({ label, onPress, tone = 'brand', disabled = false }: { label: string; onPress: () => void; tone?: AppTextTone; disabled?: boolean }) {
   return (
-    <Pressable accessibilityRole="button" className={`min-h-10 justify-center px-1 ${disabled ? 'opacity-40' : 'active:opacity-60'}`} disabled={disabled} onPress={onPress}>
+    <Pressable accessibilityRole="button" className={`min-h-11 justify-center px-1 ${disabled ? 'opacity-40' : 'active:opacity-60'}`} disabled={disabled} onPress={onPress}>
       <AppText variant="label" tone={tone}>{label}</AppText>
     </Pressable>
   );
@@ -129,7 +132,7 @@ export function FilterChip({ label, selected, onPress }: { label: string; select
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      className={`min-h-10 items-center justify-center rounded-pill border px-4 ${selected ? 'border-brand bg-brand' : 'border-line bg-surface'} active:opacity-70`}
+      className={`min-h-11 items-center justify-center rounded-pill border px-4 ${selected ? 'border-brand bg-brand' : 'border-line bg-surface'} active:opacity-70`}
       onPress={onPress}>
       <AppText variant="caption" tone={selected ? 'onBrand' : 'muted'}>{label}</AppText>
     </Pressable>

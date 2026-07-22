@@ -27,5 +27,11 @@ export {
   saveExportArtifact,
 } from './exports';
 export { createInitialMockState, getSeedData } from './seed';
+export {
+  CABINET_QR_PREFIX,
+  createCabinetQrPayload,
+  parseCabinetQrPayload,
+} from './qr-payload';
+export type { ParsedCabinetQrPayload } from './qr-payload';
 export { createMemoryStorage, MOCK_STORAGE_KEY } from './storage';
 export * from './types';

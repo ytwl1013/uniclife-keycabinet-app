@@ -1,12 +1,13 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 
-import { AppScreen } from '@/components/app-screen';
+import { AppScaffold } from '@/components/app-scaffold';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
-import { PrototypeEventList } from '@/features/cabinet-prototype/components/event-list';
+import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
+import { PrototypeEventEmpty, PrototypeEventRow } from '@/features/cabinet-prototype/components/event-list';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
 import { FilterChip, Notice, SectionCard, SectionTitle, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { CabinetEventKind } from '@/features/cabinet-prototype/types';
@@ -55,6 +56,11 @@ export default function ActivityRoute() {
   }, [actorId, app.events, app.keys, app.now, kind, time]);
 
   const borrowedKeys = app.keys.filter((key) => key.activeLoan);
+  const activeFilters = [
+    kind !== 'all' ? { id: 'kind', label: t(trKey(`activity.filter.${kind}`)), clear: () => setKind('all') } : null,
+    actorId !== 'all' ? { id: 'actor', label: operators.find((item) => item.id === actorId)?.name ?? '', clear: () => setActorId('all') } : null,
+    time !== 'all' ? { id: 'time', label: t(trKey(`activity.time.${time}`)), clear: () => setTime('all') } : null,
+  ].filter((filter): filter is { id: string; label: string; clear: () => void } => Boolean(filter));
 
   const undo = async (eventId: string) => {
     const confirmed = await confirmation.present({
@@ -77,52 +83,71 @@ export default function ActivityRoute() {
   };
 
   return (
-    <AppScreen>
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1">
-          <AppText variant="display" tone="foreground">{t(trKey('activity.title'))}</AppText>
+    <AppScaffold
+      contentClassName="p-0"
+      header={(
+        <View className="flex-row items-center justify-between gap-3">
+          <AppText className="flex-1" variant="title" tone="foreground">{t(trKey('activity.title'))}</AppText>
+          <Pressable
+            accessibilityLabel={t(trKey('activity.filtersTitle'))}
+            accessibilityRole="button"
+            className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
+            onPress={() => setFiltersOpen(true)}>
+            <AppIcon name="filter" size={23} tone="brand" />
+          </Pressable>
         </View>
-        <Pressable
-          accessibilityLabel={t(trKey('activity.filtersTitle'))}
-          accessibilityRole="button"
-          className="h-12 w-12 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
-          onPress={() => setFiltersOpen(true)}>
-          <AppIcon name="filter" size={24} tone="brand" />
-        </Pressable>
-      </View>
-
-      {app.isOffline ? <Notice description={t(trKey('activity.offlineDescription'))} title={t(trKey('activity.offlineTitle'))} tone="warning" /> : null}
-
-      <Pressable
-        accessibilityRole="button"
-        className={`flex-row items-center gap-3 rounded-card border px-4 py-3.5 active:opacity-70 ${kind === 'borrowed' ? 'border-brand bg-brand-soft' : 'border-line bg-surface'}`}
-        onPress={() => setKind(kind === 'borrowed' ? 'all' : 'borrowed')}>
-        <View className="h-10 w-10 items-center justify-center rounded-pill bg-warning-soft">
-          <AppIcon name="key" size={20} tone="warning" />
-        </View>
-        <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
-          <AppText variant="title" tone="foreground">{borrowedKeys.length}</AppText>
-          <AppText className="flex-1" variant="label" tone="foreground">{t(trKey('activity.borrowedSummary'))}</AppText>
-        </View>
-        <AppIcon name="chevronRight" size={21} tone="muted" />
-      </Pressable>
-
-      {kind !== 'all' || actorId !== 'all' || time !== 'all' ? (
-        <View className="flex-row flex-wrap gap-2">
-          {kind !== 'all' ? <FilterChip label={t(trKey(`activity.filter.${kind}`))} onPress={() => setKind('all')} selected /> : null}
-          {actorId !== 'all' ? <FilterChip label={operators.find((item) => item.id === actorId)?.name ?? ''} onPress={() => setActorId('all')} selected /> : null}
-          {time !== 'all' ? <FilterChip label={t(trKey(`activity.time.${time}`))} onPress={() => setTime('all')} selected /> : null}
-        </View>
-      ) : null}
-
-      {app.isLoading ? (
-        <StatePanel description={t(trKey('activity.loadingDescription'))} loading title={t(trKey('activity.loadingTitle'))} />
-      ) : (
-        <SectionCard>
-          <SectionTitle description={t(trKey('activity.resultCount'), { count: events.length })} title={t(trKey('activity.timelineTitle'))} />
-          <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('activity.emptyFiltered'))} events={events} onUndo={(event) => void undo(event.id)} />
-        </SectionCard>
       )}
+      scroll={false}>
+      <FlatList
+        className="min-w-0 flex-1"
+        contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
+        data={app.isLoading ? [] : events}
+        keyExtractor={(event) => event.id}
+        ListEmptyComponent={app.isLoading ? (
+          <StatePanel description={t(trKey('activity.loadingDescription'))} loading title={t(trKey('activity.loadingTitle'))} />
+        ) : <PrototypeEventEmpty label={t(trKey('activity.emptyFiltered'))} />}
+        ListHeaderComponent={(
+          <View className="gap-section">
+            {app.isOffline ? <Notice description={t(trKey('activity.offlineDescription'))} title={t(trKey('activity.offlineTitle'))} tone="warning" /> : null}
+
+            <Pressable
+              accessibilityRole="button"
+              className={`flex-row items-center gap-3 rounded-card border px-4 py-3.5 active:opacity-70 ${kind === 'borrowed' ? 'border-brand bg-brand-soft' : 'border-line bg-surface'}`}
+              onPress={() => setKind(kind === 'borrowed' ? 'all' : 'borrowed')}>
+              <View className="h-10 w-10 items-center justify-center rounded-pill bg-warning-soft">
+                <AppIcon name="key" size={20} tone="warning" />
+              </View>
+              <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
+                <AppText variant="title" tone="foreground">{borrowedKeys.length}</AppText>
+                <AppText className="flex-1" variant="label" tone="foreground">{t(trKey('activity.borrowedSummary'))}</AppText>
+              </View>
+              <AppIcon name="chevronRight" size={21} tone="muted" />
+            </Pressable>
+
+            {activeFilters.length ? (
+              <ScrollableChipRow
+                getKey={(filter) => filter.id}
+                items={activeFilters}
+                renderItem={(filter) => <FilterChip label={filter.label} onPress={filter.clear} selected />}
+              />
+            ) : null}
+
+            {!app.isLoading ? <SectionTitle description={t(trKey('activity.resultCount'), { count: events.length })} title={t(trKey('activity.timelineTitle'))} /> : null}
+          </View>
+        )}
+        ListHeaderComponentStyle={{ marginBottom: 12 }}
+        renderItem={({ index, item }) => (
+          <SectionCard>
+            <PrototypeEventRow
+              currentUserId={app.currentUserId}
+              event={item}
+              isLast={index === events.length - 1}
+              onUndo={(event) => void undo(event.id)}
+            />
+          </SectionCard>
+        )}
+        showsVerticalScrollIndicator={false}
+      />
       <BottomSheet
         closeLabel={t(trKey('common.done'))}
         onClose={() => setFiltersOpen(false)}
@@ -149,6 +174,6 @@ export default function ActivityRoute() {
         </View>
       </BottomSheet>
       {confirmation.dialog}
-    </AppScreen>
+    </AppScaffold>
   );
 }

@@ -1,6 +1,7 @@
 import { generateExportArtifact, saveExportArtifact } from './exports';
 import { assertMock, MockAppError } from './errors';
 import { developerToolsEnabled as defaultDeveloperToolsEnabled } from './developer-tools';
+import { parseCabinetQrPayload } from './qr-payload';
 import { createMockSelectors } from './selectors';
 import { createInitialMockState } from './seed';
 import {
@@ -574,7 +575,9 @@ export function createMockAppService(
       'SESSION_EXPIRED',
     );
     const code = typeof input === 'string' ? input : input.code;
-    const qr = state.qrs.find((candidate) => candidate.code === code.trim());
+    const parsed = parseCabinetQrPayload(code);
+    assertMock(parsed, 'QR_NOT_FOUND');
+    const qr = state.qrs.find((candidate) => candidate.code === parsed.canonical);
     assertMock(qr, 'QR_NOT_FOUND');
     assertMock(qr.status === 'active', 'QR_DISABLED');
     const sku = state.skus.find((candidate) => candidate.id === qr.skuId);
@@ -593,7 +596,9 @@ export function createMockAppService(
       user.id === initialUser.id && sessionRevision === initialSessionRevision,
       'SESSION_EXPIRED',
     );
-    const qr = state.qrs.find((candidate) => candidate.code === input.qrCode.trim());
+    const parsed = parseCabinetQrPayload(input.qrCode);
+    assertMock(parsed, 'QR_NOT_FOUND');
+    const qr = state.qrs.find((candidate) => candidate.code === parsed.canonical);
     assertMock(qr, 'QR_NOT_FOUND');
     assertMock(qr.status === 'active', 'QR_DISABLED');
     const existing = state.memberships.find(
