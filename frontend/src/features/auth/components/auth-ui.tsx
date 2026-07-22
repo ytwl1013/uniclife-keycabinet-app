@@ -23,7 +23,7 @@ export function AuthScreen({
   title,
 }: AuthScreenProps) {
   return (
-    <AppScreen contentClassName="min-h-full gap-6 pb-screen">
+    <AppScreen contentClassName="min-h-full gap-5 pb-screen" keyboardAware>
       <View className="gap-6">
         <View className="flex-row items-center justify-between">
           {onBack && backLabel ? (
@@ -54,7 +54,7 @@ export function AuthScreen({
         </View>
       </View>
 
-      <View className="gap-5">{children}</View>
+      <View className="gap-4">{children}</View>
 
       {footer ? <View className="mt-auto pt-2">{footer}</View> : null}
     </AppScreen>

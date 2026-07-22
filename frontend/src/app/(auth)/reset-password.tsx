@@ -1,10 +1,9 @@
-import { Href, router, useLocalSearchParams } from 'expo-router';
+import { Href, Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
 } from '@/features/auth/components/auth-ui';
@@ -15,6 +14,7 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
+import { localPasswordResetEnabled } from '@/mocks';
 
 const signInRoute = '/(auth)/sign-in' as Href;
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
@@ -32,6 +32,8 @@ export default function ResetPasswordRoute() {
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+
+  if (!localPasswordResetEnabled) return <Redirect href={signInRoute} />;
 
   async function submit() {
     const nextPasswordError = password.length >= 8 ? '' : t('auth.validation.passwordLength');
@@ -63,7 +65,6 @@ export default function ResetPasswordRoute() {
       <AuthScreen
         description={t('auth.resetPassword.successDescription')}
         title={t('auth.resetPassword.successTitle')}>
-        <AuthNotice icon="shield" text={t('auth.resetPassword.successNotice')} />
         <AuthPrimaryButton
           busyLabel={t('auth.common.working')}
           label={t('auth.resetPassword.backToSignIn')}

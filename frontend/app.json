@@ -38,8 +38,28 @@
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": ["en-US", "en-GB", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-PT", "nl-NL", "pl-PL"],
-            "android": ["en-US", "en-GB", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-PT", "nl-NL", "pl-PL"]
+            "ios": [
+              "en-US",
+              "en-GB",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "pt-PT",
+              "nl-NL",
+              "pl-PL"
+            ],
+            "android": [
+              "en-US",
+              "en-GB",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "pt-PT",
+              "nl-NL",
+              "pl-PL"
+            ]
           }
         }
       ],
@@ -54,7 +74,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

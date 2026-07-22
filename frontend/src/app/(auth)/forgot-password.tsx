@@ -1,10 +1,9 @@
-import { Href, router } from 'expo-router';
+import { Href, Redirect, router } from 'expo-router';
 import { useState } from 'react';
 
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
   AuthTextButton,
@@ -17,6 +16,7 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
+import { localPasswordResetEnabled } from '@/mocks';
 
 const signInRoute = '/(auth)/sign-in' as Href;
 
@@ -27,6 +27,8 @@ export default function ForgotPasswordRoute() {
   const [emailError, setEmailError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!localPasswordResetEnabled) return <Redirect href={signInRoute} />;
 
   function goBack() {
     if (router.canGoBack()) {
@@ -51,7 +53,6 @@ export default function ForgotPasswordRoute() {
       const challenge = await actions.requestPasswordReset(nextEmail);
       rememberResetChallenge({
         challengeId: challenge.challengeId,
-        demoCode: challenge.demoCode,
         email: nextEmail,
       });
       router.push({
@@ -74,8 +75,6 @@ export default function ForgotPasswordRoute() {
       }
       onBack={goBack}
       title={t('auth.forgotPassword.title')}>
-      <AuthNotice icon="notification" text={t('auth.forgotPassword.emailNotice')} />
-
       <AuthField
         autoCapitalize="none"
         autoComplete="email"

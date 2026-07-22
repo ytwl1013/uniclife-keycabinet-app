@@ -7,7 +7,7 @@
     "color": "Arctic White",
     "capacity": 24,
     "description": "Connected compact cabinet for offices and shared workspaces.",
-    "manualUrl": "https://example.com/demo/manuals/uc-2400",
+    "manualUrl": "https://example.com/manuals/uc-2400",
     "imageAsset": "cabinet-24-white"
   },
   {
@@ -18,7 +18,7 @@
     "color": "Midnight Navy",
     "capacity": 48,
     "description": "Connected cabinet for property and facilities teams.",
-    "manualUrl": "https://example.com/demo/manuals/uc-4800",
+    "manualUrl": "https://example.com/manuals/uc-4800",
     "imageAsset": "cabinet-48-navy"
   },
   {
@@ -29,7 +29,7 @@
     "color": "Cobalt Blue",
     "capacity": 12,
     "description": "Portable connected cabinet for small teams.",
-    "manualUrl": "https://example.com/demo/manuals/uc-1200",
+    "manualUrl": "https://example.com/manuals/uc-1200",
     "imageAsset": "cabinet-12-blue"
   }
 ]

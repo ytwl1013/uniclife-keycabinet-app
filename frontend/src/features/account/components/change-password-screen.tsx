@@ -5,7 +5,6 @@ import { View } from 'react-native';
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthSecondaryButton,
 } from '@/features/auth/components/auth-ui';
@@ -141,7 +140,6 @@ export function ChangePasswordScreen() {
       </View>
 
       {!state.online ? <AuthErrorNotice text={t('auth.errors.offline')} /> : null}
-      <AuthNotice text={t('auth.common.demoPrivacyNotice')} />
     </AccountPage>
   );
 }

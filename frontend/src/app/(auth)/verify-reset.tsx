@@ -1,10 +1,9 @@
-import { Href, router, useLocalSearchParams } from 'expo-router';
+import { Href, Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
   AuthTextButton,
@@ -16,8 +15,10 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
+import { localPasswordResetEnabled } from '@/mocks';
 
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
+const signInRoute = '/(auth)/sign-in' as Href;
 
 function maskEmail(email: string) {
   const [name = '', domain = ''] = email.split('@');
@@ -35,6 +36,20 @@ export default function VerifyResetRoute() {
   const [codeError, setCodeError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!localPasswordResetEnabled) return <Redirect href={signInRoute} />;
+
+  async function fillLocalCode() {
+    if (!challenge) return;
+    setRequestError('');
+    try {
+      const preview = await actions.getPasswordResetPreview(challenge.challengeId);
+      setCode(preview.code);
+      setCodeError('');
+    } catch (error) {
+      setRequestError(t(authErrorKey(error)));
+    }
+  }
 
   async function submit() {
     const normalizedCode = code.replace(/\s+/g, '');
@@ -79,10 +94,6 @@ export default function VerifyResetRoute() {
       title={t('auth.verifyReset.title')}>
       {challenge ? (
         <>
-          <AuthNotice
-            icon="notification"
-            text={t('auth.verifyReset.demoCode', { code: challenge.demoCode })}
-          />
           <AuthField
             autoCapitalize="none"
             autoComplete="one-time-code"
@@ -100,6 +111,12 @@ export default function VerifyResetRoute() {
             textContentType="oneTimeCode"
             value={code}
           />
+          {localPasswordResetEnabled ? (
+            <AuthTextButton
+              label={t('auth.verifyReset.useLocalCode')}
+              onPress={() => void fillLocalCode()}
+            />
+          ) : null}
           {requestError ? <AuthErrorNotice text={requestError} /> : null}
           <AuthPrimaryButton
             busy={isSubmitting}

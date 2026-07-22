@@ -2,12 +2,12 @@ import { useIsFocused } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { AppScreen } from '@/components/app-screen';
-import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
+import { ProductImage } from '@/components/ui/product-image';
 import {
   ActionButton,
   Notice,
@@ -46,54 +46,6 @@ function ProductDatum({
         {value}
       </AppText>
     </View>
-  );
-}
-
-function DemoCodeCard({
-  code,
-  disabled,
-  onUse,
-}: {
-  code?: string;
-  disabled: boolean;
-  onUse: () => void;
-}) {
-  const { t } = useTranslation();
-
-  if (!code) {
-    return null;
-  }
-
-  return (
-    <SectionCard>
-      <View className="flex-row items-start gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-pill bg-brand-soft">
-          <AppIcon name="cabinet" size={21} tone="brand" />
-        </View>
-        <View className="min-w-0 flex-1 gap-1">
-          <AppText variant="label" tone="foreground">
-            {t('common.demoBadge')}
-          </AppText>
-          <AppText variant="caption" tone="muted">
-            {t('scan.demoCodeLabel', { code })}
-          </AppText>
-        </View>
-      </View>
-
-      <Pressable
-        accessibilityLabel={t('scan.useDemoCode')}
-        accessibilityRole="button"
-        accessibilityState={{ disabled }}
-        className={`min-h-12 items-center justify-center rounded-control border border-brand bg-brand-soft px-controlX py-controlY ${
-          disabled ? 'opacity-40' : 'active:opacity-70'
-        }`}
-        disabled={disabled}
-        onPress={onUse}>
-        <AppText className="text-center" variant="label" tone="brand">
-          {t('scan.useDemoCode')}
-        </AppText>
-      </Pressable>
-    </SectionCard>
   );
 }
 
@@ -162,10 +114,14 @@ function ProductConfirmation({
   return (
     <View className="gap-section">
       <SectionCard>
+        <View className="items-center rounded-card bg-background py-2">
+          <ProductImage
+            accessibilityLabel={resolution.sku.name}
+            assetKey={resolution.sku.imageAsset}
+            variant="scan"
+          />
+        </View>
         <View className="flex-row items-start gap-4">
-          <View className="h-16 w-16 items-center justify-center rounded-card bg-brand-soft">
-            <AppIcon name="cabinet" size={36} tone="brand" />
-          </View>
           <View className="min-w-0 flex-1 gap-1">
             <AppText variant="title" tone="foreground">
               {resolution.sku.name}
@@ -206,13 +162,7 @@ function ProductConfirmation({
           title={t('scan.alreadyBoundTitle')}
           tone="success"
         />
-      ) : (
-        <Notice
-          description={t('scan.bindingNotice')}
-          title={t('scan.confirmTitle')}
-          tone="brand"
-        />
-      )}
+      ) : null}
 
       <View className="gap-3">
         <ActionButton
@@ -274,7 +224,7 @@ function ConnectedSummary({
   );
 }
 
-export function ScanFlow({ mode }: { mode: ScanMode }) {
+export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: boolean }) {
   const router = useRouter();
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
@@ -410,8 +360,13 @@ export function ScanFlow({ mode }: { mode: ScanMode }) {
 
   const sessionUnavailable =
     state.sessionStatus !== 'authenticated' || currentUser === null;
-  const fallbackDisabled =
-    resolving || binding || !state.online || sessionUnavailable || !state.hydrated;
+
+  useEffect(() => {
+    if (!sample || !demoCode || !state.hydrated || !state.online || sessionUnavailable || resolution || bindResult || resolving || binding) {
+      return;
+    }
+    void resolveCode(demoCode);
+  }, [bindResult, binding, demoCode, resolution, resolveCode, resolving, sample, sessionUnavailable, state.hydrated, state.online]);
 
   let mainContent;
   if (!state.hydrated) {
@@ -533,38 +488,9 @@ export function ScanFlow({ mode }: { mode: ScanMode }) {
 
   return (
     <AppScreen contentClassName="gap-section">
-      <ScreenHeader title={t('scan.title')} subtitle={t('scan.description')} />
-
-      <View className="flex-row flex-wrap gap-2">
-        <Pill tone="blue">{t('common.demoBadge')}</Pill>
-        <Pill tone={state.online ? 'green' : 'red'}>
-          {state.online ? t('common.online') : t('common.offline')}
-        </Pill>
-        <Pill tone="purple">
-          {mode === 'initialize' ? t('scan.modeOwner') : t('scan.modeMember')}
-        </Pill>
-      </View>
+      <ScreenHeader title={t('scan.title')} />
 
       {mainContent}
-
-      {!resolution && !bindResult ? (
-        <DemoCodeCard
-          code={demoCode}
-          disabled={fallbackDisabled}
-          onUse={() => {
-            if (demoCode) {
-              resetScanner();
-              void resolveCode(demoCode);
-            }
-          }}
-        />
-      ) : null}
-
-      <Notice
-        description={t('scan.cameraPurpose')}
-        title={t('common.demoDataOnly')}
-        tone="brand"
-      />
     </AppScreen>
   );
 }

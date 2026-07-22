@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Pressable, useWindowDimensions, View } from 'react-native';
 
 import { AppIcon, AppIconTone } from '@/components/ui/app-icon';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
@@ -17,14 +17,17 @@ const config: Record<KeyStatus, { border: string; background: string; iconTone: 
 };
 
 export function PrototypeKeySlotGrid({ cabinetId, slots }: { cabinetId: string; slots: SlotView[] }) {
+  const { width } = useWindowDimensions();
+  const columns = width <= 375 ? 2 : 3;
+
   return (
     <View className="flex-row flex-wrap gap-2.5">
-      {slots.map((slot) => <SlotCell cabinetId={cabinetId} key={slot.id} slot={slot} />)}
+      {slots.map((slot) => <SlotCell cabinetId={cabinetId} columns={columns} key={slot.id} slot={slot} />)}
     </View>
   );
 }
 
-function SlotCell({ cabinetId, slot }: { cabinetId: string; slot: SlotView }) {
+function SlotCell({ cabinetId, columns, slot }: { cabinetId: string; columns: 2 | 3; slot: SlotView }) {
   const { formatNumber, t } = useTranslation();
   const style = config[slot.status];
   const href = slot.keyId
@@ -33,9 +36,10 @@ function SlotCell({ cabinetId, slot }: { cabinetId: string; slot: SlotView }) {
 
   return (
     <Pressable
-      accessibilityLabel={slot.keyName ?? t(trKey('key.emptySlot'))}
+      accessibilityLabel={`${t(trKey('key.slotNumber'), { number: formatNumber(slot.number) })}. ${slot.keyName ?? t(trKey('key.emptySlot'))}. ${t(trKey(`key.status.${slot.status}`))}`}
       accessibilityRole="button"
-      className={`min-h-[108px] w-[31%] min-w-[96px] flex-grow gap-2 rounded-card border p-3 ${style.border} ${style.background} active:opacity-70`}
+      className={`min-h-[112px] gap-2 overflow-hidden rounded-card border p-3 ${style.border} ${style.background} active:opacity-70`}
+      style={{ width: columns === 2 ? '48%' : '31%' }}
       onPress={() => router.push(href as never)}>
       <View className="flex-row items-center justify-between">
         <AppText variant="caption" tone="muted">{t(trKey('key.slotNumber'), { number: formatNumber(slot.number) })}</AppText>
@@ -45,8 +49,8 @@ function SlotCell({ cabinetId, slot }: { cabinetId: string; slot: SlotView }) {
         {slot.keyName ?? t(trKey('key.addKey'))}
       </AppText>
       <View className="flex-row items-center gap-1.5">
-        <View className={`h-2 w-2 rounded-pill ${slot.status === 'available' ? 'bg-success' : slot.status === 'checkedOut' ? 'bg-warning' : slot.status === 'overdue' ? 'bg-danger' : 'bg-muted'}`} />
-        <AppText numberOfLines={1} variant="caption" tone={style.textTone}>{t(trKey(`key.status.${slot.status}`))}</AppText>
+        <View className={`h-4 w-1 rounded-pill ${slot.status === 'available' ? 'bg-success' : slot.status === 'checkedOut' ? 'bg-warning' : slot.status === 'overdue' ? 'bg-danger' : 'bg-muted'}`} />
+        <AppText variant="caption" tone={style.textTone}>{t(trKey(`key.status.${slot.status}`))}</AppText>
       </View>
     </Pressable>
   );

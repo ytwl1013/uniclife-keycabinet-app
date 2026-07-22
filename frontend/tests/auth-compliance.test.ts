@@ -11,6 +11,8 @@ function anonymousService() {
     storage: createMemoryStorage(),
     latencyMs: 0,
     initialState: createInitialMockState({ hydrated: true }),
+    resetCodeFactory: () => '583920',
+    developerToolsEnabled: true,
   });
 }
 
@@ -53,19 +55,44 @@ describe('authentication and consent workflow', () => {
   it('uses a transient verification challenge only for password reset', async () => {
     const app = anonymousService();
     const challenge = await app.actions.requestPasswordReset({ email: 'alex.morgan@example.com' });
+    expect(challenge).toEqual({ challengeId: expect.any(String) });
+    await expect(app.actions.verifyReset({
+      challengeId: challenge.challengeId,
+      code: '',
+    })).rejects.toMatchObject({ code: 'RESET_CODE_INVALID' });
+    await expect(app.actions.verifyReset({
+      challengeId: challenge.challengeId,
+      code: '000000',
+    })).rejects.toMatchObject({ code: 'RESET_CODE_INVALID' });
+    await expect(app.actions.getPasswordResetPreview({
+      challengeId: challenge.challengeId,
+    })).resolves.toEqual({ code: '583920' });
     const verification = await app.actions.verifyReset({
       challengeId: challenge.challengeId,
-      code: challenge.demoCode,
+      code: '583920',
     });
     await expect(
       app.actions.verifyReset({
         challengeId: challenge.challengeId,
-        code: challenge.demoCode,
+        code: '583920',
       }),
     ).rejects.toMatchObject({ code: 'RESET_CHALLENGE_INVALID' });
     await app.actions.resetPassword({ resetToken: verification.resetToken, newPassword: 'ChangedDemo123!' });
     await app.actions.signIn({ email: 'alex.morgan@example.com', password: 'ChangedDemo123!' });
     expect(app.getState().sessionStatus).toBe('authenticated');
+  });
+
+  it('does not expose the local reset preview outside developer builds', async () => {
+    const app = createMockAppService({
+      storage: createMemoryStorage(),
+      latencyMs: 0,
+      initialState: createInitialMockState({ hydrated: true }),
+      resetCodeFactory: () => '583920',
+      developerToolsEnabled: false,
+    });
+    await expect(app.actions.requestPasswordReset({
+      email: 'alex.morgan@example.com',
+    })).rejects.toMatchObject({ code: 'PERMISSION_DENIED' });
   });
 
   it('never accepts an arbitrary password when no in-memory credential exists', async () => {

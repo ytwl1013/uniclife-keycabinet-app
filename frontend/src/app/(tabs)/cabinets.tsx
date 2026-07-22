@@ -1,9 +1,8 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { AppScreen } from '@/components/app-screen';
-import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { PrototypeCabinetCard } from '@/features/cabinet-prototype/components/cabinet-card';
 import { ActionButton, Notice, SearchInput, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
@@ -26,34 +25,21 @@ export default function CabinetsRoute() {
 
   return (
     <AppScreen>
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1 gap-1">
+      <View className="gap-1">
           <AppText variant="display" tone="foreground">{t(trKey('cabinet.listTitle'))}</AppText>
           <AppText variant="body" tone="muted">{t(trKey('cabinet.listSubtitle'), { count: app.cabinets.length })}</AppText>
-        </View>
-        <Pressable
-          accessibilityLabel={t(trKey('cabinet.notifications'))}
-          className="h-12 w-12 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70">
-          <AppIcon name="notification" size={25} tone="foreground" />
-        </Pressable>
       </View>
 
       {app.isOffline ? <Notice description={t(trKey('cabinet.offlineDescription'))} title={t(trKey('cabinet.offlineTitle'))} tone="warning" /> : null}
       {app.sessionExpired ? <Notice description={t(trKey('cabinet.sessionExpiredDescription'))} title={t(trKey('cabinet.sessionExpiredTitle'))} tone="danger" /> : null}
 
-      <View className="flex-row gap-2.5">
-        <SearchInput onChangeText={setQuery} placeholder={t(trKey('cabinet.searchPlaceholder'))} value={query} />
-        <ActionButton compact icon="scan" label={t(trKey('cabinet.scanToAdd'))} onPress={() => router.push('/(tabs)/scan')} />
-      </View>
+      <SearchInput onChangeText={setQuery} placeholder={t(trKey('cabinet.searchPlaceholder'))} value={query} />
 
       {app.isLoading ? (
         <StatePanel description={t(trKey('cabinet.loadingDescription'))} loading title={t(trKey('cabinet.loadingTitle'))} />
       ) : cabinets.length ? (
         <View className="gap-3">
-          <View className="flex-row items-center justify-between">
-            <AppText variant="label" tone="muted">{t(trKey('cabinet.resultCount'), { count: cabinets.length })}</AppText>
-            <AppText variant="caption" tone="muted">{t(trKey('cabinet.syncedDemo'))}</AppText>
-          </View>
+          <AppText variant="label" tone="muted">{t(trKey('cabinet.resultCount'), { count: cabinets.length })}</AppText>
           {cabinets.map((cabinet) => <PrototypeCabinetCard cabinet={cabinet} key={cabinet.id} />)}
         </View>
       ) : (
@@ -64,8 +50,6 @@ export default function CabinetsRoute() {
           title={query ? t(trKey('cabinet.noSearchTitle')) : t(trKey('cabinet.emptyTitle'))}
         />
       )}
-
-      <Notice description={t(trKey('cabinet.syncNoticeDescription'))} title={t(trKey('cabinet.syncNoticeTitle'))} />
     </AppScreen>
   );
 }

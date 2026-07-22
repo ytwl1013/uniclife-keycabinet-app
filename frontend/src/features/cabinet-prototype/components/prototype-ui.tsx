@@ -14,8 +14,8 @@ export function ScreenHeader({ title, subtitle, onBack, action }: { title: strin
         </Pressable>
       ) : null}
       <View className="min-w-0 flex-1 gap-1">
-        <AppText numberOfLines={2} variant="pageTitle" tone="foreground">{title}</AppText>
-        {subtitle ? <AppText numberOfLines={2} variant="caption" tone="muted">{subtitle}</AppText> : null}
+        <AppText numberOfLines={2} variant="title" tone="foreground">{title}</AppText>
+        {subtitle ? <AppText numberOfLines={1} variant="caption" tone="muted">{subtitle}</AppText> : null}
       </View>
       {action}
     </View>

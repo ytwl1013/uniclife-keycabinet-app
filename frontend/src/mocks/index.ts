@@ -13,6 +13,11 @@ export type { CabinetMemberView, CabinetMetrics, MockSelectors } from './selecto
 
 export { MockAppError, assertMock, isMockAppError, mockErrorCodes } from './errors';
 export type { MockErrorCode } from './errors';
+export {
+  allowSampleQrPreview,
+  developerToolsEnabled,
+  localPasswordResetEnabled,
+} from './developer-tools';
 
 export {
   generateCsv,

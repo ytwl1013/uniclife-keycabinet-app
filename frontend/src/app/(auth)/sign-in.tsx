@@ -6,7 +6,6 @@ import { AppText } from '@/components/ui/app-text';
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
   AuthSecondaryButton,
@@ -19,7 +18,7 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
+import { localPasswordResetEnabled, useMockApp } from '@/mocks';
 
 const welcomeRoute = '/(auth)/welcome' as Href;
 const signUpRoute = '/(auth)/sign-up' as Href;
@@ -29,7 +28,7 @@ const onboardingRoute = '/onboarding' as Href;
 export default function SignInRoute() {
   const { t } = useTranslation();
   const { actions } = useAuthActions();
-  const { actions: demoActions, state } = useMockApp();
+  const { actions: workspaceActions, state } = useMockApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -86,8 +85,6 @@ export default function SignInRoute() {
       }
       onBack={goBack}
       title={t('auth.signIn.title')}>
-      <AuthNotice icon="shield" text={t('auth.common.demoPrivacyNotice')} />
-
       <AuthField
         autoCapitalize="none"
         autoComplete="email"
@@ -121,11 +118,13 @@ export default function SignInRoute() {
         value={password}
       />
 
-      <AuthTextButton
-        align="end"
-        label={t('auth.signIn.forgotPassword')}
-        onPress={() => router.push(forgotPasswordRoute)}
-      />
+      {localPasswordResetEnabled ? (
+        <AuthTextButton
+          align="end"
+          label={t('auth.signIn.forgotPassword')}
+          onPress={() => router.push(forgotPasswordRoute)}
+        />
+      ) : null}
 
       {requestError ? <AuthErrorNotice text={requestError} /> : null}
 
@@ -137,23 +136,17 @@ export default function SignInRoute() {
       />
 
       {demoOwner ? (
-        <View className="gap-3 rounded-card border border-line bg-brand-soft p-card">
-          <View className="gap-1">
-            <AppText variant="label" tone="foreground">{t('auth.signIn.demoTitle')}</AppText>
-            <AppText variant="caption" tone="muted">{t('auth.signIn.demoDescription')}</AppText>
-          </View>
-          <AuthSecondaryButton
-            icon="cabinet"
-            label={t('auth.signIn.useDemo')}
-            onPress={() => {
-              setIsSubmitting(true);
-              void demoActions.switchAccount({ userId: demoOwner.id })
-                .then(() => router.replace(onboardingRoute))
-                .catch((error) => setRequestError(t(authErrorKey(error))))
-                .finally(() => setIsSubmitting(false));
-            }}
-          />
-        </View>
+        <AuthSecondaryButton
+          icon="cabinet"
+          label={t('auth.signIn.useDemo')}
+          onPress={() => {
+            setIsSubmitting(true);
+            void workspaceActions.switchAccount({ userId: demoOwner.id })
+              .then(() => router.replace(onboardingRoute))
+              .catch((error) => setRequestError(t(authErrorKey(error))))
+              .finally(() => setIsSubmitting(false));
+          }}
+        />
       ) : null}
     </AuthScreen>
   );

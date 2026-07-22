@@ -212,7 +212,7 @@ export function usePrototypeApp(): PrototypeApp {
         color: text(sku.color, text(sku.colorName)),
         capacity: number(sku.capacity, number(sku.slotCount, cabinetSlots.length)),
         manualUrl: text(sku.manualUrl) || undefined,
-        imageUri: text(sku.imageAsset, text(sku.imageUri, text(sku.imageUrl))) || undefined,
+        imageAsset: text(sku.imageAsset) || undefined,
         role: role(membership.role ?? fallbackMembership?.role),
         availableCount: cabinetKeys.filter((key) => key.status === 'available').length,
         checkedOutCount: cabinetKeys.filter((key) => key.status === 'checkedOut').length,

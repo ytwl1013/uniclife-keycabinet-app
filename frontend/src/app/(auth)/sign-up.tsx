@@ -6,7 +6,6 @@ import { AppText } from '@/components/ui/app-text';
 import {
   AuthErrorNotice,
   AuthField,
-  AuthNotice,
   AuthPrimaryButton,
   AuthScreen,
   AuthTextButton,
@@ -98,8 +97,6 @@ export default function SignUpRoute() {
       }
       onBack={goBack}
       title={t('auth.signUp.title')}>
-      <AuthNotice icon="shield" text={t('auth.common.demoPrivacyNotice')} />
-
       <AuthField
         autoCapitalize="none"
         autoComplete="email"
@@ -150,7 +147,7 @@ export default function SignUpRoute() {
         value={confirmPassword}
       />
 
-      <View className="gap-3 rounded-card border border-line bg-surface p-card">
+      <View className="gap-2 rounded-card border border-line bg-surface p-3.5">
         <ConsentRow
           checked={acceptedTerms}
           label={t('auth.signUp.acceptTerms')}

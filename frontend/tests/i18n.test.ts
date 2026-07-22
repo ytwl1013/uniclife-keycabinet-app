@@ -35,6 +35,14 @@ function leafKeys(value: unknown, prefix = ''): string[] {
   });
 }
 
+function leafEntries(value: unknown, prefix = ''): Array<[string, string]> {
+  if (!value || typeof value !== 'object') return [];
+  return Object.entries(value).flatMap(([key, child]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    return typeof child === 'string' ? [[path, child] as [string, string]] : leafEntries(child, path);
+  });
+}
+
 describe('nine-region localisation', () => {
   it('keeps the exact supported locale list and a complete key set for every locale', () => {
     expect(supportedLocales).toEqual([
@@ -68,5 +76,13 @@ describe('nine-region localisation', () => {
   it('provides long German and Polish labels without missing-key placeholders', () => {
     expect(de.activity.exportMasked.length).toBeGreaterThan(20);
     expect(pl.cabinet.backendRestoreOnly.length).toBeGreaterThan(45);
+  });
+
+  it('keeps prototype terminology out of normal product copy', () => {
+    const forbidden = /\b(demo|prototype|simulated|fictional|seeded)\b/i;
+    for (const locale of supportedLocales) {
+      const normalCopy = leafEntries(catalog[locale]).filter(([path]) => path !== 'account.simulatedTime');
+      expect(normalCopy.filter(([, value]) => forbidden.test(value))).toEqual([]);
+    }
   });
 });

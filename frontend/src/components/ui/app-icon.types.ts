@@ -25,6 +25,7 @@ export type AppIconName =
   | 'checkOut'
   | 'settings'
   | 'empty'
+  | 'check'
   | 'expand';
 
 export type AppIconTone = 'foreground' | 'content' | 'muted' | 'brand' | 'success' | 'warning' | 'danger' | 'accent' | 'onBrand';
