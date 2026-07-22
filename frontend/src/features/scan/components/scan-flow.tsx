@@ -2,9 +2,9 @@ import { useIsFocused } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 
-import { AppScreen } from '@/components/app-screen';
+import { AppScaffold } from '@/components/app-scaffold';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
@@ -56,7 +56,7 @@ function ScannerPreview({
 }: {
   active: boolean;
   onCode: (code: string) => void;
-  onMountError: () => void;
+  onMountError: (message: string) => void;
 }) {
   const { t } = useTranslation();
   const [ready, setReady] = useState(false);
@@ -66,11 +66,12 @@ function ScannerPreview({
       <CameraView
         active={active}
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-        className="absolute inset-0"
         facing="back"
         onBarcodeScanned={active ? ({ data }) => onCode(data) : undefined}
         onCameraReady={() => setReady(true)}
-        onMountError={onMountError}
+        onMountError={({ message }) => onMountError(message)}
+        style={StyleSheet.absoluteFill}
+        testID="product-qr-camera"
       />
 
       <View
@@ -231,15 +232,22 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const { actions, currentUser, selectors, state } = useMockApp();
   const { t } = useTranslation();
   const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
+  const [cameraMountError, setCameraMountError] = useState<string | null>(null);
   const [resolution, setResolution] = useState<QrResolution | null>(null);
   const [bindResult, setBindResult] = useState<BindCabinetResult | null>(null);
   const [errorKind, setErrorKind] = useState<ScanErrorKind | null>(null);
   const [resolving, setResolving] = useState(false);
   const [binding, setBinding] = useState(false);
   const scanLockRef = useRef(false);
+  const systemScannerSubscriptionRef = useRef<ReturnType<typeof CameraView.onModernBarcodeScanned> | undefined>(undefined);
   const requestSequenceRef = useRef(0);
 
   useEffect(() => {
+    if (Platform.OS !== 'web') {
+      setCameraAvailable(true);
+      return undefined;
+    }
+
     let active = true;
     void CameraView.isAvailableAsync()
       .then((available) => {
@@ -257,6 +265,8 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
       active = false;
     };
   }, []);
+
+  useEffect(() => () => systemScannerSubscriptionRef.current?.remove(), []);
 
   const demoCode = useMemo(() => {
     const unboundQr = state.qrs.find(
@@ -288,10 +298,17 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     scanLockRef.current = false;
     setResolution(null);
     setBindResult(null);
+    setCameraMountError(null);
     setErrorKind(null);
     setResolving(false);
     setBinding(false);
   }, []);
+
+  useEffect(() => {
+    if (errorKind !== 'invalid') return undefined;
+    const retryTimer = setTimeout(resetScanner, 1800);
+    return () => clearTimeout(retryTimer);
+  }, [errorKind, resetScanner]);
 
   const classifyError = useCallback((error: unknown): ScanErrorKind => {
     if (!isMockAppError(error)) {
@@ -334,6 +351,32 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     },
     [actions, binding, classifyError, resolving],
   );
+
+  const launchSystemScanner = useCallback(async () => {
+    if (Platform.OS === 'web' || resolving || binding) return;
+    if (!CameraView.isModernBarcodeScannerAvailable) {
+      setCameraMountError('system-scanner-unavailable');
+      return;
+    }
+    scanLockRef.current = false;
+    setErrorKind(null);
+    setCameraMountError(null);
+
+    systemScannerSubscriptionRef.current?.remove();
+    try {
+      systemScannerSubscriptionRef.current = CameraView.onModernBarcodeScanned(({ data }) => {
+        systemScannerSubscriptionRef.current?.remove();
+        systemScannerSubscriptionRef.current = undefined;
+        void CameraView.dismissScanner();
+        void resolveCode(data);
+      });
+      await CameraView.launchScanner({ barcodeTypes: ['qr'] });
+    } catch {
+      systemScannerSubscriptionRef.current?.remove();
+      systemScannerSubscriptionRef.current = undefined;
+      setCameraMountError('system-scanner');
+    }
+  }, [binding, resolveCode, resolving]);
 
   const bindCabinet = useCallback(async () => {
     if (!resolution || binding) {
@@ -447,10 +490,18 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
         title={t('common.loading')}
       />
     );
-  } else if (!cameraAvailable) {
+  } else if (!cameraAvailable || cameraMountError) {
     mainContent = (
       <StatePanel
-        description={t('scan.cameraUnavailableDescription')}
+        action={Platform.OS === 'web' ? (
+          <ActionButton icon="scan" label={t('common.retry')} onPress={resetScanner} tone="neutral" />
+        ) : (
+          <View className="w-full gap-3 pt-2">
+            <ActionButton icon="scan" label={t('scan.systemScanner')} onPress={() => void launchSystemScanner()} />
+            <ActionButton label={t('common.retry')} onPress={resetScanner} tone="neutral" />
+          </View>
+        )}
+        description={cameraMountError ? t('scan.cameraMountError') : t('scan.cameraUnavailableDescription')}
         icon="scan"
         title={t('scan.cameraUnavailableTitle')}
       />
@@ -458,15 +509,20 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   } else if (!permission.granted) {
     mainContent = (
       <StatePanel
-        action={
-          permission.canAskAgain ? (
+        action={permission.canAskAgain ? (
             <ActionButton
               icon="scan"
               label={t('scan.requestPermission')}
               onPress={() => void requestPermission()}
             />
-          ) : undefined
-        }
+          ) : (
+            <ActionButton
+              icon="settings"
+              label={t('scan.openSettings')}
+              onPress={() => void Linking.openSettings()}
+              tone="neutral"
+            />
+          )}
         description={
           permission.canAskAgain ? t('scan.permissionDescription') : t('scan.permissionDenied')
         }
@@ -481,16 +537,14 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
       <ScannerPreview
         active={isFocused && !scanLockRef.current}
         onCode={(code) => void resolveCode(code)}
-        onMountError={() => setCameraAvailable(false)}
+        onMountError={(message) => setCameraMountError(message)}
       />
     );
   }
 
   return (
-    <AppScreen contentClassName="gap-section">
-      <ScreenHeader title={t('scan.title')} />
-
+    <AppScaffold contentClassName="gap-section" header={<ScreenHeader title={t('scan.title')} />}>
       {mainContent}
-    </AppScreen>
+    </AppScaffold>
   );
 }

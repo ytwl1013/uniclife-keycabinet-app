@@ -226,31 +226,4 @@ export async function generateExportArtifact(input: {
   throw new MockAppError('EXPORT_NOT_SUPPORTED');
 }
 
-export async function saveExportArtifact(artifact: ExportArtifact): Promise<string> {
-  if (Platform.OS === 'web') {
-    if (typeof document === 'undefined' || typeof URL === 'undefined') {
-      throw new MockAppError('EXPORT_NOT_SUPPORTED');
-    }
-    const buffer = artifact.bytes.slice().buffer as ArrayBuffer;
-    const url = URL.createObjectURL(new Blob([buffer], { type: artifact.mimeType }));
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = artifact.filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    return artifact.filename;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { File, Paths } = require('expo-file-system') as typeof import('expo-file-system');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Sharing = require('expo-sharing') as typeof import('expo-sharing');
-  const file = new File(Paths.cache, artifact.filename);
-  file.create({ overwrite: true, intermediates: true });
-  file.write(artifact.bytes);
-  if (!(await Sharing.isAvailableAsync())) {
-    throw new MockAppError('SHARING_NOT_AVAILABLE');
-  }
-  await Sharing.shareAsync(file.uri, { mimeType: artifact.mimeType });
-  return file.uri;
-}
+export { saveExportArtifact } from './export-delivery';

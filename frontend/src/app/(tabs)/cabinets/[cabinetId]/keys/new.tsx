@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
+import { AppScaffold } from '@/components/app-scaffold';
 import { AppScreen } from '@/components/app-screen';
 import { AppText } from '@/components/ui/app-text';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
@@ -62,8 +63,11 @@ export default function AddKeyRoute() {
   }
 
   return (
-    <AppScreen>
-      <ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('key.addToSlot'), { number: slot.number })} />
+    <AppScaffold
+      footer={<ActionButton disabled={busy || app.isOffline} icon="key" label={busy ? t(trKey('key.saving')) : t(trKey('key.addAction'))} onPress={() => void submit()} />}
+      header={<ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('key.addToSlot'), { number: slot.number })} />}
+      keyboardAware
+      tabBarAware={false}>
       {app.isOffline ? <Notice description={t(trKey('key.offlineDescription'))} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
       <SectionCard>
         <AppText variant="title" tone="foreground">{t(trKey('key.detailsTitle'))}</AppText>
@@ -76,11 +80,10 @@ export default function AddKeyRoute() {
           value={name}
         />
         <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
-        <ActionButton disabled={busy || app.isOffline} icon="key" label={busy ? t(trKey('key.saving')) : t(trKey('key.addAction'))} onPress={() => void submit()} />
       </SectionCard>
       <Notice description={t(trKey('key.auditNoticeDescription'))} title={t(trKey('key.auditNoticeTitle'))} />
       {confirmation.dialog}
-    </AppScreen>
+    </AppScaffold>
   );
 }
 

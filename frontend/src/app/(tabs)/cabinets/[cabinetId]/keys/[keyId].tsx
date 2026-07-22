@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
+import { AppScaffold } from '@/components/app-scaffold';
 import { AppScreen } from '@/components/app-screen';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
@@ -108,15 +109,29 @@ export default function KeyDetailRoute() {
     }
   };
 
+  const primaryAction = key.status === 'available' ? (
+    <ActionButton
+      disabled={busy || app.isOffline}
+      icon="checkOut"
+      label={t(trKey('loan.checkOutAction'))}
+      onPress={() => router.push({ pathname: '/cabinets/[cabinetId]/loans/[keyId]', params: { cabinetId, keyId } } as never)}
+    />
+  ) : (
+    <ActionButton disabled={busy || app.isOffline} icon="return" label={t(trKey('loan.returnAction'))} onPress={() => void returnKey()} />
+  );
+
   return (
-    <AppScreen contentClassName="gap-4 pb-screen" scroll={false}>
-      <ScreenHeader
+    <AppScaffold
+      contentClassName="pt-screen"
+      footer={primaryAction}
+      header={<ScreenHeader
         action={<Pill tone={statusTone}>{t(trKey(`key.status.${key.status}`))}</Pill>}
         onBack={() => router.back()}
         subtitle={t(trKey('key.slotNumber'), { number: key.slotNumber })}
         title={key.name}
-      />
-      <ScrollView contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      />}
+      scroll={false}>
+      <ScrollView className="min-w-0 flex-1" contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {app.isOffline ? <Notice description={t(trKey('key.offlineDescription'))} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
         {key.activeLoan ? (
           <SectionCard>
@@ -140,13 +155,8 @@ export default function KeyDetailRoute() {
           <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('key.historyEmpty'))} events={history} onUndo={(event) => void undo(event.id)} />
         </SectionCard>
       </ScrollView>
-      {key.status === 'available' ? (
-        <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={t(trKey('loan.checkOutAction'))} onPress={() => router.push({ pathname: '/cabinets/[cabinetId]/loans/[keyId]', params: { cabinetId, keyId } } as never)} />
-      ) : (
-        <ActionButton disabled={busy || app.isOffline} icon="return" label={t(trKey('loan.returnAction'))} onPress={() => void returnKey()} />
-      )}
       {confirmation.dialog}
-    </AppScreen>
+    </AppScaffold>
   );
 }
 

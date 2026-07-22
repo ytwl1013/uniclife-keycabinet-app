@@ -1,16 +1,17 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Alert, FlatList, Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { Pill, PillTone } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
+import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
 import { TranslationKey, useTranslation } from '@/i18n';
 
 import { CabinetEventKind, CabinetView, ExportFormat, PrototypeApp } from '../types';
-import { PrototypeEventList } from './event-list';
+import { PrototypeEventEmpty, PrototypeEventList, PrototypeEventRow } from './event-list';
 import { PrototypeKeySlotGrid } from './key-slot-grid';
 import { usePrototypeDialog } from './prototype-dialog';
 import { ActionButton, FilterChip, InlineButton, Notice, SearchInput, SectionCard, SectionTitle, Stat, StatePanel } from './prototype-ui';
@@ -26,7 +27,10 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
   const statusTone: PillTone = cabinet.status === 'online' ? 'green' : cabinet.status === 'maintenance' ? 'orange' : 'gray';
 
   return (
-    <View className="gap-section">
+    <ScrollView
+      className="min-w-0 flex-1"
+      contentContainerClassName="gap-section px-screen py-screen pb-screen"
+      showsVerticalScrollIndicator={false}>
       <SectionCard className="overflow-hidden">
         <View className="items-center gap-2 rounded-card bg-background py-2">
           <ProductImage
@@ -112,7 +116,7 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
         <SectionTitle description={t(trKey('activity.latestDescription'))} title={t(trKey('activity.latestTitle'))} />
         <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('activity.empty'))} events={latestEvents} />
       </SectionCard>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -130,23 +134,30 @@ export function CabinetKeys({ app, cabinet }: { app: PrototypeApp; cabinet: Cabi
     });
   }, [cabinetSlots, query, status]);
 
+  const statuses = ['all', 'available', 'checkedOut', 'overdue', 'empty'] as const;
+
   return (
-    <View className="gap-section">
-      <View className="gap-3">
-        <SearchInput onChangeText={setQuery} placeholder={t(trKey('key.searchPlaceholder'))} value={query} />
-        <ScrollView contentContainerClassName="gap-2 pr-2" horizontal showsHorizontalScrollIndicator={false}>
-          {(['all', 'available', 'checkedOut', 'overdue', 'empty'] as const).map((value) => (
-            <FilterChip key={value} label={t(trKey(`key.filter.${value}`))} onPress={() => setStatus(value)} selected={status === value} />
-          ))}
-        </ScrollView>
-      </View>
-      <SectionCard>
-        <SectionTitle description={t(trKey('key.slotCount'), { count: slots.length })} title={t(trKey('key.gridTitle'))} />
-        {slots.length ? <PrototypeKeySlotGrid cabinetId={cabinet.id} slots={slots} /> : (
-          <StatePanel description={t(trKey('key.noResultDescription'))} icon="key" title={t(trKey('key.noResultTitle'))} />
-        )}
-      </SectionCard>
-    </View>
+    <PrototypeKeySlotGrid
+      cabinetId={cabinet.id}
+      empty={<StatePanel description={t(trKey('key.noResultDescription'))} icon="key" title={t(trKey('key.noResultTitle'))} />}
+      header={(
+        <View className="gap-section">
+          <View className="min-w-0 gap-3">
+            <SearchInput onChangeText={setQuery} placeholder={t(trKey('key.searchPlaceholder'))} value={query} />
+            <ScrollableChipRow
+              items={statuses}
+              renderItem={(value) => (
+                <FilterChip label={t(trKey(`key.filter.${value}`))} onPress={() => setStatus(value)} selected={status === value} />
+              )}
+              selectedValue={status}
+              testID="key-filter-scroll"
+            />
+          </View>
+          <SectionTitle description={t(trKey('key.slotCount'), { count: slots.length })} title={t(trKey('key.gridTitle'))} />
+        </View>
+      )}
+      slots={slots}
+    />
   );
 }
 
@@ -180,6 +191,11 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
       return event.kind === kind;
     });
   }, [actorId, app.now, cabinetEvents, kind, time]);
+  const activeFilters = [
+    kind !== 'all' ? { id: 'kind', label: t(trKey(`activity.filter.${kind}`)), clear: () => setKind('all') } : null,
+    actorId !== 'all' ? { id: 'actor', label: operators.find((operator) => operator.id === actorId)?.name ?? actorId, clear: () => setActorId('all') } : null,
+    time !== 'all' ? { id: 'time', label: t(trKey(`activity.time.${time}`)), clear: () => setTime('all') } : null,
+  ].filter((filter): filter is { id: string; label: string; clear: () => void } => Boolean(filter));
 
   const executeUndo = async (eventId: string) => {
     const confirmed = await confirmation.present({
@@ -228,36 +244,56 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
   };
 
   return (
-    <View className="gap-section">
-      <View className="flex-row gap-2">
-        <Pressable
-          accessibilityRole="button"
-          className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-control border border-line bg-surface px-4 active:opacity-70"
-          onPress={() => setFiltersOpen(true)}>
-          <AppIcon name="filter" size={19} tone="brand" />
-          <AppText variant="label" tone="foreground">{t(trKey('activity.filtersTitle'))}</AppText>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-control border border-line bg-surface px-4 active:opacity-70"
-          onPress={() => setExportOpen(true)}>
-          <AppIcon name="download" size={19} tone="brand" />
-          <AppText variant="label" tone="foreground">{t(trKey('activity.exportTitle'))}</AppText>
-        </Pressable>
-      </View>
+    <View className="min-w-0 flex-1">
+      <FlatList
+        className="min-w-0 flex-1"
+        contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
+        data={events}
+        keyExtractor={(event) => event.id}
+        ListEmptyComponent={<PrototypeEventEmpty label={t(trKey('activity.emptyFiltered'))} />}
+        ListHeaderComponent={(
+          <View className="gap-section">
+            <View className="flex-row gap-2">
+              <Pressable
+                accessibilityRole="button"
+                className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-control border border-line bg-surface px-4 active:opacity-70"
+                onPress={() => setFiltersOpen(true)}>
+                <AppIcon name="filter" size={19} tone="brand" />
+                <AppText variant="label" tone="foreground">{t(trKey('activity.filtersTitle'))}</AppText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-control border border-line bg-surface px-4 active:opacity-70"
+                onPress={() => setExportOpen(true)}>
+                <AppIcon name="download" size={19} tone="brand" />
+                <AppText variant="label" tone="foreground">{t(trKey('activity.exportTitle'))}</AppText>
+              </Pressable>
+            </View>
 
-      {kind !== 'all' || actorId !== 'all' || time !== 'all' ? (
-        <ScrollView contentContainerClassName="gap-2 pr-2" horizontal showsHorizontalScrollIndicator={false}>
-          {kind !== 'all' ? <FilterChip label={t(trKey(`activity.filter.${kind}`))} onPress={() => setKind('all')} selected /> : null}
-          {actorId !== 'all' ? <FilterChip label={operators.find((operator) => operator.id === actorId)?.name ?? actorId} onPress={() => setActorId('all')} selected /> : null}
-          {time !== 'all' ? <FilterChip label={t(trKey(`activity.time.${time}`))} onPress={() => setTime('all')} selected /> : null}
-        </ScrollView>
-      ) : null}
+            {activeFilters.length ? (
+              <ScrollableChipRow
+                getKey={(filter) => filter.id}
+                items={activeFilters}
+                renderItem={(filter) => <FilterChip label={filter.label} onPress={filter.clear} selected />}
+              />
+            ) : null}
 
-      <SectionCard>
-        <SectionTitle description={t(trKey('activity.resultCount'), { count: events.length })} title={t(trKey('activity.timelineTitle'))} />
-        <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('activity.emptyFiltered'))} events={events} onUndo={(event) => void executeUndo(event.id)} />
-      </SectionCard>
+            <SectionTitle description={t(trKey('activity.resultCount'), { count: events.length })} title={t(trKey('activity.timelineTitle'))} />
+          </View>
+        )}
+        ListHeaderComponentStyle={{ marginBottom: 12 }}
+        renderItem={({ index, item }) => (
+          <SectionCard>
+            <PrototypeEventRow
+              currentUserId={app.currentUserId}
+              event={item}
+              isLast={index === events.length - 1}
+              onUndo={(event) => void executeUndo(event.id)}
+            />
+          </SectionCard>
+        )}
+        showsVerticalScrollIndicator={false}
+      />
 
       <BottomSheet closeLabel={t(trKey('common.done'))} onClose={() => setFiltersOpen(false)} title={t(trKey('activity.filtersTitle'))} visible={filtersOpen}>
         <AppText variant="label" tone="foreground">{t(trKey('activity.filter.all'))}</AppText>
@@ -347,76 +383,81 @@ export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: 
   };
 
   return (
-    <View className="gap-section">
-      <SectionCard>
-        <SectionTitle description={t(trKey('cabinet.membersDescription'))} title={t(trKey('cabinet.membersTitle'), { count: visibleMembers.length })} />
-        <View className="gap-2.5">
-          {visibleMembers.map((member) => {
-            const canChangeRole = isOwner && member.role !== 'owner' && member.userId !== app.currentUserId;
-            const canRemove = canManage && member.role === 'member' && member.userId !== app.currentUserId;
-            return (
-              <View className="gap-2 rounded-control border border-line bg-background p-3" key={member.id}>
-                <View className="flex-row items-center gap-3">
-                  <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
-                    <AppText variant="title" tone="brand">{member.name.slice(0, 1).toUpperCase()}</AppText>
-                  </View>
-                  <View className="min-w-0 flex-1 gap-0.5">
-                    <AppText numberOfLines={1} variant="label" tone="foreground">{member.name}</AppText>
-                    <AppText numberOfLines={1} variant="caption" tone="muted">{member.email}</AppText>
-                  </View>
-                  <View className="items-end gap-1">
-                    <Pill tone={member.role === 'owner' ? 'purple' : member.role === 'admin' ? 'blue' : 'gray'}>{t(trKey(`cabinet.role.${member.role}`))}</Pill>
-                    {(canChangeRole || canRemove) ? (
-                      <Pressable
-                        accessibilityLabel={t(trKey('cabinet.memberActions'))}
-                        accessibilityRole="button"
-                        className="h-9 w-9 items-center justify-center rounded-pill active:opacity-70"
-                        onPress={() => setOpenMemberMenu((value) => value === member.id ? undefined : member.id)}>
-                        <AppIcon name="more" size={22} tone="muted" />
-                      </Pressable>
-                    ) : null}
-                  </View>
-                </View>
-                {openMemberMenu === member.id ? (
-                  <View className="flex-row flex-wrap items-center justify-end gap-3 border-t border-line pt-2">
-                    {canChangeRole ? (
-                      <InlineButton
-                        disabled={Boolean(busyId)}
-                        label={member.role === 'admin' ? t(trKey('cabinet.revokeAdmin')) : t(trKey('cabinet.makeAdmin'))}
-                        onPress={() => void changeRole(member.id, member.role === 'admin' ? 'member' : 'admin', member.name)}
-                      />
-                    ) : null}
-                    {canRemove ? <InlineButton disabled={Boolean(busyId)} label={t(trKey('cabinet.removeMember'))} onPress={() => void removeMember(member.id, member.name)} tone="danger" /> : null}
-                  </View>
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
-      </SectionCard>
-
-      <SectionCard>
-        <SectionTitle description={t(trKey('cabinet.clearSectionDescription'))} title={t(trKey('cabinet.clearSectionTitle'))} />
-        {cabinet.clearRestoreUntil ? (
-          <Notice
-            description={t(trKey('cabinet.restoreUntilDescription'), { date: new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(cabinet.clearRestoreUntil)) })}
-            title={t(trKey('cabinet.restoreUntilTitle'))}
-            tone="success"
-          />
-        ) : null}
-        {activeLoans.length ? <Notice description={t(trKey('cabinet.clearBlockedDescription'), { count: activeLoans.length })} title={t(trKey('cabinet.clearBlockedTitle'))} tone="warning" /> : null}
-        {canManage ? (
-          <ActionButton
-            disabled={Boolean(busyId) || app.isOffline || Boolean(activeLoans.length) || configuredKeys.length === 0}
-            icon="error"
-            label={t(trKey('cabinet.clearKeysAction'))}
-            onPress={() => void clearKeys()}
-            tone="danger"
-          />
-        ) : (
-          <Notice description={t(trKey('cabinet.managePermissionRequiredDescription'))} title={t(trKey('cabinet.managePermissionRequiredTitle'))} tone="warning" />
+    <View className="min-w-0 flex-1">
+      <FlatList
+        className="min-w-0 flex-1"
+        contentContainerStyle={{ padding: 20, rowGap: 10 }}
+        data={visibleMembers}
+        keyExtractor={(member) => member.id}
+        ListHeaderComponent={<SectionTitle description={t(trKey('cabinet.membersDescription'))} title={t(trKey('cabinet.membersTitle'), { count: visibleMembers.length })} />}
+        ListHeaderComponentStyle={{ marginBottom: 8 }}
+        ListFooterComponent={(
+          <SectionCard className="mt-2">
+            <SectionTitle description={t(trKey('cabinet.clearSectionDescription'))} title={t(trKey('cabinet.clearSectionTitle'))} />
+            {cabinet.clearRestoreUntil ? (
+              <Notice
+                description={t(trKey('cabinet.restoreUntilDescription'), { date: new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(cabinet.clearRestoreUntil)) })}
+                title={t(trKey('cabinet.restoreUntilTitle'))}
+                tone="success"
+              />
+            ) : null}
+            {activeLoans.length ? <Notice description={t(trKey('cabinet.clearBlockedDescription'), { count: activeLoans.length })} title={t(trKey('cabinet.clearBlockedTitle'))} tone="warning" /> : null}
+            {canManage ? (
+              <ActionButton
+                disabled={Boolean(busyId) || app.isOffline || Boolean(activeLoans.length) || configuredKeys.length === 0}
+                icon="error"
+                label={t(trKey('cabinet.clearKeysAction'))}
+                onPress={() => void clearKeys()}
+                tone="danger"
+              />
+            ) : (
+              <Notice description={t(trKey('cabinet.managePermissionRequiredDescription'))} title={t(trKey('cabinet.managePermissionRequiredTitle'))} tone="warning" />
+            )}
+          </SectionCard>
         )}
-      </SectionCard>
+        renderItem={({ item: member }) => {
+          const canChangeRole = isOwner && member.role !== 'owner' && member.userId !== app.currentUserId;
+          const canRemove = canManage && member.role === 'member' && member.userId !== app.currentUserId;
+          return (
+            <View className="gap-2 rounded-control border border-line bg-surface p-3">
+              <View className="flex-row items-center gap-3">
+                <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
+                  <AppText variant="title" tone="brand">{member.name.slice(0, 1).toUpperCase()}</AppText>
+                </View>
+                <View className="min-w-0 flex-1 gap-0.5">
+                  <AppText numberOfLines={1} variant="label" tone="foreground">{member.name}</AppText>
+                  <AppText numberOfLines={1} variant="caption" tone="muted">{member.email}</AppText>
+                </View>
+                <View className="items-end gap-1">
+                  <Pill tone={member.role === 'owner' ? 'purple' : member.role === 'admin' ? 'blue' : 'gray'}>{t(trKey(`cabinet.role.${member.role}`))}</Pill>
+                  {(canChangeRole || canRemove) ? (
+                    <Pressable
+                      accessibilityLabel={t(trKey('cabinet.memberActions'))}
+                      accessibilityRole="button"
+                      className="h-11 w-11 items-center justify-center rounded-pill active:opacity-70"
+                      onPress={() => setOpenMemberMenu((value) => value === member.id ? undefined : member.id)}>
+                      <AppIcon name="more" size={22} tone="muted" />
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+              {openMemberMenu === member.id ? (
+                <View className="flex-row flex-wrap items-center justify-end gap-3 border-t border-line pt-2">
+                  {canChangeRole ? (
+                    <InlineButton
+                      disabled={Boolean(busyId)}
+                      label={member.role === 'admin' ? t(trKey('cabinet.revokeAdmin')) : t(trKey('cabinet.makeAdmin'))}
+                      onPress={() => void changeRole(member.id, member.role === 'admin' ? 'member' : 'admin', member.name)}
+                    />
+                  ) : null}
+                  {canRemove ? <InlineButton disabled={Boolean(busyId)} label={t(trKey('cabinet.removeMember'))} onPress={() => void removeMember(member.id, member.name)} tone="danger" /> : null}
+                </View>
+              ) : null}
+            </View>
+          );
+        }}
+        showsVerticalScrollIndicator={false}
+      />
       {confirmation.dialog}
     </View>
   );

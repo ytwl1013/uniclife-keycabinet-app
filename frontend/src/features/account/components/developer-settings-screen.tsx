@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
@@ -26,6 +27,7 @@ export function DeveloperSettingsScreen() {
   const { actions, currentUser, state } = useMockApp();
   const [pending, setPending] = useState<PendingAction>(null);
   const [showAccounts, setShowAccounts] = useState(false);
+  const [showSampleQr, setShowSampleQr] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [feedback, setFeedback] = useState<{ message: string; tone: 'success' | 'danger' } | null>(null);
 
@@ -35,6 +37,10 @@ export function DeveloperSettingsScreen() {
       .filter((batch) => batch.status === 'restorable' && Date.parse(batch.recoverableUntil) >= Date.parse(state.now))
       .sort((left, right) => Date.parse(right.clearedAt) - Date.parse(left.clearedAt))[0],
     [state.clearBatches, state.now],
+  );
+  const sampleQr = useMemo(
+    () => state.qrs.find((qr) => qr.status === 'active'),
+    [state.qrs],
   );
 
   if (!state.hydrated) return <AccountLoading label={t('common.loading')} />;
@@ -184,7 +190,27 @@ export function DeveloperSettingsScreen() {
           label={t('account.restoreClear')}
           onPress={() => void restoreLatestBatch()}
         />
-        <SettingsAction icon="scan" label={t('account.sampleQr')} onPress={() => router.push('/(tabs)/scan?sample=1')} />
+        <SettingsAction
+          detail={t('account.sampleQrDescription')}
+          icon="scan"
+          label={showSampleQr ? t('account.hideSampleQr') : t('account.sampleQr')}
+          onPress={() => setShowSampleQr((value) => !value)}
+          selected={showSampleQr}
+        />
+        {showSampleQr && sampleQr ? (
+          <View className="items-center gap-3 rounded-control border border-line bg-background p-4">
+            <View
+              accessible
+              accessibilityLabel={t('account.sampleQr')}
+              accessibilityRole="image"
+              className="rounded-control bg-white p-3">
+              <QRCode backgroundColor="#FFFFFF" color="#071126" quietZone={8} size={220} value={sampleQr.code} />
+            </View>
+            <AppText className="text-center" selectable variant="caption" tone="muted">
+              {sampleQr.code}
+            </AppText>
+          </View>
+        ) : null}
         <SettingsAction icon="error" label={t('account.resetData')} onPress={() => setConfirmReset(true)} tone="danger" />
         {confirmReset ? (
           <ConfirmationPanel

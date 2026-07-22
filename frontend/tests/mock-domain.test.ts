@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 
 import { MockAppError } from '../src/mocks/errors';
 import { createMockSelectors, maskContact } from '../src/mocks/selectors';
+import { createCabinetQrPayload, parseCabinetQrPayload } from '../src/mocks/qr-payload';
 import { createMockAppService } from '../src/mocks/service';
 import { createInitialMockState, getSeedData } from '../src/mocks/seed';
 import { parseDomainData } from '../src/mocks/schemas';
@@ -25,7 +26,7 @@ describe('mock domain seed and QR binding', () => {
     const state = app.getState();
     expect(new Set(state.qrs.map((qr) => qr.code)).size).toBe(state.qrs.length);
 
-    const resolved = await app.actions.resolveQr({ code: 'UL-DEMO-UC12-V5T7-X2C8' });
+    const resolved = await app.actions.resolveQr({ code: 'uniclife://cabinet/u12_v5t7_x2c8_b6h1' });
     expect(resolved.cabinet.id).toBe('cabinet-studio');
     expect(resolved.sku.sku).toBe('UL-KC-12-BL');
   });
@@ -33,8 +34,8 @@ describe('mock domain seed and QR binding', () => {
   it('binds a signed-in user immediately and returns the existing membership idempotently', async () => {
     const app = service();
     await app.actions.switchAccount({ userId: 'user-demo' });
-    const first = await app.actions.bindCabinet({ qrCode: 'UL-DEMO-UC24-A7F4-N1Q9' });
-    const second = await app.actions.bindCabinet({ qrCode: 'UL-DEMO-UC24-A7F4-N1Q9' });
+    const first = await app.actions.bindCabinet({ qrCode: 'uniclife://cabinet/u24_a7f4_n1q9_c8v2' });
+    const second = await app.actions.bindCabinet({ qrCode: 'uniclife://cabinet/u24_a7f4_n1q9_c8v2' });
 
     expect(first.membership.role).toBe('member');
     expect(second.membership.id).toBe(first.membership.id);
@@ -65,7 +66,7 @@ describe('mock domain seed and QR binding', () => {
     await app.actions.switchAccount({ userId: 'user-member' });
 
     const rebound = await app.actions.bindCabinet({
-      qrCode: 'UL-DEMO-UC24-A7F4-N1Q9',
+      qrCode: 'uniclife://cabinet/u24_a7f4_n1q9_c8v2',
       requestId: 'rebind-removed-member',
     });
     expect(rebound.membership).toMatchObject({
@@ -96,6 +97,17 @@ describe('mock domain seed and QR binding', () => {
     const duplicate = getSeedData();
     duplicate.qrs[1].code = duplicate.qrs[0].code;
     expect(() => parseDomainData(duplicate)).toThrow(MockAppError);
+  });
+
+  it('accepts only canonical UnicLife product links', async () => {
+    const app = service();
+    expect(parseCabinetQrPayload('uniclife://cabinet/u24_a7f4_n1q9_c8v2')).toEqual({
+      canonical: 'uniclife://cabinet/u24_a7f4_n1q9_c8v2',
+      token: 'u24_a7f4_n1q9_c8v2',
+    });
+    expect(createCabinetQrPayload('u24_a7f4_n1q9_c8v2')).toBe('uniclife://cabinet/u24_a7f4_n1q9_c8v2');
+    expect(parseCabinetQrPayload('https://example.com/cabinet/u24_a7f4_n1q9_c8v2')).toBeNull();
+    await expect(app.actions.resolveQr({ code: 'not-a-product-code' })).rejects.toMatchObject({ code: 'QR_NOT_FOUND' });
   });
 });
 

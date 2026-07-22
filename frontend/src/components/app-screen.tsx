@@ -8,7 +8,7 @@ type AppScreenProps = PropsWithChildren<{
   keyboardAware?: boolean;
 }>;
 
-const baseContentClassName = 'mx-auto w-full max-w-content gap-section px-screen pt-screen pb-tabBarBottom';
+const baseContentClassName = 'mx-auto w-full max-w-content gap-section px-screen pt-screen pb-screen';
 
 export function AppScreen({ children, scroll = true, contentClassName = '', keyboardAware = false }: AppScreenProps) {
   const content = scroll ? (

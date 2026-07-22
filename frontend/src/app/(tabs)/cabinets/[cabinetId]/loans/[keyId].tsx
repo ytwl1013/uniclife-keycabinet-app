@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 
+import { AppScaffold } from '@/components/app-scaffold';
 import { AppScreen } from '@/components/app-screen';
 import { DateTimeField } from '@/components/ui/date-time-field';
 import { isExpectedReturnAfter } from '@/components/ui/date-time';
@@ -86,9 +87,14 @@ export default function CheckOutKeyRoute() {
   };
 
   return (
-    <AppScreen contentClassName="gap-4 pb-screen" keyboardAware scroll={false}>
-      <ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />
-      <ScrollView contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <AppScaffold
+      contentClassName="pt-screen"
+      footer={<ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />}
+      header={<ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />}
+      keyboardAware
+      scroll={false}
+      tabBarAware={false}>
+      <ScrollView className="min-w-0 flex-1" contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
         <SectionCard>
           <FormField
@@ -120,9 +126,8 @@ export default function CheckOutKeyRoute() {
           />
         </SectionCard>
       </ScrollView>
-      <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />
       {confirmation.dialog}
-    </AppScreen>
+    </AppScaffold>
   );
 }
 

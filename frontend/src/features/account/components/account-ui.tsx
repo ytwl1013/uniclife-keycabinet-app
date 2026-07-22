@@ -1,6 +1,7 @@
 import { PropsWithChildren, ReactNode } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
+import { AppScaffold } from '@/components/app-scaffold';
 import { AppScreen } from '@/components/app-screen';
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
@@ -23,38 +24,37 @@ export function AccountPage({
   trailing,
 }: AccountPageProps) {
   return (
-    <AppScreen contentClassName="gap-6">
-      <View className="gap-5">
-        <View className="flex-row items-center justify-between">
-          {onBack && backLabel ? (
-            <Pressable
-              accessibilityLabel={backLabel}
-              accessibilityRole="button"
-              className="h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70"
-              hitSlop={8}
-              onPress={onBack}>
-              <AppIcon name="back" size={22} tone="foreground" />
-            </Pressable>
-          ) : (
-            <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
-              <AppIcon name="person" size={22} tone="brand" />
-            </View>
-          )}
-          {trailing ?? <View className="h-11 w-11" />}
-        </View>
-
-        <View className="gap-2">
-          <AppText variant="pageTitle" tone="foreground">
+    <AppScaffold
+      contentClassName="gap-6"
+      header={(
+        <View className="flex-row items-center gap-3">
+        {onBack && backLabel ? (
+          <Pressable
+            accessibilityLabel={backLabel}
+            accessibilityRole="button"
+            className="h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70"
+            hitSlop={8}
+            onPress={onBack}>
+            <AppIcon name="back" size={22} tone="foreground" />
+          </Pressable>
+        ) : (
+          <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
+            <AppIcon name="person" size={22} tone="brand" />
+          </View>
+        )}
+        <View className="min-w-0 flex-1 gap-0.5">
+          <AppText numberOfLines={1} variant="title" tone="foreground">
             {title}
           </AppText>
-          <AppText className="max-w-md" tone="muted">
+          <AppText numberOfLines={2} variant="caption" tone="muted">
             {description}
           </AppText>
         </View>
-      </View>
-
+        {trailing ?? <View className="h-11 w-11" />}
+        </View>
+      )}>
       {children}
-    </AppScreen>
+    </AppScaffold>
   );
 }
 

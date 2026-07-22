@@ -1,8 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
+import { View } from 'react-native';
 
+import { AppScaffold } from '@/components/app-scaffold';
 import { AppScreen } from '@/components/app-screen';
 import { Pill } from '@/components/ui/pill';
+import { SwipeSegmentPager } from '@/components/ui/swipe-segment-pager';
 import { CabinetActivity, CabinetKeys, CabinetOverview, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
 import { ActionButton, Notice, ScreenHeader, SegmentControl, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
@@ -46,25 +49,38 @@ export default function CabinetDetailRoute() {
     value,
     label: t(trKey(`cabinet.segment.${value}`)),
   }));
+  const pages = [
+    { value: 'overview', content: <CabinetOverview app={app} cabinet={cabinet} /> },
+    { value: 'keys', content: <CabinetKeys app={app} cabinet={cabinet} /> },
+    { value: 'activity', content: <CabinetActivity app={app} cabinet={cabinet} /> },
+    { value: 'settings', content: <CabinetSettings app={app} cabinet={cabinet} /> },
+  ] as const;
 
   return (
-    <AppScreen>
-      <ScreenHeader
-        action={<Pill tone={cabinet.status === 'online' ? 'green' : cabinet.status === 'maintenance' ? 'orange' : 'gray'}>{t(trKey(`cabinet.status.${cabinet.status}`))}</Pill>}
-        onBack={() => router.back()}
-        subtitle={cabinet.location}
-        title={cabinet.name}
+    <AppScaffold
+      contentClassName="p-0"
+      header={(
+        <View className="gap-3">
+          <ScreenHeader
+            action={<Pill tone={cabinet.status === 'online' ? 'green' : cabinet.status === 'maintenance' ? 'orange' : 'gray'}>{t(trKey(`cabinet.status.${cabinet.status}`))}</Pill>}
+            onBack={() => router.back()}
+            subtitle={cabinet.location}
+            title={cabinet.name}
+          />
+
+          {app.isOffline ? <Notice description={t(trKey('cabinet.offlineDescription'))} title={t(trKey('cabinet.offlineTitle'))} tone="warning" /> : null}
+          {app.sessionExpired ? <Notice description={t(trKey('cabinet.sessionExpiredDescription'))} title={t(trKey('cabinet.sessionExpiredTitle'))} tone="danger" /> : null}
+
+          <SegmentControl items={segments} onChange={setSegment} value={segment} />
+        </View>
+      )}
+      scroll={false}>
+      <SwipeSegmentPager
+        onChange={setSegment}
+        pages={pages}
+        testID="cabinet-swipe-pager"
+        value={segment}
       />
-
-      {app.isOffline ? <Notice description={t(trKey('cabinet.offlineDescription'))} title={t(trKey('cabinet.offlineTitle'))} tone="warning" /> : null}
-      {app.sessionExpired ? <Notice description={t(trKey('cabinet.sessionExpiredDescription'))} title={t(trKey('cabinet.sessionExpiredTitle'))} tone="danger" /> : null}
-
-      <SegmentControl items={segments} onChange={setSegment} value={segment} />
-
-      {segment === 'overview' ? <CabinetOverview app={app} cabinet={cabinet} /> : null}
-      {segment === 'keys' ? <CabinetKeys app={app} cabinet={cabinet} /> : null}
-      {segment === 'activity' ? <CabinetActivity app={app} cabinet={cabinet} /> : null}
-      {segment === 'settings' ? <CabinetSettings app={app} cabinet={cabinet} /> : null}
-    </AppScreen>
+    </AppScaffold>
   );
 }

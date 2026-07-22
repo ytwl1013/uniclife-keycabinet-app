@@ -88,6 +88,7 @@ export const en = {
   scan: {
     title: 'Scan product QR', description: 'Scan the cabinet code and confirm the product.', cameraPurpose: 'Camera access is used only to recognize a product QR. Frames are not stored or uploaded.',
     permissionTitle: 'Camera permission required', permissionDescription: 'Allow camera access to scan a cabinet code.', requestPermission: 'Allow camera', permissionDenied: 'Camera permission is denied. Enable it in system settings to continue.',
+    openSettings: 'Open system settings', systemScanner: 'Use system scanner', cameraMountError: 'The camera could not start. Retry or use the system scanner.',
     cameraUnavailableTitle: 'Camera unavailable', cameraUnavailableDescription: 'This device or browser cannot open a camera here.', sessionExpiredTitle: 'Sign in to scan', sessionExpiredDescription: 'Your session is missing or expired. Sign in again before binding a cabinet.',
     alignCode: 'Place the product QR inside the frame', scanning: 'Looking for a supported code…', useDemoCode: 'Use sample code', demoCodeLabel: 'Sample code: %{code}',
     invalidTitle: 'Code not recognized', invalidDescription: 'This code does not map to a supported SKU.', offlineTitle: 'Scanner offline', offlineDescription: 'SKU matching is unavailable while the network is off.',
@@ -122,7 +123,7 @@ export const en = {
     currentPassword: 'Current password', simulatedTime: 'Simulated current time',
     deleteTitle: 'Delete account?', deleteDescription: 'Owners must transfer every cabinet first. A sole Owner may explicitly release the cabinet.', deleteBlockedTitle: 'Ownership transfer required', deleteBlockedDescription: 'Transfer ownership or release sole-member cabinets before deleting this account.', deleteConfirm: 'Delete account',
     releaseSoleCabinets: 'Release my sole-member cabinets', releaseSoleCabinetsDescription: 'I understand these cabinets will become unbound before this account is deleted.',
-    appSettingsTitle: 'App settings', developerSettings: 'Developer settings', developerDescription: 'Local tools for testing product states.', developerTools: 'Testing tools', sampleQr: 'Open sample QR scan',
+    appSettingsTitle: 'App settings', developerSettings: 'Developer settings', developerDescription: 'Local tools for testing product states.', developerTools: 'Testing tools', sampleQr: 'Product test QR', sampleQrDescription: 'Display this code on another screen or print it to test the device camera.', hideSampleQr: 'Hide product test QR',
     demoTitle: 'Developer settings', demoDescription: 'Local testing controls.', network: 'Network state', goOffline: 'Go offline', goOnline: 'Go online', switchAccount: 'Switch test account', advanceTime: 'Advance 8 days', restoreClear: 'Restore cleared keys', resetData: 'Reset local data', resetConfirmTitle: 'Reset all local data?', resetConfirmDescription: 'This restores the original local workspace data.',
     noRecovery: 'No recoverable clear batch is available.', recoverySuccess: 'The latest eligible clear batch was restored.', actionComplete: 'Settings updated.',
   },

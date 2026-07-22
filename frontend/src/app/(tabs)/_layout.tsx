@@ -1,4 +1,4 @@
-import { Redirect, Tabs } from 'expo-router';
+import { Redirect, Tabs, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -26,10 +26,17 @@ export default function TabLayout() {
   const { state } = useMockApp();
   const { palette } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
   const tabBarBottomPadding = Math.max(insets.bottom, navigationMetrics.tabBarPaddingBottom);
   const tabBarHeight = navigationMetrics.tabBarHeight
     + tabBarBottomPadding
     - navigationMetrics.tabBarPaddingBottom;
+  const focusedForm = [
+    /^\/cabinets\/[^/]+\/keys\/new$/,
+    /^\/cabinets\/[^/]+\/loans\/[^/]+$/,
+    /^\/account\/change-password$/,
+    /^\/account\/delete$/,
+  ].some((pattern) => pattern.test(pathname));
 
   if (state.hydrated && state.sessionStatus !== 'authenticated') {
     return <Redirect href="/(auth)/sign-in" />;
@@ -51,6 +58,7 @@ export default function TabLayout() {
           alignSelf: 'center',
           backgroundColor: palette.surface,
           borderTopColor: palette.line,
+          display: focusedForm ? 'none' : 'flex',
           height: tabBarHeight,
           maxWidth: navigationMetrics.tabBarMaxWidth,
           paddingBottom: tabBarBottomPadding,
