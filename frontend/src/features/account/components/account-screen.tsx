@@ -12,7 +12,7 @@ import {
   supportedLocales,
   useTranslation,
 } from '@/i18n';
-import { useMockApp } from '@/mocks';
+import { developerToolsEnabled, useMockApp } from '@/mocks';
 
 import {
   AccountLoading,
@@ -178,9 +178,11 @@ export function AccountScreen() {
         ) : null}
       </AccountSection>
 
-      <AccountSection icon="settings" title={t('account.appSettingsTitle')}>
-        <SettingsAction icon="settings" label={t('account.developerSettings')} onPress={() => router.push(accountRoutes.developer)} />
-      </AccountSection>
+      {developerToolsEnabled ? (
+        <AccountSection icon="settings" title={t('account.appSettingsTitle')}>
+          <SettingsAction icon="settings" label={t('account.developerSettings')} onPress={() => router.push(accountRoutes.developer)} />
+        </AccountSection>
+      ) : null}
 
       <BottomSheet
         closeLabel={t('common.done')}

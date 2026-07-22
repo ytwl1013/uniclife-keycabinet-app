@@ -15,6 +15,7 @@ import {
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
+import { developerToolsEnabled } from '@/mocks';
 
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
 
@@ -34,6 +35,18 @@ export default function VerifyResetRoute() {
   const [codeError, setCodeError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function fillLocalCode() {
+    if (!challenge) return;
+    setRequestError('');
+    try {
+      const preview = await actions.getPasswordResetPreview(challenge.challengeId);
+      setCode(preview.code);
+      setCodeError('');
+    } catch (error) {
+      setRequestError(t(authErrorKey(error)));
+    }
+  }
 
   async function submit() {
     const normalizedCode = code.replace(/\s+/g, '');
@@ -95,6 +108,12 @@ export default function VerifyResetRoute() {
             textContentType="oneTimeCode"
             value={code}
           />
+          {developerToolsEnabled ? (
+            <AuthTextButton
+              label={t('auth.verifyReset.useLocalCode')}
+              onPress={() => void fillLocalCode()}
+            />
+          ) : null}
           {requestError ? <AuthErrorNotice text={requestError} /> : null}
           <AuthPrimaryButton
             busy={isSubmitting}

@@ -1,5 +1,6 @@
 import { generateExportArtifact, saveExportArtifact } from './exports';
 import { assertMock, MockAppError } from './errors';
+import { developerToolsEnabled as defaultDeveloperToolsEnabled } from './developer-tools';
 import { createMockSelectors } from './selectors';
 import { createInitialMockState } from './seed';
 import {
@@ -54,6 +55,7 @@ export type MockAppActions = {
   register(input: RegisterInput): Promise<UserAccount>;
   signOut(): Promise<void>;
   requestPasswordReset(input: { email: string }): Promise<{ challengeId: string }>;
+  getPasswordResetPreview(input: { challengeId: string }): Promise<{ code: string }>;
   verifyReset(input: { challengeId: string; code: string }): Promise<{ resetToken: string }>;
   resetPassword(input: { resetToken: string; newPassword: string }): Promise<void>;
   changePassword(input: { currentPassword: string; newPassword: string }): Promise<void>;
@@ -99,6 +101,7 @@ export type CreateMockAppServiceOptions = {
   latencyMs?: number;
   initialState?: MockAppState;
   resetCodeFactory?: () => string;
+  developerToolsEnabled?: boolean;
 };
 
 function clone<T>(value: T): T {
@@ -125,6 +128,8 @@ export function createMockAppService(
 ): MockAppService {
   const storage = options.storage ?? asyncStorageAdapter;
   const latencyMs = options.latencyMs ?? 240;
+  const developerToolsEnabled =
+    options.developerToolsEnabled ?? defaultDeveloperToolsEnabled;
   let state = clone(options.initialState ?? createInitialMockState());
   const listeners = new Set<() => void>();
   const requestResults = new Map<string, unknown>();
@@ -406,6 +411,18 @@ export function createMockAppService(
       verified: false,
     });
     return { challengeId };
+  };
+
+  const getPasswordResetPreview: MockAppActions['getPasswordResetPreview'] = async ({
+    challengeId,
+  }) => {
+    assertMock(developerToolsEnabled, 'PERMISSION_DENIED');
+    const challenge = resetChallenges.get(challengeId);
+    assertMock(
+      challenge && !challenge.verified && challenge.expiresAt >= Date.parse(state.now),
+      'RESET_CHALLENGE_INVALID',
+    );
+    return { code: challenge.code };
   };
 
   const verifyReset: MockAppActions['verifyReset'] = async ({ challengeId, code }) => {
@@ -1080,6 +1097,7 @@ export function createMockAppService(
     register,
     signOut,
     requestPasswordReset,
+    getPasswordResetPreview,
     verifyReset,
     resetPassword,
     changePassword,

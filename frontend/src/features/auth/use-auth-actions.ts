@@ -61,6 +61,8 @@ export function useAuthActions() {
         }),
       signOut: () => actions.signOut(),
       requestPasswordReset: (email: string) => actions.requestPasswordReset({ email }),
+      getPasswordResetPreview: (challengeId: string) =>
+        actions.getPasswordResetPreview({ challengeId }),
       verifyReset: (challengeId: string, code: string) => actions.verifyReset({ challengeId, code }),
       resetPassword: (resetToken: string, newPassword: string) =>
         actions.resetPassword({ resetToken, newPassword }),
