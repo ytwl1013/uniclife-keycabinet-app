@@ -52,6 +52,14 @@ describe('mobile navigation architecture', () => {
     expect(cabinet).toContain('<SwipeSegmentPager');
   });
 
+  it('keeps segmented and filter controls at least 44px tall', () => {
+    const controls = source('src/features/cabinet-prototype/components/prototype-ui.tsx');
+
+    expect(controls).toContain('min-h-11 min-w-[78px]');
+    expect(controls).toContain('min-h-11 items-center justify-center rounded-pill');
+    expect(controls).not.toContain('min-h-10 items-center justify-center rounded-pill');
+  });
+
   it('virtualizes the high-volume mobile lists', () => {
     const files = [
       'src/app/(tabs)/cabinets/index.tsx',
