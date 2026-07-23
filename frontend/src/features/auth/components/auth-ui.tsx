@@ -1,7 +1,7 @@
 import { ComponentProps, PropsWithChildren, ReactNode } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppScreen } from '@/components/app-screen';
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { useAppTheme } from '@/styles/theme';
@@ -23,41 +23,54 @@ export function AuthScreen({
   title,
 }: AuthScreenProps) {
   return (
-    <AppScreen contentClassName="min-h-full gap-5 pb-screen" keyboardAware>
-      <View className="gap-6">
-        <View className="flex-row items-center justify-between">
-          {onBack && backLabel ? (
-            <Pressable
-              accessibilityLabel={backLabel}
-              accessibilityRole="button"
-              className="h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70"
-              hitSlop={8}
-              onPress={onBack}>
-              <AppIcon name="back" size={22} tone="foreground" />
-            </Pressable>
-          ) : (
-            <View className="h-11 w-11" />
-          )}
+    <KeyboardAvoidingView
+      behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1"
+      keyboardVerticalOffset={8}>
+      <SafeAreaView className="flex-1 bg-background">
+        <ScrollView
+          automaticallyAdjustKeyboardInsets
+          className="flex-1"
+          contentContainerClassName="mx-auto min-h-full w-full max-w-content gap-5 px-screen pb-screen pt-screen"
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <View className="gap-6">
+            <View className="flex-row items-center justify-between">
+              {onBack && backLabel ? (
+                <Pressable
+                  accessibilityLabel={backLabel}
+                  accessibilityRole="button"
+                  className="h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70"
+                  hitSlop={8}
+                  onPress={onBack}>
+                  <AppIcon name="back" size={22} tone="foreground" />
+                </Pressable>
+              ) : (
+                <View className="h-11 w-11" />
+              )}
 
-          <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
-            <AppIcon name="cabinet" size={24} tone="brand" />
+              <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
+                <AppIcon name="cabinet" size={24} tone="brand" />
+              </View>
+            </View>
+
+            <View className="gap-2">
+              <AppText variant="pageTitle" tone="foreground">
+                {title}
+              </AppText>
+              <AppText className="max-w-md" tone="muted">
+                {description}
+              </AppText>
+            </View>
           </View>
-        </View>
 
-        <View className="gap-2">
-          <AppText variant="pageTitle" tone="foreground">
-            {title}
-          </AppText>
-          <AppText className="max-w-md" tone="muted">
-            {description}
-          </AppText>
-        </View>
-      </View>
+          <View className="gap-4">{children}</View>
 
-      <View className="gap-4">{children}</View>
-
-      {footer ? <View className="mt-auto pt-2">{footer}</View> : null}
-    </AppScreen>
+          {footer ? <View className="mt-auto pt-2">{footer}</View> : null}
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 

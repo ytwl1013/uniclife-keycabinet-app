@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppScaffold } from '@/components/app-scaffold';
 import { AppText } from '@/components/ui/app-text';
 import { PrototypeCabinetCard } from '@/features/cabinet-prototype/components/cabinet-card';
 import { ActionButton, Notice, SearchInput, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
@@ -24,18 +24,21 @@ export default function CabinetsRoute() {
   }, [app.cabinets, query]);
 
   return (
-    <AppScaffold
-      contentClassName="p-0"
-      header={(
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <View className="border-b border-line bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="gap-0.5">
           <AppText variant="title" tone="foreground">{t(trKey('cabinet.listTitle'))}</AppText>
           <AppText variant="caption" tone="muted">{t(trKey('cabinet.listSubtitle'), { count: app.cabinets.length })}</AppText>
         </View>
-      )}
-      scroll={false}>
+        </View>
+      </View>
+
+      <View className="mx-auto min-w-0 w-full max-w-content flex-1">
       <FlatList
         className="min-w-0 flex-1"
         contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
+        contentInsetAdjustmentBehavior="automatic"
         data={app.isLoading ? [] : cabinets}
         keyExtractor={(cabinet) => cabinet.id}
         ListHeaderComponent={(
@@ -60,6 +63,7 @@ export default function CabinetsRoute() {
         renderItem={({ item }) => <PrototypeCabinetCard cabinet={item} />}
         showsVerticalScrollIndicator={false}
       />
-    </AppScaffold>
+      </View>
+    </SafeAreaView>
   );
 }

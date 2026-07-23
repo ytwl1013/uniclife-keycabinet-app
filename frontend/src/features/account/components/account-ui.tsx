@@ -1,8 +1,7 @@
 import { PropsWithChildren, ReactNode } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppScaffold } from '@/components/app-scaffold';
-import { AppScreen } from '@/components/app-screen';
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
 import { useAppTheme } from '@/styles/theme';
@@ -24,37 +23,46 @@ export function AccountPage({
   trailing,
 }: AccountPageProps) {
   return (
-    <AppScaffold
-      contentClassName="gap-6"
-      header={(
-        <View className="flex-row items-center gap-3">
-        {onBack && backLabel ? (
-          <Pressable
-            accessibilityLabel={backLabel}
-            accessibilityRole="button"
-            className="h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70"
-            hitSlop={8}
-            onPress={onBack}>
-            <AppIcon name="back" size={22} tone="foreground" />
-          </Pressable>
-        ) : (
-          <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
-            <AppIcon name="person" size={22} tone="brand" />
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <View className="border-b border-line bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">
+          <View className="flex-row items-center gap-3">
+          {onBack && backLabel ? (
+            <Pressable
+              accessibilityLabel={backLabel}
+              accessibilityRole="button"
+              className="h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70"
+              hitSlop={8}
+              onPress={onBack}>
+              <AppIcon name="back" size={22} tone="foreground" />
+            </Pressable>
+          ) : (
+            <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
+              <AppIcon name="person" size={22} tone="brand" />
+            </View>
+          )}
+          <View className="min-w-0 flex-1 gap-0.5">
+            <AppText numberOfLines={1} variant="title" tone="foreground">
+              {title}
+            </AppText>
+            <AppText numberOfLines={2} variant="caption" tone="muted">
+              {description}
+            </AppText>
           </View>
-        )}
-        <View className="min-w-0 flex-1 gap-0.5">
-          <AppText numberOfLines={1} variant="title" tone="foreground">
-            {title}
-          </AppText>
-          <AppText numberOfLines={2} variant="caption" tone="muted">
-            {description}
-          </AppText>
+          {trailing ?? <View className="h-11 w-11" />}
+          </View>
         </View>
-        {trailing ?? <View className="h-11 w-11" />}
-        </View>
-      )}>
-      {children}
-    </AppScaffold>
+      </View>
+
+      <ScrollView
+        className="min-w-0 flex-1"
+        contentContainerClassName="mx-auto w-full max-w-content gap-6 px-screen pb-screen pt-screen"
+        contentInsetAdjustmentBehavior="never"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {children}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -298,13 +306,15 @@ export function AccountLoading({ label }: { label: string }) {
   const { palette } = useAppTheme();
 
   return (
-    <AppScreen contentClassName="min-h-full items-center justify-center gap-4" scroll={false}>
-      <View className="h-14 w-14 items-center justify-center rounded-pill bg-brand-soft">
-        <ActivityIndicator color={palette.brand} />
+    <SafeAreaView className="flex-1 bg-background">
+      <View className="mx-auto min-h-full w-full max-w-content flex-1 items-center justify-center gap-4 px-screen pb-screen pt-screen">
+        <View className="h-14 w-14 items-center justify-center rounded-pill bg-brand-soft">
+          <ActivityIndicator color={palette.brand} />
+        </View>
+        <AppText variant="label" tone="muted">
+          {label}
+        </AppText>
       </View>
-      <AppText variant="label" tone="muted">
-        {label}
-      </AppText>
-    </AppScreen>
+    </SafeAreaView>
   );
 }

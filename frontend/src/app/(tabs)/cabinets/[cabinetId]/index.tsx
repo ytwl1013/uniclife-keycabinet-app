@@ -1,9 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppScaffold } from '@/components/app-scaffold';
-import { AppScreen } from '@/components/app-screen';
 import { Pill } from '@/components/ui/pill';
 import { SwipeSegmentPager } from '@/components/ui/swipe-segment-pager';
 import { CabinetActivity, CabinetKeys, CabinetOverview, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
@@ -24,24 +23,36 @@ export default function CabinetDetailRoute() {
 
   if (app.isLoading) {
     return (
-      <AppScreen>
-        <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.loadingTitle'))} />
-        <StatePanel description={t(trKey('cabinet.loadingDescription'))} loading title={t(trKey('cabinet.loadingTitle'))} />
-      </AppScreen>
+      <SafeAreaView className="flex-1 bg-background">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}>
+          <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.loadingTitle'))} />
+          <StatePanel description={t(trKey('cabinet.loadingDescription'))} loading title={t(trKey('cabinet.loadingTitle'))} />
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   if (!cabinet) {
     return (
-      <AppScreen>
-        <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.notFoundTitle'))} />
-        <StatePanel
-          action={<ActionButton label={t(trKey('cabinet.backToList'))} onPress={() => router.replace('/(tabs)/cabinets')} tone="neutral" />}
-          description={t(trKey('cabinet.notFoundDescription'))}
-          icon="cabinet"
-          title={t(trKey('cabinet.notFoundTitle'))}
-        />
-      </AppScreen>
+      <SafeAreaView className="flex-1 bg-background">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}>
+          <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.notFoundTitle'))} />
+          <StatePanel
+            action={<ActionButton label={t(trKey('cabinet.backToList'))} onPress={() => router.replace('/(tabs)/cabinets')} tone="neutral" />}
+            description={t(trKey('cabinet.notFoundDescription'))}
+            icon="cabinet"
+            title={t(trKey('cabinet.notFoundTitle'))}
+          />
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
@@ -57,9 +68,9 @@ export default function CabinetDetailRoute() {
   ] as const;
 
   return (
-    <AppScaffold
-      contentClassName="p-0"
-      header={(
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <View className="border-b border-line bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="gap-3">
           <ScreenHeader
             action={<Pill tone={cabinet.status === 'online' ? 'green' : cabinet.status === 'maintenance' ? 'orange' : 'gray'}>{t(trKey(`cabinet.status.${cabinet.status}`))}</Pill>}
@@ -73,14 +84,17 @@ export default function CabinetDetailRoute() {
 
           <SegmentControl items={segments} onChange={setSegment} value={segment} />
         </View>
-      )}
-      scroll={false}>
-      <SwipeSegmentPager
-        onChange={setSegment}
-        pages={pages}
-        testID="cabinet-swipe-pager"
-        value={segment}
-      />
-    </AppScaffold>
+        </View>
+      </View>
+
+      <View className="mx-auto min-w-0 w-full max-w-content flex-1">
+        <SwipeSegmentPager
+          onChange={setSegment}
+          pages={pages}
+          testID="cabinet-swipe-pager"
+          value={segment}
+        />
+      </View>
+    </SafeAreaView>
   );
 }

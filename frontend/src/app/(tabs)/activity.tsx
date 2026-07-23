@@ -1,8 +1,8 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppScaffold } from '@/components/app-scaffold';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
@@ -83,9 +83,9 @@ export default function ActivityRoute() {
   };
 
   return (
-    <AppScaffold
-      contentClassName="p-0"
-      header={(
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <View className="border-b border-line bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="flex-row items-center justify-between gap-3">
           <AppText className="flex-1" variant="title" tone="foreground">{t(trKey('activity.title'))}</AppText>
           <Pressable
@@ -96,11 +96,14 @@ export default function ActivityRoute() {
             <AppIcon name="filter" size={23} tone="brand" />
           </Pressable>
         </View>
-      )}
-      scroll={false}>
+        </View>
+      </View>
+
+      <View className="mx-auto min-w-0 w-full max-w-content flex-1">
       <FlatList
         className="min-w-0 flex-1"
         contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
+        contentInsetAdjustmentBehavior="automatic"
         data={app.isLoading ? [] : events}
         keyExtractor={(event) => event.id}
         ListEmptyComponent={app.isLoading ? (
@@ -148,6 +151,7 @@ export default function ActivityRoute() {
         )}
         showsVerticalScrollIndicator={false}
       />
+      </View>
       <BottomSheet
         closeLabel={t(trKey('common.done'))}
         onClose={() => setFiltersOpen(false)}
@@ -174,6 +178,6 @@ export default function ActivityRoute() {
         </View>
       </BottomSheet>
       {confirmation.dialog}
-    </AppScaffold>
+    </SafeAreaView>
   );
 }

@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppScreen } from '@/components/app-screen';
 import { AppText } from '@/components/ui/app-text';
 import { useTranslation } from '@/i18n';
 import { useMockApp } from '@/mocks';
@@ -12,11 +12,17 @@ export default function AppEntryRoute() {
 
   if (!state.hydrated) {
     return (
-      <AppScreen contentClassName="min-h-full items-center justify-center gap-4">
-        <View className="h-16 w-16 rounded-card bg-brand-soft" />
-        <AppText variant="title" tone="foreground">{t('onboarding.loadingTitle')}</AppText>
-        <AppText className="text-center" tone="muted">{t('onboarding.loadingDescription')}</AppText>
-      </AppScreen>
+      <SafeAreaView className="flex-1 bg-background">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="mx-auto min-h-full w-full max-w-content items-center justify-center gap-4 px-screen py-screen"
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}>
+          <View className="h-16 w-16 rounded-card bg-brand-soft" />
+          <AppText variant="title" tone="foreground">{t('onboarding.loadingTitle')}</AppText>
+          <AppText className="text-center" tone="muted">{t('onboarding.loadingDescription')}</AppText>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 

@@ -23,16 +23,21 @@ describe('mobile navigation architecture', () => {
     expect(tabs).not.toContain('/developer-settings$');
   });
 
-  it('keeps fixed headers and footers outside the body scroll view', () => {
-    const scaffold = source('src/components/app-scaffold.tsx');
-    const headerPosition = scaffold.indexOf('{header ?');
-    const bodyPosition = scaffold.indexOf('{body}');
-    const footerPosition = scaffold.indexOf('{footer ?');
+  it('keeps page-owned fixed headers and footers outside body scrolling', () => {
+    const addKey = source('src/app/(tabs)/cabinets/[cabinetId]/keys/new.tsx');
+    const cabinet = source('src/app/(tabs)/cabinets/[cabinetId]/index.tsx');
+    const headerPosition = addKey.indexOf('className="border-b border-line bg-background"');
+    const bodyPosition = addKey.indexOf('<ScrollView', headerPosition);
+    const footerPosition = addKey.indexOf("edges={['bottom']}", bodyPosition);
 
     expect(headerPosition).toBeGreaterThan(0);
     expect(bodyPosition).toBeGreaterThan(headerPosition);
     expect(footerPosition).toBeGreaterThan(bodyPosition);
-    expect(scaffold).toContain("edges={tabBarAware ? [] : ['bottom']}");
+    expect(cabinet.indexOf('<SwipeSegmentPager')).toBeGreaterThan(
+      cabinet.indexOf('className="border-b border-line bg-background"'),
+    );
+    expect(existsSync(resolve(__dirname, '../src/components/app-scaffold.tsx'))).toBe(false);
+    expect(existsSync(resolve(__dirname, '../src/components/app-screen.tsx'))).toBe(false);
   });
 
   it('supports horizontal chips and click/swipe synchronized cabinet pages', () => {

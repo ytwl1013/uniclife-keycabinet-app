@@ -1,8 +1,7 @@
 import { Href, router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppScaffold } from '@/components/app-scaffold';
-import { AppScreen } from '@/components/app-screen';
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { ProductImage } from '@/components/ui/product-image';
@@ -23,33 +22,47 @@ export default function HomeRoute() {
 
   if (!state.hydrated) {
     return (
-      <AppScreen>
-        <View className="h-32 rounded-card bg-brand-soft" />
-        <View className="h-24 rounded-card bg-surface" />
-        <View className="h-56 rounded-card bg-surface" />
-      </AppScreen>
+      <SafeAreaView className="flex-1 bg-background">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}>
+          <View className="h-32 rounded-card bg-brand-soft" />
+          <View className="h-24 rounded-card bg-surface" />
+          <View className="h-56 rounded-card bg-surface" />
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <AppScaffold
-      contentClassName="gap-6"
-      header={(
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <View className="border-b border-line bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="flex-row items-center gap-4">
-        <View className="min-w-0 flex-1 gap-1">
-          <AppText variant="caption" tone="brand">{t('home.eyebrow')}</AppText>
-          <AppText numberOfLines={1} variant="title" tone="foreground">
-            {t('home.greeting', { name: firstName })}
-          </AppText>
+          <View className="min-w-0 flex-1 gap-1">
+            <AppText variant="caption" tone="brand">{t('home.eyebrow')}</AppText>
+            <AppText numberOfLines={1} variant="title" tone="foreground">
+              {t('home.greeting', { name: firstName })}
+            </AppText>
+          </View>
+          <Pressable
+            accessibilityLabel={t('navigation.account')}
+            className="h-12 w-12 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
+            onPress={() => router.push('/(tabs)/account' as Href)}>
+            <AppIcon name="person" size={25} tone="brand" />
+          </Pressable>
         </View>
-        <Pressable
-          accessibilityLabel={t('navigation.account')}
-          className="h-12 w-12 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
-          onPress={() => router.push('/(tabs)/account' as Href)}>
-          <AppIcon name="person" size={25} tone="brand" />
-        </Pressable>
         </View>
-      )}>
+      </View>
+
+      <ScrollView
+        className="min-w-0 flex-1"
+        contentContainerClassName="mx-auto w-full max-w-content gap-6 px-screen pb-screen pt-screen"
+        contentInsetAdjustmentBehavior="never"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
 
       <View className="flex-row gap-2.5">
         <SummaryCard icon="cabinet" label={t('home.summaryCabinets')} value={formatNumber(cabinets.length)} />
@@ -114,7 +127,8 @@ export default function HomeRoute() {
           <QuickAction icon="audit" label={t('home.audit')} onPress={() => router.push('/(tabs)/activity' as Href)} />
         </View>
       </View>
-    </AppScaffold>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
