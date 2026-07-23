@@ -19,7 +19,6 @@ import {
 } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
 
-const welcomeRoute = '/(auth)/welcome' as Href;
 const signInRoute = '/(auth)/sign-in' as Href;
 const onboardingRoute = '/onboarding' as Href;
 
@@ -38,14 +37,6 @@ export default function SignUpRoute() {
   const [consentError, setConsentError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  function goBack() {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace(welcomeRoute);
-  }
 
   async function submit() {
     const nextEmail = normalizeEmail(email);
@@ -85,7 +76,6 @@ export default function SignUpRoute() {
 
   return (
     <AuthScreen
-      backLabel={t('auth.common.back')}
       description={t('auth.signUp.description')}
       footer={
         <View className="flex-row flex-wrap items-center justify-center gap-1">
@@ -94,9 +84,7 @@ export default function SignUpRoute() {
           </AppText>
           <AuthTextButton label={t('auth.signUp.signIn')} onPress={() => router.replace(signInRoute)} />
         </View>
-      }
-      onBack={goBack}
-      title={t('auth.signUp.title')}>
+      }>
       <AuthField
         autoCapitalize="none"
         autoComplete="email"

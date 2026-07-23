@@ -20,7 +20,6 @@ import {
 import { useTranslation } from '@/i18n';
 import { localPasswordResetEnabled, useMockApp } from '@/mocks';
 
-const welcomeRoute = '/(auth)/welcome' as Href;
 const signUpRoute = '/(auth)/sign-up' as Href;
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
 const onboardingRoute = '/onboarding' as Href;
@@ -38,14 +37,6 @@ export default function SignInRoute() {
   const demoOwner = state.users.find((user) =>
     state.memberships.some((membership) => membership.userId === user.id && membership.role === 'owner'),
   );
-
-  function goBack() {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace(welcomeRoute);
-  }
 
   async function submit() {
     const nextEmail = normalizeEmail(email);
@@ -73,7 +64,6 @@ export default function SignInRoute() {
 
   return (
     <AuthScreen
-      backLabel={t('auth.common.back')}
       description={t('auth.signIn.description')}
       footer={
         <View className="flex-row flex-wrap items-center justify-center gap-1">
@@ -82,9 +72,7 @@ export default function SignInRoute() {
           </AppText>
           <AuthTextButton label={t('auth.signIn.createAccount')} onPress={() => router.push(signUpRoute)} />
         </View>
-      }
-      onBack={goBack}
-      title={t('auth.signIn.title')}>
+      }>
       <AuthField
         autoCapitalize="none"
         autoComplete="email"

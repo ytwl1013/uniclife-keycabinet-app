@@ -4,6 +4,6 @@ import { DeveloperSettingsScreen } from '@/features/account/components/developer
 import { developerToolsEnabled } from '@/mocks';
 
 export default function DeveloperSettingsRoute() {
-  if (!developerToolsEnabled) return <Redirect href="/(tabs)/account/index" />;
+  if (!developerToolsEnabled) return <Redirect href="/(tabs)/account" />;
   return <DeveloperSettingsScreen />;
 }

@@ -4,28 +4,44 @@ import { resolve } from 'node:path';
 const source = (relativePath: string) => readFileSync(resolve(__dirname, '..', relativePath), 'utf8');
 
 describe('mobile navigation architecture', () => {
-  it('keeps browsing and detail routes inside their owning tabs', () => {
-    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/cabinets/[cabinetId]/index.tsx'))).toBe(true);
-    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/cabinets/[cabinetId]/keys/[keyId].tsx'))).toBe(true);
-    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/account/developer-settings.tsx'))).toBe(true);
-    expect(existsSync(resolve(__dirname, '../src/app/cabinets/[cabinetId]/index.tsx'))).toBe(false);
-    expect(existsSync(resolve(__dirname, '../src/app/account/developer-settings.tsx'))).toBe(false);
+  it('keeps tab roots inside the tab navigator and moves detail routes outside it', () => {
+    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/cabinets/index.tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/account/index.tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(details)/cabinets/[cabinetId]/index.tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(details)/cabinets/[cabinetId]/keys/[keyId].tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(details)/account/developer-settings.tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/cabinets/[cabinetId]/index.tsx'))).toBe(false);
+    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/account/developer-settings.tsx'))).toBe(false);
   });
 
-  it('only hides the tab bar for focused forms and keeps keyboard hiding enabled', () => {
+  it('keeps the tab bar limited to tab roots without a reserved top padding', () => {
     const tabs = source('src/app/(tabs)/_layout.tsx');
+    const tokens = JSON.parse(source('design-tokens.json')) as {
+      navigation: Record<string, number>;
+    };
 
     expect(tabs).toContain('tabBarHideOnKeyboard: true');
-    expect(tabs).toContain("display: focusedForm ? 'none' : 'flex'");
-    expect(tabs).toContain('/keys\\/new');
-    expect(tabs).toContain('/loans\\/');
-    expect(tabs).not.toContain('/keys\\/[^/]+$');
-    expect(tabs).not.toContain('/developer-settings$');
+    expect(tabs).not.toContain('usePathname');
+    expect(tabs).not.toContain('focusedForm');
+    expect(tabs).not.toContain('paddingTop:');
+    expect(tokens.navigation.tabBarHeight).toBe(61);
+    expect(tokens.navigation.tabBarPaddingTop).toBeUndefined();
+  });
+
+  it('hides the account stack header and animates the bottom sheet layers independently', () => {
+    const accountStack = source('src/app/(tabs)/account/_layout.tsx');
+    const bottomSheet = source('src/components/ui/bottom-sheet.tsx');
+
+    expect(accountStack).toContain('<Stack.Screen name="index" options={{ headerShown: false }} />');
+    expect(bottomSheet).toContain('animationType="none"');
+    expect(bottomSheet).toContain('FadeIn.duration');
+    expect(bottomSheet).toContain('SlideInDown.duration');
+    expect(bottomSheet).not.toContain('animationType="slide"');
   });
 
   it('keeps page-owned fixed headers and footers outside body scrolling', () => {
-    const addKey = source('src/app/(tabs)/cabinets/[cabinetId]/keys/new.tsx');
-    const cabinet = source('src/app/(tabs)/cabinets/[cabinetId]/index.tsx');
+    const addKey = source('src/app/(details)/cabinets/[cabinetId]/keys/new.tsx');
+    const cabinet = source('src/app/(details)/cabinets/[cabinetId]/index.tsx');
     const headerPosition = addKey.indexOf('className="border-b border-line bg-background"');
     const bodyPosition = addKey.indexOf('<ScrollView', headerPosition);
     const footerPosition = addKey.indexOf("edges={['bottom']}", bodyPosition);
@@ -44,7 +60,7 @@ describe('mobile navigation architecture', () => {
     const chips = source('src/components/ui/scrollable-chip-row.tsx');
     const pager = source('src/components/ui/swipe-segment-pager.tsx');
     const webPager = source('src/components/ui/swipe-segment-pager.web.tsx');
-    const cabinet = source('src/app/(tabs)/cabinets/[cabinetId]/index.tsx');
+    const cabinet = source('src/app/(details)/cabinets/[cabinetId]/index.tsx');
 
     expect(chips).toContain('horizontal');
     expect(chips).toContain('scrollTo');

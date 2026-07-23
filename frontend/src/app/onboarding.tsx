@@ -5,9 +5,9 @@ import { View } from 'react-native';
 import {
   AuthErrorNotice,
   AuthPrimaryButton,
-  AuthScreen,
   AuthTextButton,
   OnboardingChoice,
+  StandaloneAuthScreen,
 } from '@/features/auth/components/auth-ui';
 import { authErrorKey, useAuthActions } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
@@ -40,7 +40,7 @@ export default function OnboardingRoute() {
 
   if (!hydrated) {
     return (
-      <AuthScreen
+      <StandaloneAuthScreen
         description={t('onboarding.loadingDescription')}
         title={t('onboarding.loadingTitle')}>
         <View className="gap-3">
@@ -48,13 +48,13 @@ export default function OnboardingRoute() {
           <View className="h-20 rounded-card bg-brand-soft opacity-70" />
           <View className="h-20 rounded-card bg-brand-soft opacity-40" />
         </View>
-      </AuthScreen>
+      </StandaloneAuthScreen>
     );
   }
 
   if (!currentUser) {
     return (
-      <AuthScreen
+      <StandaloneAuthScreen
         description={t('onboarding.sessionRequiredDescription')}
         title={t('onboarding.sessionRequiredTitle')}>
         <AuthErrorNotice text={t('auth.errors.sessionExpired')} />
@@ -63,12 +63,12 @@ export default function OnboardingRoute() {
           label={t('onboarding.goToSignIn')}
           onPress={() => router.replace(signInRoute)}
         />
-      </AuthScreen>
+      </StandaloneAuthScreen>
     );
   }
 
   return (
-    <AuthScreen
+    <StandaloneAuthScreen
       description={t('onboarding.description')}
       footer={
         <AuthTextButton
@@ -98,6 +98,6 @@ export default function OnboardingRoute() {
         <AuthTextButton label={t('onboarding.laterTitle')} onPress={() => router.replace(homeRoute)} />
       </View>
       {requestError ? <AuthErrorNotice text={requestError} /> : null}
-    </AuthScreen>
+    </StandaloneAuthScreen>
   );
 }

@@ -21,10 +21,11 @@ function AppNavigation() {
     <View className="flex-1 bg-background" style={variables}>
       <NavigationThemeProvider value={navigationTheme}>
         <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="index" options={{ headerShown: false,headerShadowVisible: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false,headerShadowVisible: false }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false,headerShadowVisible: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false,headerShadowVisible: false }} />
+          <Stack.Screen name="(details)" options={{ headerShown: false,headerShadowVisible: false }} />
           <Stack.Screen
             name="modal"
             options={{ presentation: 'modal', title: t('navigation.actionModal') }}

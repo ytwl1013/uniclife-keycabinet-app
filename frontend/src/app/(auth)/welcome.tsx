@@ -21,7 +21,7 @@ export default function WelcomeRoute() {
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView
         className="flex-1"
-        contentContainerClassName="mx-auto min-h-full w-full max-w-content gap-5 px-screen pb-screen pt-screen"
+        contentContainerClassName="mx-auto min-h-full w-full max-w-content gap-6 px-screen pb-screen pt-screen"
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
@@ -47,14 +47,14 @@ export default function WelcomeRoute() {
           />
         </View>
 
-        <View className="gap-3">
+        <View className="gap-2">
           <AppText variant="display" tone="foreground">
             {t('auth.welcome.title')}
           </AppText>
           <AppText tone="muted">{t('auth.welcome.description')}</AppText>
         </View>
 
-        <View className="mt-auto gap-3">
+        <View className="mt-auto gap-3 pt-4">
           <AuthPrimaryButton
             busyLabel={t('auth.common.working')}
             label={t('auth.welcome.signIn')}
