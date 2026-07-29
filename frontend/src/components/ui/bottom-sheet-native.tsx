@@ -1,12 +1,14 @@
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native/bottom-sheet';
 import { useCallback } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { View } from 'react-native';
 
 import { useAppTheme } from '@/styles/theme';
 
 import { BottomSheetContent } from './bottom-sheet-content';
 import type { BottomSheetProps } from './bottom-sheet-types';
+
+const NATIVE_SHEET_SNAP_POINTS = ['55%', '82%'];
 
 export function BottomSheet({
   children,
@@ -16,7 +18,6 @@ export function BottomSheet({
   title,
   visible,
 }: BottomSheetProps) {
-  const { height } = useWindowDimensions();
   const { palette } = useAppTheme();
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
@@ -41,18 +42,23 @@ export function BottomSheet({
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
           }}
-          contentContainerProps={{ style: { padding: 0 } }}
-          enableDynamicSizing
+          contentContainerProps={{ style: { flex: 1, padding: 0 } }}
+          enableDynamicSizing={false}
           handleIndicatorStyle={{ backgroundColor: palette.line }}
-          maxDynamicContentSize={height * 0.82}>
+          index={0}
+          snapPoints={NATIVE_SHEET_SNAP_POINTS}>
           <BottomSheetContent
             closeLabel={closeLabel}
+            fillAvailable
             footer={footer}
             onClose={onClose}
             renderBody={(content) => (
               <BottomSheetScrollView
+                contentContainerStyle={{ flexGrow: 1 }}
                 keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}>
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+                style={{ flex: 1 }}>
                 <View className="gap-5 px-screen py-5">{content}</View>
               </BottomSheetScrollView>
             )}

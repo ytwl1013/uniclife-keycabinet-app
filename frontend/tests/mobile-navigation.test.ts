@@ -45,6 +45,14 @@ describe('mobile navigation architecture', () => {
     expect(nativeBottomSheet).toContain('<HeroBottomSheet.Overlay');
     expect(nativeBottomSheet).toContain('<HeroBottomSheet.Content');
     expect(nativeBottomSheet).toContain('<BottomSheetScrollView');
+    expect(nativeBottomSheet).toContain("const NATIVE_SHEET_SNAP_POINTS = ['55%', '82%']");
+    expect(nativeBottomSheet).toContain('snapPoints={NATIVE_SHEET_SNAP_POINTS}');
+    expect(nativeBottomSheet).toContain('enableDynamicSizing={false}');
+    expect(nativeBottomSheet).toContain('contentContainerProps={{ style: { flex: 1, padding: 0 } }}');
+    expect(nativeBottomSheet).toContain('fillAvailable');
+    expect(nativeBottomSheet).toContain('contentContainerStyle={{ flexGrow: 1 }}');
+    expect(nativeBottomSheet).toContain('nestedScrollEnabled');
+    expect(nativeBottomSheet).toContain('style={{ flex: 1 }}');
     expect(overlayBottomSheet).toContain('animationType="none"');
     expect(overlayBottomSheet).toContain('FadeIn.duration');
     expect(overlayBottomSheet).toContain('SlideInDown.duration');
