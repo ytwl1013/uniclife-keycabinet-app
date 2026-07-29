@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppText } from '@/components/ui/app-text';
 import { useTranslation } from '@/i18n';
@@ -9,6 +9,13 @@ import { useMockApp } from '@/mocks';
 export default function AppEntryRoute() {
   const { t } = useTranslation();
   const { state } = useMockApp();
+
+  if (__DEV__) {
+    console.info('[boot] entry route render', {
+      hydrated: state.hydrated,
+      sessionStatus: state.sessionStatus,
+    });
+  }
 
   if (!state.hydrated) {
     return (

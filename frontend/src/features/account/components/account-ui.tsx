@@ -1,6 +1,6 @@
 import { PropsWithChildren, ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText, AppTextTone } from '@/components/ui/app-text';

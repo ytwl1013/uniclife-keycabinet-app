@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { Pill } from '@/components/ui/pill';
 import { SwipeSegmentPager } from '@/components/ui/swipe-segment-pager';

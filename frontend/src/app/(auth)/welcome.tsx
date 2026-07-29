@@ -1,6 +1,6 @@
 import { Href, router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
@@ -54,7 +54,7 @@ export default function WelcomeRoute() {
           <AppText tone="muted">{t('auth.welcome.description')}</AppText>
         </View>
 
-        <View className="mt-auto gap-3 pt-4">
+        <View className="mb-auto mt-auto gap-3 pt-4">
           <AuthPrimaryButton
             busyLabel={t('auth.common.working')}
             label={t('auth.welcome.signIn')}

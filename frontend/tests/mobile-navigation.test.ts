@@ -24,19 +24,46 @@ describe('mobile navigation architecture', () => {
     expect(tabs).not.toContain('usePathname');
     expect(tabs).not.toContain('focusedForm');
     expect(tabs).not.toContain('paddingTop:');
-    expect(tokens.navigation.tabBarHeight).toBe(61);
+    expect(tokens.navigation.tabBarHeight).toBe(55);
     expect(tokens.navigation.tabBarPaddingTop).toBeUndefined();
   });
 
-  it('hides the account stack header and animates the bottom sheet layers independently', () => {
+  it('hides the account stack header and uses platform-specific bottom sheets', () => {
     const accountStack = source('src/app/(tabs)/account/_layout.tsx');
-    const bottomSheet = source('src/components/ui/bottom-sheet.tsx');
+    const sharedBottomSheet = source('src/components/ui/bottom-sheet.tsx');
+    const androidBottomSheet = source('src/components/ui/bottom-sheet.android.tsx');
+    const iosBottomSheet = source('src/components/ui/bottom-sheet.ios.tsx');
+    const nativeBottomSheet = source('src/components/ui/bottom-sheet-native.tsx');
+    const overlayBottomSheet = source('src/components/ui/bottom-sheet-overlay.tsx');
 
     expect(accountStack).toContain('<Stack.Screen name="index" options={{ headerShown: false }} />');
-    expect(bottomSheet).toContain('animationType="none"');
-    expect(bottomSheet).toContain('FadeIn.duration');
-    expect(bottomSheet).toContain('SlideInDown.duration');
-    expect(bottomSheet).not.toContain('animationType="slide"');
+    expect(sharedBottomSheet).toContain("from './bottom-sheet-overlay'");
+    expect(androidBottomSheet).toContain("from './bottom-sheet-native'");
+    expect(iosBottomSheet).toContain("from './bottom-sheet-native'");
+    expect(nativeBottomSheet).toContain("from 'heroui-native/bottom-sheet'");
+    expect(nativeBottomSheet).toContain('<HeroBottomSheet');
+    expect(nativeBottomSheet).toContain('<HeroBottomSheet.Overlay');
+    expect(nativeBottomSheet).toContain('<HeroBottomSheet.Content');
+    expect(nativeBottomSheet).toContain('<BottomSheetScrollView');
+    expect(overlayBottomSheet).toContain('animationType="none"');
+    expect(overlayBottomSheet).toContain('FadeIn.duration');
+    expect(overlayBottomSheet).toContain('SlideInDown.duration');
+    expect(overlayBottomSheet).not.toContain('animationType="slide"');
+    expect(sharedBottomSheet).not.toContain('@expo/ui');
+    expect(nativeBottomSheet).not.toContain('@expo/ui');
+  });
+
+  it('keeps the native route root minimal and scopes HeroUI to its bottom sheet', () => {
+    const rootLayout = source('src/app/_layout.tsx');
+    const nativeProvider = source('src/components/ui/app-ui-provider.native.tsx');
+    const nativeBottomSheet = source('src/components/ui/bottom-sheet-native.tsx');
+
+    expect(rootLayout).toContain('<AppUiProvider>');
+    expect(nativeProvider).toContain('<GestureHandlerRootView');
+    expect(nativeProvider).not.toContain("from 'heroui-native/provider'");
+    expect(nativeBottomSheet).toContain("from 'heroui-native/provider'");
+    expect(nativeBottomSheet).toContain('if (!visible)');
+    expect(nativeBottomSheet).toContain('<HeroUINativeProvider');
   });
 
   it('keeps page-owned fixed headers and footers outside body scrolling', () => {

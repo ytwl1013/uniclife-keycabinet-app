@@ -59,7 +59,7 @@ describe('mobile selection and confirmations', () => {
     expect(source).toContain("icon: 'accountCircle'");
     expect(source).not.toContain('tabBarLabelStyle');
     expect(globalStyles).toContain("[role='tab']:focus-visible");
-    expect(globalStyles).toContain('outline: 2px solid rgb(var(--color-brand))');
+    expect(globalStyles).toContain('outline: 2px solid var(--brand)');
   });
 
   it('gives selected tabs a distinct icon surface without rendering a label', async () => {

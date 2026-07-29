@@ -110,7 +110,7 @@ export function AccountScreen() {
     setFeedback(null);
     try {
       await actions.signOut();
-      router.replace('/(auth)/welcome');
+      router.replace('/(auth)/sign-in');
     } catch (caught) {
       fail(caught);
       setConfirmSignOut(false);
