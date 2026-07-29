@@ -25,7 +25,7 @@ export default function CabinetsRoute() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-      <View className="border-b border-line bg-background">
+      <View className="bg-background">
         <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="gap-0.5">
           <AppText variant="title" tone="foreground">{t(trKey('cabinet.listTitle'))}</AppText>

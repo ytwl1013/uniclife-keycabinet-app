@@ -10,6 +10,7 @@ type AccountPageProps = PropsWithChildren<{
   title: string;
   description: string;
   backLabel?: string;
+  headerShown?: boolean;
   onBack?: () => void;
   trailing?: ReactNode;
 }>;
@@ -18,49 +19,56 @@ export function AccountPage({
   backLabel,
   children,
   description,
+  headerShown = true,
   onBack,
   title,
   trailing,
 }: AccountPageProps) {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-      <View className="border-b border-line bg-background">
-        <View className="mx-auto w-full max-w-content px-screen py-3">
-          <View className="flex-row items-center gap-3">
-          {onBack && backLabel ? (
-            <Pressable
-              accessibilityLabel={backLabel}
-              accessibilityRole="button"
-              className="h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70"
-              hitSlop={8}
-              onPress={onBack}>
-              <AppIcon name="back" size={22} tone="foreground" />
-            </Pressable>
-          ) : (
-            <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
-              <AppIcon name="person" size={22} tone="brand" />
+      {headerShown ? (
+        <View className="bg-background">
+          <View className="mx-auto w-full max-w-content px-screen py-3">
+            <View className="flex-row items-center gap-3">
+              {onBack && backLabel ? (
+                <Pressable
+                  accessibilityLabel={backLabel}
+                  accessibilityRole="button"
+                  className="h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface active:opacity-70"
+                  hitSlop={8}
+                  onPress={onBack}>
+                  <AppIcon name="back" size={22} tone="foreground" />
+                </Pressable>
+              ) : (
+                <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
+                  <AppIcon name="person" size={22} tone="brand" />
+                </View>
+              )}
+              <View className="min-w-0 flex-1 gap-0.5">
+                <AppText numberOfLines={1} variant="title" tone="foreground">
+                  {title}
+                </AppText>
+                <AppText numberOfLines={2} variant="caption" tone="muted">
+                  {description}
+                </AppText>
+              </View>
+              {trailing ?? <View className="h-11 w-11" />}
             </View>
-          )}
-          <View className="min-w-0 flex-1 gap-0.5">
-            <AppText numberOfLines={1} variant="title" tone="foreground">
-              {title}
-            </AppText>
-            <AppText numberOfLines={2} variant="caption" tone="muted">
-              {description}
-            </AppText>
-          </View>
-          {trailing ?? <View className="h-11 w-11" />}
           </View>
         </View>
-      </View>
+      ) : null}
 
       <ScrollView
         className="min-w-0 flex-1"
-        contentContainerClassName="mx-auto w-full max-w-content gap-6 px-screen pb-screen pt-screen"
+        contentContainerClassName={`pb-screen ${
+          headerShown ? 'pt-screen' : 'pt-3'
+        }`}
         contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        {children}
+        <View className="mx-auto w-full max-w-content gap-6 px-screen">
+          {children}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -69,7 +77,6 @@ export function AccountPage({
 export function AccountSection({
   children,
   description,
-  icon,
   title,
 }: PropsWithChildren<{
   title: string;
@@ -77,23 +84,20 @@ export function AccountSection({
   icon: AppIconName;
 }>) {
   return (
-    <View className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
-      <View className="flex-row items-start gap-3 border-b border-line p-card">
-        <View className="h-10 w-10 items-center justify-center rounded-pill bg-brand-soft">
-          <AppIcon name={icon} size={20} tone="brand" />
-        </View>
-        <View className="flex-1 gap-1">
-          <AppText variant="title" tone="foreground">
-            {title}
+    <View className="gap-3">
+      <View className="gap-1 px-1">
+        <AppText variant="title" tone="content">
+          {title}
+        </AppText>
+        {description ? (
+          <AppText variant="caption" tone="muted">
+            {description}
           </AppText>
-          {description ? (
-            <AppText variant="caption" tone="muted">
-              {description}
-            </AppText>
-          ) : null}
-        </View>
+        ) : null}
       </View>
-      <View className="gap-3 p-card">{children}</View>
+      <View className="gap-1 overflow-hidden rounded-[24px] bg-surface p-2 shadow-card">
+        {children}
+      </View>
     </View>
   );
 }
@@ -119,12 +123,13 @@ export function SettingsAction({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled, selected }}
-      className={`min-h-14 flex-row items-center gap-3 rounded-control border px-controlX py-3 active:opacity-70 ${
-        selected ? 'border-brand bg-brand-soft' : 'border-line bg-background'
+      className={`min-h-16 flex-row items-center gap-4 rounded-control px-3 py-3 active:bg-brand-soft active:opacity-80 ${
+        selected ? 'bg-brand-soft' : 'bg-surface'
       } ${disabled ? 'opacity-45' : ''}`}
       disabled={disabled}
+      hitSlop={4}
       onPress={onPress}>
-      <View className={`h-9 w-9 items-center justify-center rounded-pill ${selected ? 'bg-brand' : 'bg-surface'}`}>
+      <View className={`h-10 w-10 items-center justify-center rounded-pill ${selected ? 'bg-brand' : 'bg-brand-soft'}`}>
         <AppIcon name={icon} size={19} tone={selected ? 'onBrand' : tone} />
       </View>
       <View className="flex-1 gap-0.5">
@@ -162,11 +167,15 @@ export function ToggleRow({
       accessibilityLabel={`${label}. ${valueLabel}`}
       accessibilityRole="switch"
       accessibilityState={{ checked: value, disabled }}
-      className={`flex-row items-center gap-4 rounded-control border border-line bg-background px-controlX py-3 active:opacity-70 ${
+      className={`min-h-16 flex-row items-center gap-4 rounded-control bg-surface px-3 py-3 active:bg-brand-soft active:opacity-80 ${
         disabled ? 'opacity-45' : ''
       }`}
       disabled={disabled}
+      hitSlop={4}
       onPress={() => onChange(!value)}>
+      <View className="h-10 w-10 items-center justify-center rounded-pill bg-brand-soft">
+        <AppIcon name="notification" size={19} tone="brand" />
+      </View>
       <View className="flex-1 gap-1">
         <View className="flex-row flex-wrap items-center gap-2">
           <AppText variant="label" tone="foreground">

@@ -5,7 +5,11 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
 import { bottomTabIconTestIds, BottomTabIcon } from '../src/components/ui/bottom-tab-icon';
-import { ChoiceChip, ConfirmationPanel } from '../src/features/account/components/account-ui';
+import {
+  ChoiceChip,
+  ConfirmationPanel,
+  SettingsAction,
+} from '../src/features/account/components/account-ui';
 import { allowSampleQrPreview } from '../src/mocks/developer-tools';
 
 describe('mobile selection and confirmations', () => {
@@ -43,6 +47,16 @@ describe('mobile selection and confirmations', () => {
     fireEvent.press(getByRole('button', { name: 'Clear keys' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('makes the complete account settings row pressable', async () => {
+    const onPress = jest.fn();
+    const { getByRole } = await render(
+      <SettingsAction icon="shield" label="Privacy policy" onPress={onPress} />,
+    );
+
+    fireEvent.press(getByRole('button', { name: 'Privacy policy' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 
   it('uses icon-only tabs with translated accessibility names', () => {

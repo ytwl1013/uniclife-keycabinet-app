@@ -1,7 +1,6 @@
 import { ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import 'react-native-reanimated';
 import '../../global.css';
@@ -19,20 +18,9 @@ function AppNavigation() {
   const { t } = useTranslation();
   const { mode, navigationTheme, palette } = useAppTheme();
 
-  useEffect(() => {
-    if (__DEV__) {
-      console.info('[boot] app navigation mounted');
-    }
-  }, []);
-
   return (
     <View
       className="flex-1 bg-background"
-      onLayout={({ nativeEvent }) => {
-        if (__DEV__) {
-          console.info('[boot] app navigation layout', nativeEvent.layout);
-        }
-      }}
       style={{ flex: 1, backgroundColor: palette.background }}>
       <NavigationThemeProvider value={navigationTheme}>
         <Stack>
@@ -56,15 +44,6 @@ function AppNavigationGate() {
   const { t } = useTranslation();
   const { state } = useMockApp();
   const { palette } = useAppTheme();
-
-  useEffect(() => {
-    if (__DEV__) {
-      console.info('[boot] app state', {
-        hydrated: state.hydrated,
-        sessionStatus: state.sessionStatus,
-      });
-    }
-  }, [state.hydrated, state.sessionStatus]);
 
   if (!state.hydrated) {
     return (

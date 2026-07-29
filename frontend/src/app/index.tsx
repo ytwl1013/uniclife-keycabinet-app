@@ -10,13 +10,6 @@ export default function AppEntryRoute() {
   const { t } = useTranslation();
   const { state } = useMockApp();
 
-  if (__DEV__) {
-    console.info('[boot] entry route render', {
-      hydrated: state.hydrated,
-      sessionStatus: state.sessionStatus,
-    });
-  }
-
   if (!state.hydrated) {
     return (
       <SafeAreaView className="flex-1 bg-background">

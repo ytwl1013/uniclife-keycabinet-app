@@ -84,7 +84,7 @@ export default function ActivityRoute() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-      <View className="border-b border-line bg-background">
+      <View className="bg-background">
         <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="flex-row items-center justify-between gap-3">
           <AppText className="flex-1" variant="title" tone="foreground">{t(trKey('activity.title'))}</AppText>

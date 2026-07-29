@@ -53,17 +53,43 @@ describe('mobile navigation architecture', () => {
     expect(nativeBottomSheet).not.toContain('@expo/ui');
   });
 
-  it('keeps the native route root minimal and scopes HeroUI to its bottom sheet', () => {
+  it('keeps one HeroUI provider at the native root and controlled bottom sheets below it', () => {
     const rootLayout = source('src/app/_layout.tsx');
     const nativeProvider = source('src/components/ui/app-ui-provider.native.tsx');
     const nativeBottomSheet = source('src/components/ui/bottom-sheet-native.tsx');
 
     expect(rootLayout).toContain('<AppUiProvider>');
     expect(nativeProvider).toContain('<GestureHandlerRootView');
-    expect(nativeProvider).not.toContain("from 'heroui-native/provider'");
-    expect(nativeBottomSheet).toContain("from 'heroui-native/provider'");
-    expect(nativeBottomSheet).toContain('if (!visible)');
-    expect(nativeBottomSheet).toContain('<HeroUINativeProvider');
+    expect(nativeProvider).not.toContain('NATIVE ROOT OK');
+    expect(nativeProvider).not.toContain('[boot]');
+    expect(nativeProvider).toContain("from 'heroui-native/provider'");
+    expect(nativeProvider).toContain('<HeroUINativeProvider');
+    expect(nativeProvider).toContain('toast: false');
+    expect(nativeBottomSheet).not.toContain("from 'heroui-native/provider'");
+    expect(nativeBottomSheet).not.toContain('<HeroUINativeProvider');
+    expect(nativeBottomSheet).toContain('isOpen={visible}');
+    expect(nativeBottomSheet).not.toContain('if (!visible)');
+  });
+
+  it('keeps account actions tappable, routes details through the sibling stack, and removes tab header dividers', () => {
+    const account = source('src/features/account/components/account-screen.tsx');
+    const accountUi = source('src/features/account/components/account-ui.tsx');
+    const tabHeaders = [
+      source('src/app/(tabs)/index.tsx'),
+      source('src/app/(tabs)/cabinets/index.tsx'),
+      source('src/app/(tabs)/activity.tsx'),
+      source('src/features/scan/components/scan-flow.tsx'),
+    ];
+
+    expect(account).toContain("privacy: '/(details)/account/privacy' as Href");
+    expect(account).toContain("changePassword: '/(details)/account/change-password' as Href");
+    expect(account).toContain('headerShown={false}');
+    expect(accountUi).toContain('hitSlop={4}');
+    expect(accountUi).toContain('className="mx-auto w-full max-w-content gap-6 px-screen"');
+    expect(accountUi).not.toContain('className="border-b border-line bg-background"');
+    tabHeaders.forEach((header) => {
+      expect(header).not.toContain('className="border-b border-line bg-background"');
+    });
   });
 
   it('keeps page-owned fixed headers and footers outside body scrolling', () => {

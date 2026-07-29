@@ -38,7 +38,7 @@ export default function HomeRoute() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-      <View className="border-b border-line bg-background">
+      <View className="bg-background">
         <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="flex-row items-center gap-4">
           <View className="min-w-0 flex-1 gap-1">

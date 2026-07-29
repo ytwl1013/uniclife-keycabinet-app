@@ -28,13 +28,26 @@ import {
 type PendingAction = 'language' | 'marketing' | 'sign-out' | null;
 
 const accountRoutes = {
-  changePassword: '/account/change-password' as Href,
-  data: '/account/data' as Href,
-  delete: '/account/delete' as Href,
-  developer: '/account/developer-settings' as Href,
-  privacy: '/account/privacy' as Href,
-  terms: '/account/terms' as Href,
+  changePassword: '/(details)/account/change-password' as Href,
+  data: '/(details)/account/data' as Href,
+  delete: '/(details)/account/delete' as Href,
+  developer: '/(details)/account/developer-settings' as Href,
+  privacy: '/(details)/account/privacy' as Href,
+  terms: '/(details)/account/terms' as Href,
 };
+
+function AccountMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <View className="min-w-0 flex-1 items-center gap-1 px-1">
+      <AppText numberOfLines={1} variant="metric" tone="foreground">
+        {value}
+      </AppText>
+      <AppText className="text-center" numberOfLines={1} variant="caption" tone="muted">
+        {label}
+      </AppText>
+    </View>
+  );
+}
 
 export function AccountScreen() {
   const router = useRouter();
@@ -59,7 +72,10 @@ export function AccountScreen() {
 
   if (!currentUser || state.sessionStatus !== 'authenticated') {
     return (
-      <AccountPage description={t('auth.errors.sessionExpired')} title={t('account.title')}>
+      <AccountPage
+        description={t('auth.errors.sessionExpired')}
+        headerShown={false}
+        title={t('account.title')}>
         <AuthErrorNotice text={t('auth.errors.sessionExpired')} />
         <AuthSecondaryButton icon="person" label={t('auth.welcome.signIn')} onPress={() => router.replace('/(auth)/sign-in')} />
       </AccountPage>
@@ -120,31 +136,58 @@ export function AccountScreen() {
   };
 
   return (
-    <AccountPage description={t('account.subtitle')} title={t('account.title')}>
+    <AccountPage description={t('account.subtitle')} headerShown={false} title={t('account.title')}>
       {feedback ? <FeedbackBanner message={feedback.message} tone={feedback.tone} /> : null}
 
-      <AccountSection icon="person" title={t('account.profileTitle')}>
-        <View className="flex-row items-center gap-4 rounded-control bg-background p-card">
-          <View className="h-14 w-14 items-center justify-center rounded-pill bg-brand">
-            <AppText variant="title" tone="onBrand">{initials}</AppText>
-          </View>
-          <View className="min-w-0 flex-1 gap-1">
-            <AppText numberOfLines={1} variant="title" tone="foreground">{currentUser.displayName}</AppText>
-            <AppText numberOfLines={1} variant="caption" tone="muted">{currentUser.email}</AppText>
-            <AppText variant="caption" tone="brand">
-              {t('account.cabinetAccess', { count: memberships.length })}
-            </AppText>
-          </View>
+      <View className="items-center gap-5 pb-2 pt-3">
+        <View className="h-28 w-28 items-center justify-center rounded-pill bg-brand">
+          <AppText variant="display" tone="onBrand">
+            {initials}
+          </AppText>
         </View>
-      </AccountSection>
+        <View className="w-full items-center gap-1 px-4">
+          <AppText className="text-center" numberOfLines={1} variant="pageTitle" tone="foreground">
+            {currentUser.displayName}
+          </AppText>
+          <AppText className="text-center" numberOfLines={1} variant="caption" tone="muted">
+            {currentUser.email}
+          </AppText>
+        </View>
+        <View className="w-full flex-row items-start">
+          <AccountMetric label={t('navigation.cabinets')} value={memberships.length} />
+          <AccountMetric label={t('account.languageTitle')} value={locale.split('-')[0].toUpperCase()} />
+          <AccountMetric
+            label={t('account.marketingTitle')}
+            value={t(marketingConsent ? 'account.marketingOn' : 'account.marketingOff')}
+          />
+        </View>
+      </View>
 
-      <AccountSection icon="settings" title={t('account.preferencesTitle')}>
+      <AccountSection icon="person" title={t('account.profileTitle')}>
         <SettingsAction
           detail={localeLabels[locale]}
           icon="settings"
           label={t('account.languageTitle')}
           onPress={() => setLanguageOpen(true)}
         />
+        <SettingsAction
+          icon="shield"
+          label={t('account.privacyPolicy')}
+          onPress={() => router.push(accountRoutes.privacy)}
+        />
+        <SettingsAction
+          icon="audit"
+          label={t('account.terms')}
+          onPress={() => router.push(accountRoutes.terms)}
+        />
+        <SettingsAction
+          icon="notification"
+          label={t('account.dataUse')}
+          onPress={() => router.push(accountRoutes.data)}
+        />
+      </AccountSection>
+
+      <AccountSection icon="settings" title={t('account.preferencesTitle')}>
         <ToggleRow
           description={t('account.marketingShortDescription')}
           disabled={!state.online || pending === 'marketing'}
@@ -155,16 +198,19 @@ export function AccountScreen() {
         />
       </AccountSection>
 
-      <AccountSection icon="shield" title={t('account.privacyTitle')}>
-        <SettingsAction icon="shield" label={t('account.privacyPolicy')} onPress={() => router.push(accountRoutes.privacy)} />
-        <SettingsAction icon="audit" label={t('account.terms')} onPress={() => router.push(accountRoutes.terms)} />
-        <SettingsAction icon="notification" label={t('account.dataUse')} onPress={() => router.push(accountRoutes.data)} />
-      </AccountSection>
-
       <AccountSection icon="settings" title={t('account.securityTitle')}>
-        <SettingsAction icon="settings" label={t('account.changePassword')} onPress={() => router.push(accountRoutes.changePassword)} />
+        <SettingsAction
+          icon="settings"
+          label={t('account.changePassword')}
+          onPress={() => router.push(accountRoutes.changePassword)}
+        />
         <SettingsAction icon="person" label={t('account.signOut')} onPress={() => setConfirmSignOut(true)} />
-        <SettingsAction icon="error" label={t('account.deleteAccount')} onPress={() => router.push(accountRoutes.delete)} tone="danger" />
+        <SettingsAction
+          icon="error"
+          label={t('account.deleteAccount')}
+          onPress={() => router.push(accountRoutes.delete)}
+          tone="danger"
+        />
         {confirmSignOut ? (
           <ConfirmationPanel
             cancelLabel={t('common.cancel')}
@@ -180,7 +226,11 @@ export function AccountScreen() {
 
       {developerToolsEnabled ? (
         <AccountSection icon="settings" title={t('account.appSettingsTitle')}>
-          <SettingsAction icon="settings" label={t('account.developerSettings')} onPress={() => router.push(accountRoutes.developer)} />
+          <SettingsAction
+            icon="settings"
+            label={t('account.developerSettings')}
+            onPress={() => router.push(accountRoutes.developer)}
+          />
         </AccountSection>
       ) : null}
 
@@ -190,7 +240,11 @@ export function AccountScreen() {
         title={t('account.languageTitle')}
         visible={languageOpen}>
         <View accessibilityRole="radiogroup" className="gap-2">
-          <ChoiceChip label={t('account.systemLanguage')} onPress={() => void updateLanguage('system')} selected={preference === 'system'} />
+          <ChoiceChip
+            label={t('account.systemLanguage')}
+            onPress={() => void updateLanguage('system')}
+            selected={preference === 'system'}
+          />
           {supportedLocales.map((supportedLocale) => (
             <ChoiceChip
               key={supportedLocale}
@@ -200,7 +254,11 @@ export function AccountScreen() {
             />
           ))}
         </View>
-        {pending === 'language' ? <AppText variant="caption" tone="muted">{t('common.loading')}</AppText> : null}
+        {pending === 'language' ? (
+          <AppText variant="caption" tone="muted">
+            {t('common.loading')}
+          </AppText>
+        ) : null}
       </BottomSheet>
     </AccountPage>
   );
