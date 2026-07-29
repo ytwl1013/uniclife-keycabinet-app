@@ -78,6 +78,7 @@
       "@react-native-community/datetimepicker"
     ],
     "experiments": {
+      "autolinkingModuleResolution": true,
       "typedRoutes": true,
       "reactCompiler": true
     }

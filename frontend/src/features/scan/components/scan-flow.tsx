@@ -2,9 +2,9 @@ import { useIsFocused } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Platform, StyleSheet, View } from 'react-native';
+import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 
-import { AppScaffold } from '@/components/app-scaffold';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
@@ -543,8 +543,21 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   }
 
   return (
-    <AppScaffold contentClassName="gap-section" header={<ScreenHeader title={t('scan.title')} />}>
-      {mainContent}
-    </AppScaffold>
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <View className="bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">
+          <ScreenHeader title={t('scan.title')} />
+        </View>
+      </View>
+
+      <ScrollView
+        className="min-w-0 flex-1"
+        contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
+        contentInsetAdjustmentBehavior="never"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {mainContent}
+      </ScrollView>
+    </SafeAreaView>
   );
 }

@@ -4,42 +4,124 @@ import { resolve } from 'node:path';
 const source = (relativePath: string) => readFileSync(resolve(__dirname, '..', relativePath), 'utf8');
 
 describe('mobile navigation architecture', () => {
-  it('keeps browsing and detail routes inside their owning tabs', () => {
-    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/cabinets/[cabinetId]/index.tsx'))).toBe(true);
-    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/cabinets/[cabinetId]/keys/[keyId].tsx'))).toBe(true);
-    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/account/developer-settings.tsx'))).toBe(true);
-    expect(existsSync(resolve(__dirname, '../src/app/cabinets/[cabinetId]/index.tsx'))).toBe(false);
-    expect(existsSync(resolve(__dirname, '../src/app/account/developer-settings.tsx'))).toBe(false);
+  it('keeps tab roots inside the tab navigator and moves detail routes outside it', () => {
+    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/cabinets/index.tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/account/index.tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(details)/cabinets/[cabinetId]/index.tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(details)/cabinets/[cabinetId]/keys/[keyId].tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(details)/account/developer-settings.tsx'))).toBe(true);
+    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/cabinets/[cabinetId]/index.tsx'))).toBe(false);
+    expect(existsSync(resolve(__dirname, '../src/app/(tabs)/account/developer-settings.tsx'))).toBe(false);
   });
 
-  it('only hides the tab bar for focused forms and keeps keyboard hiding enabled', () => {
+  it('keeps the tab bar limited to tab roots without a reserved top padding', () => {
     const tabs = source('src/app/(tabs)/_layout.tsx');
+    const tokens = JSON.parse(source('design-tokens.json')) as {
+      navigation: Record<string, number>;
+    };
 
     expect(tabs).toContain('tabBarHideOnKeyboard: true');
-    expect(tabs).toContain("display: focusedForm ? 'none' : 'flex'");
-    expect(tabs).toContain('/keys\\/new');
-    expect(tabs).toContain('/loans\\/');
-    expect(tabs).not.toContain('/keys\\/[^/]+$');
-    expect(tabs).not.toContain('/developer-settings$');
+    expect(tabs).not.toContain('usePathname');
+    expect(tabs).not.toContain('focusedForm');
+    expect(tabs).not.toContain('paddingTop:');
+    expect(tokens.navigation.tabBarHeight).toBe(55);
+    expect(tokens.navigation.tabBarPaddingTop).toBeUndefined();
   });
 
-  it('keeps fixed headers and footers outside the body scroll view', () => {
-    const scaffold = source('src/components/app-scaffold.tsx');
-    const headerPosition = scaffold.indexOf('{header ?');
-    const bodyPosition = scaffold.indexOf('{body}');
-    const footerPosition = scaffold.indexOf('{footer ?');
+  it('hides the account stack header and uses platform-specific bottom sheets', () => {
+    const accountStack = source('src/app/(tabs)/account/_layout.tsx');
+    const sharedBottomSheet = source('src/components/ui/bottom-sheet.tsx');
+    const androidBottomSheet = source('src/components/ui/bottom-sheet.android.tsx');
+    const iosBottomSheet = source('src/components/ui/bottom-sheet.ios.tsx');
+    const nativeBottomSheet = source('src/components/ui/bottom-sheet-native.tsx');
+    const overlayBottomSheet = source('src/components/ui/bottom-sheet-overlay.tsx');
+
+    expect(accountStack).toContain('<Stack.Screen name="index" options={{ headerShown: false }} />');
+    expect(sharedBottomSheet).toContain("from './bottom-sheet-overlay'");
+    expect(androidBottomSheet).toContain("from './bottom-sheet-native'");
+    expect(iosBottomSheet).toContain("from './bottom-sheet-native'");
+    expect(nativeBottomSheet).toContain("from 'heroui-native/bottom-sheet'");
+    expect(nativeBottomSheet).toContain('<HeroBottomSheet');
+    expect(nativeBottomSheet).toContain('<HeroBottomSheet.Overlay');
+    expect(nativeBottomSheet).toContain('<HeroBottomSheet.Content');
+    expect(nativeBottomSheet).toContain('<BottomSheetScrollView');
+    expect(nativeBottomSheet).toContain("const NATIVE_SHEET_SNAP_POINTS = ['55%', '82%']");
+    expect(nativeBottomSheet).toContain('snapPoints={NATIVE_SHEET_SNAP_POINTS}');
+    expect(nativeBottomSheet).toContain('enableDynamicSizing={false}');
+    expect(nativeBottomSheet).toContain('contentContainerProps={{ style: { flex: 1, padding: 0 } }}');
+    expect(nativeBottomSheet).toContain('fillAvailable');
+    expect(nativeBottomSheet).toContain('contentContainerStyle={{ flexGrow: 1 }}');
+    expect(nativeBottomSheet).toContain('nestedScrollEnabled');
+    expect(nativeBottomSheet).toContain('style={{ flex: 1 }}');
+    expect(overlayBottomSheet).toContain('animationType="none"');
+    expect(overlayBottomSheet).toContain('FadeIn.duration');
+    expect(overlayBottomSheet).toContain('SlideInDown.duration');
+    expect(overlayBottomSheet).not.toContain('animationType="slide"');
+    expect(sharedBottomSheet).not.toContain('@expo/ui');
+    expect(nativeBottomSheet).not.toContain('@expo/ui');
+  });
+
+  it('keeps one HeroUI provider at the native root and controlled bottom sheets below it', () => {
+    const rootLayout = source('src/app/_layout.tsx');
+    const nativeProvider = source('src/components/ui/app-ui-provider.native.tsx');
+    const nativeBottomSheet = source('src/components/ui/bottom-sheet-native.tsx');
+
+    expect(rootLayout).toContain('<AppUiProvider>');
+    expect(nativeProvider).toContain('<GestureHandlerRootView');
+    expect(nativeProvider).not.toContain('NATIVE ROOT OK');
+    expect(nativeProvider).not.toContain('[boot]');
+    expect(nativeProvider).toContain("from 'heroui-native/provider'");
+    expect(nativeProvider).toContain('<HeroUINativeProvider');
+    expect(nativeProvider).toContain('toast: false');
+    expect(nativeBottomSheet).not.toContain("from 'heroui-native/provider'");
+    expect(nativeBottomSheet).not.toContain('<HeroUINativeProvider');
+    expect(nativeBottomSheet).toContain('isOpen={visible}');
+    expect(nativeBottomSheet).not.toContain('if (!visible)');
+  });
+
+  it('keeps account actions tappable, routes details through the sibling stack, and removes tab header dividers', () => {
+    const account = source('src/features/account/components/account-screen.tsx');
+    const accountUi = source('src/features/account/components/account-ui.tsx');
+    const tabHeaders = [
+      source('src/app/(tabs)/index.tsx'),
+      source('src/app/(tabs)/cabinets/index.tsx'),
+      source('src/app/(tabs)/activity.tsx'),
+      source('src/features/scan/components/scan-flow.tsx'),
+    ];
+
+    expect(account).toContain("privacy: '/(details)/account/privacy' as Href");
+    expect(account).toContain("changePassword: '/(details)/account/change-password' as Href");
+    expect(account).toContain('headerShown={false}');
+    expect(accountUi).toContain('hitSlop={4}');
+    expect(accountUi).toContain('className="mx-auto w-full max-w-content gap-6 px-screen"');
+    expect(accountUi).not.toContain('className="border-b border-line bg-background"');
+    tabHeaders.forEach((header) => {
+      expect(header).not.toContain('className="border-b border-line bg-background"');
+    });
+  });
+
+  it('keeps page-owned fixed headers and footers outside body scrolling', () => {
+    const addKey = source('src/app/(details)/cabinets/[cabinetId]/keys/new.tsx');
+    const cabinet = source('src/app/(details)/cabinets/[cabinetId]/index.tsx');
+    const headerPosition = addKey.indexOf('className="border-b border-line bg-background"');
+    const bodyPosition = addKey.indexOf('<ScrollView', headerPosition);
+    const footerPosition = addKey.indexOf("edges={['bottom']}", bodyPosition);
 
     expect(headerPosition).toBeGreaterThan(0);
     expect(bodyPosition).toBeGreaterThan(headerPosition);
     expect(footerPosition).toBeGreaterThan(bodyPosition);
-    expect(scaffold).toContain("edges={tabBarAware ? [] : ['bottom']}");
+    expect(cabinet.indexOf('<SwipeSegmentPager')).toBeGreaterThan(
+      cabinet.indexOf('className="border-b border-line bg-background"'),
+    );
+    expect(existsSync(resolve(__dirname, '../src/components/app-scaffold.tsx'))).toBe(false);
+    expect(existsSync(resolve(__dirname, '../src/components/app-screen.tsx'))).toBe(false);
   });
 
   it('supports horizontal chips and click/swipe synchronized cabinet pages', () => {
     const chips = source('src/components/ui/scrollable-chip-row.tsx');
     const pager = source('src/components/ui/swipe-segment-pager.tsx');
     const webPager = source('src/components/ui/swipe-segment-pager.web.tsx');
-    const cabinet = source('src/app/(tabs)/cabinets/[cabinetId]/index.tsx');
+    const cabinet = source('src/app/(details)/cabinets/[cabinetId]/index.tsx');
 
     expect(chips).toContain('horizontal');
     expect(chips).toContain('scrollTo');

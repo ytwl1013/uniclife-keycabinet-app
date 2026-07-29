@@ -5,7 +5,11 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
 import { bottomTabIconTestIds, BottomTabIcon } from '../src/components/ui/bottom-tab-icon';
-import { ChoiceChip, ConfirmationPanel } from '../src/features/account/components/account-ui';
+import {
+  ChoiceChip,
+  ConfirmationPanel,
+  SettingsAction,
+} from '../src/features/account/components/account-ui';
 import { allowSampleQrPreview } from '../src/mocks/developer-tools';
 
 describe('mobile selection and confirmations', () => {
@@ -45,6 +49,16 @@ describe('mobile selection and confirmations', () => {
     expect(onCancel).not.toHaveBeenCalled();
   });
 
+  it('makes the complete account settings row pressable', async () => {
+    const onPress = jest.fn();
+    const { getByRole } = await render(
+      <SettingsAction icon="shield" label="Privacy policy" onPress={onPress} />,
+    );
+
+    fireEvent.press(getByRole('button', { name: 'Privacy policy' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
   it('uses icon-only tabs with translated accessibility names', () => {
     const source = readFileSync(
       resolve(__dirname, '../src/app/(tabs)/_layout.tsx'),
@@ -59,7 +73,7 @@ describe('mobile selection and confirmations', () => {
     expect(source).toContain("icon: 'accountCircle'");
     expect(source).not.toContain('tabBarLabelStyle');
     expect(globalStyles).toContain("[role='tab']:focus-visible");
-    expect(globalStyles).toContain('outline: 2px solid rgb(var(--color-brand))');
+    expect(globalStyles).toContain('outline: 2px solid var(--brand)');
   });
 
   it('gives selected tabs a distinct icon surface without rendering a label', async () => {

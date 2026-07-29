@@ -1,9 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, View } from 'react-native';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 
-import { AppScaffold } from '@/components/app-scaffold';
-import { AppScreen } from '@/components/app-screen';
 import { DateTimeField } from '@/components/ui/date-time-field';
 import { isExpectedReturnAfter } from '@/components/ui/date-time';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
@@ -36,11 +35,18 @@ export default function CheckOutKeyRoute() {
 
   if (!cabinet || !key || key.status !== 'available') {
     return (
-      <AppScreen>
-        <ScreenHeader onBack={() => router.back()} title={t(trKey('loan.checkOutTitle'))} />
-        <StatePanel description={t(trKey('loan.unavailableDescription'))} icon="key" title={t(trKey('loan.unavailableTitle'))} />
-        {confirmation.dialog}
-      </AppScreen>
+      <SafeAreaView className="flex-1 bg-background">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <ScreenHeader onBack={() => router.back()} title={t(trKey('loan.checkOutTitle'))} />
+          <StatePanel description={t(trKey('loan.unavailableDescription'))} icon="key" title={t(trKey('loan.unavailableTitle'))} />
+          {confirmation.dialog}
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
@@ -87,16 +93,26 @@ export default function CheckOutKeyRoute() {
   };
 
   return (
-    <AppScaffold
-      contentClassName="pt-screen"
-      footer={<ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />}
-      header={<ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />}
-      keyboardAware
-      scroll={false}
-      tabBarAware={false}>
-      <ScrollView className="min-w-0 flex-1" contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
-        <SectionCard>
+    <KeyboardAvoidingView
+      behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1">
+      <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+        <View className="border-b border-line bg-background">
+          <View className="mx-auto w-full max-w-content px-screen py-3">
+            <ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />
+          </View>
+        </View>
+
+        <View className="mx-auto min-w-0 w-full max-w-content flex-1 px-screen pb-screen pt-screen">
+          <ScrollView
+            automaticallyAdjustKeyboardInsets
+            className="min-w-0 flex-1"
+            contentContainerClassName="gap-4 pb-4"
+            contentInsetAdjustmentBehavior="never"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
+            <SectionCard>
           <FormField
             error={errors.borrowerName}
             label={t(trKey('loan.borrowerName'))}
@@ -124,10 +140,18 @@ export default function CheckOutKeyRoute() {
             timeZone={cabinet.timezone}
             value={expectedReturnAt}
           />
-        </SectionCard>
-      </ScrollView>
-      {confirmation.dialog}
-    </AppScaffold>
+            </SectionCard>
+          </ScrollView>
+          {confirmation.dialog}
+        </View>
+
+        <SafeAreaView className="border-t border-line bg-background" edges={['bottom']}>
+          <View className="mx-auto w-full max-w-content px-screen py-3">
+            <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />
+          </View>
+        </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 

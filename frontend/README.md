@@ -19,7 +19,7 @@ src/api/                         Unified backend request layer
 src/stores/                      Frontend-only state
 src/styles/                      Runtime theme bridge
 design-tokens.json               Shared visual tokens
-tailwind.config.js               NativeWind token mapping
+global.css                       Uniwind, Tailwind CSS 4, HeroUI, and design tokens
 tests/                           Component and flow tests
 ```
 
@@ -49,9 +49,10 @@ override.
 
 ## UI conventions
 
-- Use NativeWind `className` utilities and semantic tokens; do not add page-level `StyleSheet` objects.
+- Use Uniwind/Tailwind CSS 4 `className` utilities and semantic tokens; do not add page-level `StyleSheet` objects.
 - Use `useTranslation()` for every user-facing label. The current locale follows the operating system through `expo-localization`.
-- Prefer Expo/React Native components. Platform-specific implementations live behind semantic components such as `AppIcon`, using `.ios.tsx` / `.android.tsx` files where required.
+- Prefer Expo SDK or React Native components, then HeroUI Native, and only then project-owned implementations. Keep vendor APIs behind semantic components in `src/components/ui`.
+- Platform-specific implementations live behind semantic components such as `AppIcon`, using `.ios.tsx` / `.android.tsx` files where required. HeroUI Native is used on iOS and Android; web keeps a project-owned fallback when the native package does not support web.
 - Keep route page implementations directly in `src/app`. Small local components may stay in the route file; move larger domain components into `src/features/<domain>/components`.
 - Keep non-route helpers outside `src/app`, and define Stack/Tab screen metadata in the nearest `_layout.tsx`.
 

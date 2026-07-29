@@ -30,14 +30,6 @@ export default function ForgotPasswordRoute() {
 
   if (!localPasswordResetEnabled) return <Redirect href={signInRoute} />;
 
-  function goBack() {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace(signInRoute);
-  }
-
   async function submit() {
     const nextEmail = normalizeEmail(email);
     const nextEmailError = isValidEmail(nextEmail) ? '' : t('auth.validation.email');
@@ -68,13 +60,10 @@ export default function ForgotPasswordRoute() {
 
   return (
     <AuthScreen
-      backLabel={t('auth.common.back')}
       description={t('auth.forgotPassword.description')}
       footer={
         <AuthTextButton label={t('auth.forgotPassword.backToSignIn')} onPress={() => router.replace(signInRoute)} />
-      }
-      onBack={goBack}
-      title={t('auth.forgotPassword.title')}>
+      }>
       <AuthField
         autoCapitalize="none"
         autoComplete="email"

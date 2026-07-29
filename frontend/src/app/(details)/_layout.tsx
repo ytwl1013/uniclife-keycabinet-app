@@ -1,0 +1,30 @@
+import { Redirect, Stack } from 'expo-router';
+
+import { useMockApp } from '@/mocks';
+
+export default function DetailRoutesLayout() {
+  const { state } = useMockApp();
+
+  if (!state.hydrated) {
+    return null;
+  }
+
+  if (state.sessionStatus !== 'authenticated') {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  return (
+    <Stack screenOptions={{ animation: 'slide_from_right', gestureEnabled: true, headerShown: false }}>
+      <Stack.Screen name="account/privacy" />
+      <Stack.Screen name="account/terms" />
+      <Stack.Screen name="account/data" />
+      <Stack.Screen name="account/developer-settings" />
+      <Stack.Screen name="account/change-password" />
+      <Stack.Screen name="account/delete" />
+      <Stack.Screen name="cabinets/[cabinetId]/index" />
+      <Stack.Screen name="cabinets/[cabinetId]/keys/new" />
+      <Stack.Screen name="cabinets/[cabinetId]/keys/[keyId]" />
+      <Stack.Screen name="cabinets/[cabinetId]/loans/[keyId]" />
+    </Stack>
+  );
+}

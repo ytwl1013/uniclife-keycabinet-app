@@ -1,4 +1,4 @@
-import { Href, Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Href, Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import {
@@ -62,24 +62,22 @@ export default function ResetPasswordRoute() {
 
   if (isComplete) {
     return (
-      <AuthScreen
-        description={t('auth.resetPassword.successDescription')}
-        title={t('auth.resetPassword.successTitle')}>
-        <AuthPrimaryButton
-          busyLabel={t('auth.common.working')}
-          label={t('auth.resetPassword.backToSignIn')}
-          onPress={() => router.replace(signInRoute)}
-        />
-      </AuthScreen>
+      <>
+        <Stack.Screen options={{ title: t('auth.resetPassword.successTitle') }} />
+        <AuthScreen description={t('auth.resetPassword.successDescription')}>
+          <AuthPrimaryButton
+            busyLabel={t('auth.common.working')}
+            label={t('auth.resetPassword.backToSignIn')}
+            onPress={() => router.replace(signInRoute)}
+          />
+        </AuthScreen>
+      </>
     );
   }
 
   return (
     <AuthScreen
-      backLabel={t('auth.common.back')}
-      description={t('auth.resetPassword.description')}
-      onBack={() => router.replace(forgotPasswordRoute)}
-      title={t('auth.resetPassword.title')}>
+      description={t('auth.resetPassword.description')}>
       {challenge?.resetToken ? (
         <>
           <AuthField

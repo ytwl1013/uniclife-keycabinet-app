@@ -78,7 +78,6 @@ export default function VerifyResetRoute() {
 
   return (
     <AuthScreen
-      backLabel={t('auth.common.back')}
       description={
         challenge
           ? t('auth.verifyReset.description', { email: maskEmail(challenge.email) })
@@ -89,9 +88,7 @@ export default function VerifyResetRoute() {
           label={t('auth.verifyReset.requestAnother')}
           onPress={() => router.replace(forgotPasswordRoute)}
         />
-      }
-      onBack={() => router.replace(forgotPasswordRoute)}
-      title={t('auth.verifyReset.title')}>
+      }>
       {challenge ? (
         <>
           <AuthField

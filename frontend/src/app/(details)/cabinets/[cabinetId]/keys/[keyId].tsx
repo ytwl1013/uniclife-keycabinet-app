@@ -1,9 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 
-import { AppScaffold } from '@/components/app-scaffold';
-import { AppScreen } from '@/components/app-screen';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
 import { PrototypeEventList } from '@/features/cabinet-prototype/components/event-list';
@@ -34,10 +33,16 @@ export default function KeyDetailRoute() {
 
   if (!cabinet || !key) {
     return (
-      <AppScreen>
-        <ScreenHeader onBack={() => router.back()} title={t(trKey('key.notFoundTitle'))} />
-        <StatePanel description={t(trKey('key.notFoundDescription'))} icon="key" title={t(trKey('key.notFoundTitle'))} />
-      </AppScreen>
+      <SafeAreaView className="flex-1 bg-background">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}>
+          <ScreenHeader onBack={() => router.back()} title={t(trKey('key.notFoundTitle'))} />
+          <StatePanel description={t(trKey('key.notFoundDescription'))} icon="key" title={t(trKey('key.notFoundTitle'))} />
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
@@ -121,42 +126,50 @@ export default function KeyDetailRoute() {
   );
 
   return (
-    <AppScaffold
-      contentClassName="pt-screen"
-      footer={primaryAction}
-      header={<ScreenHeader
-        action={<Pill tone={statusTone}>{t(trKey(`key.status.${key.status}`))}</Pill>}
-        onBack={() => router.back()}
-        subtitle={t(trKey('key.slotNumber'), { number: key.slotNumber })}
-        title={key.name}
-      />}
-      scroll={false}>
-      <ScrollView className="min-w-0 flex-1" contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {app.isOffline ? <Notice description={t(trKey('key.offlineDescription'))} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
-        {key.activeLoan ? (
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <View className="border-b border-line bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">
+          <ScreenHeader
+            action={<Pill tone={statusTone}>{t(trKey(`key.status.${key.status}`))}</Pill>}
+            onBack={() => router.back()}
+            subtitle={t(trKey('key.slotNumber'), { number: key.slotNumber })}
+            title={key.name}
+          />
+        </View>
+      </View>
+
+      <View className="mx-auto min-w-0 w-full max-w-content flex-1 px-screen pb-screen pt-screen">
+        <ScrollView className="min-w-0 flex-1" contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {app.isOffline ? <Notice description={t(trKey('key.offlineDescription'))} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
+          {key.activeLoan ? (
+            <SectionCard>
+              <SectionTitle title={t(trKey('loan.activeDetailTitle'))} />
+              <DetailRow label={t(trKey('loan.borrowerName'))} value={key.activeLoan.borrowerName} />
+              <DetailRow label={t(trKey('loan.borrowerContact'))} value={maskContact(key.activeLoan.borrowerContact) || t(trKey('loan.notProvided'))} />
+              <DetailRow label={t(trKey('loan.checkedOutAt'))} value={formatDate(locale, key.activeLoan.checkedOutAt)} />
+              <DetailRow label={t(trKey('loan.expectedReturnAt'))} value={formatDate(locale, key.activeLoan.expectedReturnAt)} />
+            </SectionCard>
+          ) : null}
+
           <SectionCard>
-            <SectionTitle title={t(trKey('loan.activeDetailTitle'))} />
-            <DetailRow label={t(trKey('loan.borrowerName'))} value={key.activeLoan.borrowerName} />
-            <DetailRow label={t(trKey('loan.borrowerContact'))} value={maskContact(key.activeLoan.borrowerContact) || t(trKey('loan.notProvided'))} />
-            <DetailRow label={t(trKey('loan.checkedOutAt'))} value={formatDate(locale, key.activeLoan.checkedOutAt)} />
-            <DetailRow label={t(trKey('loan.expectedReturnAt'))} value={formatDate(locale, key.activeLoan.expectedReturnAt)} />
+            <SectionTitle title={t(trKey('key.detailsTitle'))} />
+            <FormField label={t(trKey('key.nameLabel'))} onChangeText={setName} placeholder={t(trKey('key.namePlaceholder'))} value={name} />
+            <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
+            <ActionButton disabled={!dirty || busy || app.isOffline} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
           </SectionCard>
-        ) : null}
 
-        <SectionCard>
-          <SectionTitle title={t(trKey('key.detailsTitle'))} />
-          <FormField label={t(trKey('key.nameLabel'))} onChangeText={setName} placeholder={t(trKey('key.namePlaceholder'))} value={name} />
-          <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
-          <ActionButton disabled={!dirty || busy || app.isOffline} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
-        </SectionCard>
+          <SectionCard>
+            <SectionTitle title={t(trKey('key.historyTitle'))} />
+            <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('key.historyEmpty'))} events={history} onUndo={(event) => void undo(event.id)} />
+          </SectionCard>
+        </ScrollView>
+        {confirmation.dialog}
+      </View>
 
-        <SectionCard>
-          <SectionTitle title={t(trKey('key.historyTitle'))} />
-          <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('key.historyEmpty'))} events={history} onUndo={(event) => void undo(event.id)} />
-        </SectionCard>
-      </ScrollView>
-      {confirmation.dialog}
-    </AppScaffold>
+      <View className="border-t border-line bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">{primaryAction}</View>
+      </View>
+    </SafeAreaView>
   );
 }
 

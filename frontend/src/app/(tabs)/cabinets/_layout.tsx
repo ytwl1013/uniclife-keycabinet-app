@@ -14,12 +14,8 @@ export default function CabinetRoutesLayout() {
   }
 
   return (
-    <Stack screenOptions={{ animation: 'slide_from_right', gestureEnabled: true, headerShown: false }}>
+    <Stack screenOptions={{ animation: 'slide_from_right', gestureEnabled: true, headerShown: false, headerShadowVisible: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="[cabinetId]/index" />
-      <Stack.Screen name="[cabinetId]/keys/new" />
-      <Stack.Screen name="[cabinetId]/keys/[keyId]" />
-      <Stack.Screen name="[cabinetId]/loans/[keyId]" />
     </Stack>
   );
 }

@@ -3,6 +3,7 @@ module.exports = {
   testMatch: ['<rootDir>/tests/**/*.test.ts', '<rootDir>/tests/**/*.test.tsx'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^uniwind$': '<rootDir>/tests/mocks/uniwind.js',
   },
   collectCoverageFrom: [
     'src/mocks/**/*.{ts,tsx}',
