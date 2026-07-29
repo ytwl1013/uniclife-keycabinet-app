@@ -17,7 +17,6 @@ import {
 } from '@/features/cabinet-prototype/components/prototype-ui';
 import { useTranslation } from '@/i18n';
 import {
-  BindCabinetResult,
   isMockAppError,
   QrResolution,
   useMockApp,
@@ -189,42 +188,6 @@ function ProductConfirmation({
   );
 }
 
-function ConnectedSummary({
-  result,
-  onOpen,
-  onReset,
-}: {
-  result: BindCabinetResult;
-  onOpen: () => void;
-  onReset: () => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <View className="gap-section">
-      <StatePanel
-        action={
-          <View className="w-full gap-3 pt-2">
-            <ActionButton
-              icon="arrowForward"
-              label={t('scan.openCabinet')}
-              onPress={onOpen}
-            />
-            <ActionButton
-              label={t('scan.scanAnother')}
-              onPress={onReset}
-              tone="neutral"
-            />
-          </View>
-        }
-        description={t('scan.boundDescription', { cabinet: result.cabinet.name })}
-        icon="shield"
-        title={t('scan.boundTitle')}
-      />
-    </View>
-  );
-}
-
 export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: boolean }) {
   const router = useRouter();
   const isFocused = useIsFocused();
@@ -234,7 +197,6 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
   const [cameraMountError, setCameraMountError] = useState<string | null>(null);
   const [resolution, setResolution] = useState<QrResolution | null>(null);
-  const [bindResult, setBindResult] = useState<BindCabinetResult | null>(null);
   const [errorKind, setErrorKind] = useState<ScanErrorKind | null>(null);
   const [resolving, setResolving] = useState(false);
   const [binding, setBinding] = useState(false);
@@ -286,7 +248,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
 
   const openCabinet = useCallback(
     (cabinetId: string) => {
-      router.replace({
+      router.push({
         pathname: '/cabinets/[cabinetId]',
         params: { cabinetId },
       } as never);
@@ -297,7 +259,6 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const resetScanner = useCallback(() => {
     scanLockRef.current = false;
     setResolution(null);
-    setBindResult(null);
     setCameraMountError(null);
     setErrorKind(null);
     setResolving(false);
@@ -387,29 +348,28 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     requestSequenceRef.current += 1;
 
     try {
-      const result = await actions.bindCabinet({
+      await actions.bindCabinet({
         expectedVersion: state.version,
         qrCode: resolution.qr.code,
         requestId: `scan-bind-${resolution.qr.id}-${requestSequenceRef.current}`,
       });
-      setBindResult(result);
-      openCabinet(result.cabinet.id);
+      router.replace('/(tabs)');
     } catch (error) {
       setErrorKind(classifyError(error));
     } finally {
       setBinding(false);
     }
-  }, [actions, binding, classifyError, openCabinet, resolution, state.version]);
+  }, [actions, binding, classifyError, resolution, router, state.version]);
 
   const sessionUnavailable =
     state.sessionStatus !== 'authenticated' || currentUser === null;
 
   useEffect(() => {
-    if (!sample || !demoCode || !state.hydrated || !state.online || sessionUnavailable || resolution || bindResult || resolving || binding) {
+    if (!sample || !demoCode || !state.hydrated || !state.online || sessionUnavailable || resolution || resolving || binding) {
       return;
     }
     void resolveCode(demoCode);
-  }, [bindResult, binding, demoCode, resolution, resolveCode, resolving, sample, sessionUnavailable, state.hydrated, state.online]);
+  }, [binding, demoCode, resolution, resolveCode, resolving, sample, sessionUnavailable, state.hydrated, state.online]);
 
   let mainContent;
   if (!state.hydrated) {
@@ -434,14 +394,6 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
         description={t('scan.sessionExpiredDescription')}
         icon="error"
         title={t('scan.sessionExpiredTitle')}
-      />
-    );
-  } else if (bindResult) {
-    mainContent = (
-      <ConnectedSummary
-        onOpen={() => openCabinet(bindResult.cabinet.id)}
-        onReset={resetScanner}
-        result={bindResult}
       />
     );
   } else if (errorKind) {
