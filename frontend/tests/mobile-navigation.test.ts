@@ -169,6 +169,15 @@ describe('mobile navigation architecture', () => {
     expect(developer).toContain('<QRCode');
   });
 
+  it('preserves scan history when opening a cabinet and returns home after binding', () => {
+    const scan = source('src/features/scan/components/scan-flow.tsx');
+
+    expect(scan).toContain("router.push({\n        pathname: '/cabinets/[cabinetId]'");
+    expect(scan).toContain("router.replace('/(tabs)');");
+    expect(scan).not.toContain('openCabinet(result.cabinet.id)');
+    expect(scan).not.toContain("router.replace({\n        pathname: '/cabinets/[cabinetId]'");
+  });
+
   it('keeps DOM download APIs inside the web adapter', () => {
     const sharedExports = source('src/mocks/exports.ts');
     const webDelivery = source('src/mocks/export-delivery.web.ts');
