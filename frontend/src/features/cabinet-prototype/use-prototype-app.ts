@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 
 import { TranslationKey, useTranslation } from '@/i18n';
 import { useMockApp } from '@/mocks';
-import { loadPdfFontBytes, saveExportArtifact } from '@/mocks/exports';
 
 import {
   CabinetEventKind,
@@ -10,8 +9,6 @@ import {
   CabinetStatus,
   CabinetView,
   EventView,
-  ExportArtifactView,
-  ExportFormat,
   KeyStatus,
   KeyView,
   LoanView,
@@ -62,8 +59,8 @@ async function callAction(source: MockSource, names: string[], input: UnknownRec
   return Promise.resolve(source.actions[name](input as never));
 }
 
-function role(value: unknown): CabinetRole {
-  return value === 'owner' || value === 'admin' ? value : 'member';
+function role(_value: unknown): CabinetRole {
+  return 'admin';
 }
 
 function cabinetStatus(value: unknown): CabinetStatus {
@@ -102,12 +99,11 @@ export function usePrototypeApp(): PrototypeApp {
     const rawKeys = array(state.keys);
     const rawLoans = array(state.loans);
     const rawEvents = array(state.events);
-    const rawClearBatches = array(state.clearBatches);
     const currentUserId =
       state.sessionStatus === 'authenticated'
         ? text(source.currentUser?.id, text(state.currentUserId))
         : '';
-    const now = new Date(text(state.now, new Date().toISOString()));
+    const now = new Date();
 
     const userById = new Map(users.map((user) => [text(user.id), user]));
     const skuById = new Map(skus.map((sku) => [text(sku.id), sku]));
@@ -127,7 +123,7 @@ export function usePrototypeApp(): PrototypeApp {
       borrowerName: text(loan.borrowerName),
       borrowerContact: text(loan.borrowerContact) || undefined,
       checkedOutAt: text(loan.checkedOutAt),
-      expectedReturnAt: text(loan.expectedReturnAt),
+      expectedReturnAt: text(loan.expectedReturnAt) || undefined,
       returnedAt: text(loan.returnedAt) || undefined,
       operatorUserId: text(loan.operatorId, text(loan.operatorUserId)),
     }));
@@ -139,7 +135,7 @@ export function usePrototypeApp(): PrototypeApp {
     );
 
     const keyViews: KeyView[] = rawKeys
-      .filter((key) => visibleCabinetIds.has(text(key.cabinetId)) && !text(key.deletedAt))
+      .filter((key) => visibleCabinetIds.has(text(key.cabinetId)))
       .map((key) => {
         const activeLoan = activeLoanByKey.get(text(key.id));
         const dueAt = activeLoan?.expectedReturnAt ? new Date(activeLoan.expectedReturnAt) : undefined;
@@ -162,7 +158,7 @@ export function usePrototypeApp(): PrototypeApp {
     const keyViewById = new Map(keyViews.map((key) => [key.id, key]));
     const slotViews: SlotView[] = rawSlots.filter((slot) => visibleCabinetIds.has(text(slot.cabinetId))).map((slot) => {
       const rawKey = keyById.get(text(slot.keyId));
-      const key = rawKey && !text(rawKey.deletedAt) ? keyViewById.get(text(rawKey.id)) : undefined;
+      const key = rawKey ? keyViewById.get(text(rawKey.id)) : undefined;
       return {
         id: text(slot.id),
         cabinetId: text(slot.cabinetId),
@@ -195,10 +191,6 @@ export function usePrototypeApp(): PrototypeApp {
       const fallbackMembership = rawMemberships.find((candidate) => text(candidate.cabinetId) === cabinetId && text(candidate.userId) === currentUserId);
       const cabinetKeys = keyViews.filter((key) => key.cabinetId === cabinetId);
       const cabinetSlots = slotViews.filter((slot) => slot.cabinetId === cabinetId);
-      const clearBatch = rawClearBatches
-        .filter((batch) => text(batch.cabinetId) === cabinetId)
-        .sort((a, b) => text(b.clearedAt, text(b.createdAt)).localeCompare(text(a.clearedAt, text(a.createdAt))))[0];
-      const recoverableUntil = text(clearBatch?.recoverableUntil, text(clearBatch?.restoreUntil));
       return {
         id: cabinetId,
         name: text(cabinet.name),
@@ -217,7 +209,6 @@ export function usePrototypeApp(): PrototypeApp {
         availableCount: cabinetKeys.filter((key) => key.status === 'available').length,
         checkedOutCount: cabinetKeys.filter((key) => key.status === 'checkedOut').length,
         overdueCount: cabinetKeys.filter((key) => key.status === 'overdue').length,
-        clearRestoreUntil: clearBatch?.status === 'restorable' && recoverableUntil && new Date(recoverableUntil).getTime() > now.getTime() ? recoverableUntil : undefined,
       };
     });
 
@@ -249,7 +240,6 @@ export function usePrototypeApp(): PrototypeApp {
           title: t(trKey(`activity.event.${kind}`), { key: keyName, actor: actorName }),
           detail,
           borrowerContact: text(summary.borrowerContact) || undefined,
-          reversible: Boolean(callSelector(source, 'canUndoEvent', text(event.id))),
         };
       })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -268,6 +258,13 @@ export function usePrototypeApp(): PrototypeApp {
         const cabinetId = keyViewById.get(input.keyId)?.cabinetId ?? '';
         await callAction(source, ['updateKey'], { ...input, ...writeOptions('update-key', cabinetId) });
       },
+      deleteKey: async (input) => {
+        const cabinetId = keyViewById.get(input.keyId)?.cabinetId ?? '';
+        await callAction(source, ['deleteKey'], { ...input, ...writeOptions('delete-key', cabinetId) });
+      },
+      renameCabinet: async (input) => {
+        await callAction(source, ['renameCabinet'], { ...input, ...writeOptions('rename-cabinet', input.cabinetId) });
+      },
       checkoutKey: async (input) => {
         const { cabinetId, ...command } = input;
         await callAction(source, ['checkOutKey', 'checkoutKey'], { ...command, ...writeOptions('check-out', cabinetId) });
@@ -276,37 +273,11 @@ export function usePrototypeApp(): PrototypeApp {
         const { cabinetId, ...command } = input;
         await callAction(source, ['returnKey'], { ...command, ...writeOptions('return-key', cabinetId) });
       },
-      undoEvent: async (input) => {
-        const cabinetId = events.find((event) => event.id === input.eventId)?.cabinetId ?? '';
-        await callAction(source, ['undoEvent'], { ...input, ...writeOptions('undo-event', cabinetId) });
-      },
-      setMemberRole: async (input) => {
-        await callAction(source, ['setMemberRole'], { ...input, ...writeOptions('set-role', input.cabinetId) });
-      },
       removeMember: async (input) => {
         await callAction(source, ['removeMember'], { ...input, ...writeOptions('remove-member', input.cabinetId) });
       },
-      clearKeys: async (input) => {
-        await callAction(source, ['clearCabinetKeys', 'clearKeys'], { ...input, ...writeOptions('clear-keys', input.cabinetId) });
-      },
-      restoreLastClear: async (input) => {
-        const batch = rawClearBatches
-          .filter((candidate) => text(candidate.cabinetId) === input.cabinetId)
-          .sort((a, b) => text(b.clearedAt, text(b.createdAt)).localeCompare(text(a.clearedAt, text(a.createdAt))))[0];
-        await callAction(source, ['restoreClearBatch', 'restoreCabinetKeys'], {
-          ...input,
-          batchId: text(batch?.id),
-          ...writeOptions('restore-keys', input.cabinetId),
-        });
-      },
-      exportLog: async (input) => {
-        const fontBytes = input.format === 'pdf' ? await loadPdfFontBytes() : undefined;
-        const artifact = await callAction(source, ['exportCabinetLog'], {
-          ...input,
-          fontBytes,
-        } as unknown as UnknownRecord) as ExportArtifactView;
-        await saveExportArtifact(artifact);
-        return artifact;
+      deleteAllKeys: async (input) => {
+        await callAction(source, ['deleteCabinetKeys'], { ...input, ...writeOptions('delete-all-keys', input.cabinetId) });
       },
     };
 
@@ -318,7 +289,7 @@ export function usePrototypeApp(): PrototypeApp {
       loans: loanViews,
       events,
       currentUserId,
-      now: now.toISOString(),
+      now: new Date().toISOString(),
       isOffline: state.online === false,
       isLoading: state.hydrated === false,
       sessionExpired: state.sessionStatus === 'expired',
@@ -334,8 +305,4 @@ export function maskContact(value?: string) {
   const digits = value.replace(/\D/g, '');
   if (digits.length >= 7) return `${value.slice(0, 3)}••••${value.slice(-2)}`;
   return '••••••';
-}
-
-export function isExportFormat(value: string): value is ExportFormat {
-  return value === 'csv' || value === 'xlsx' || value === 'pdf';
 }

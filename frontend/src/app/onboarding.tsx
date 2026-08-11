@@ -22,7 +22,7 @@ export default function OnboardingRoute() {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   function openScanner(mode: 'initialize' | 'join') {
-    router.replace({ pathname: '/(tabs)/scan', params: { mode } } as Href);
+    router.replace({ pathname: '/(details)/scan', params: { mode } } as unknown as Href);
   }
 
   async function signOut() {

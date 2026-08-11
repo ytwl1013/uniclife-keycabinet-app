@@ -68,9 +68,11 @@ describe('mobile selection and confirmations', () => {
 
     expect(source).toContain('tabBarShowLabel: false');
     expect(source).toContain('tabBarAccessibilityLabel: t(route.titleKey)');
-    expect(source).toContain("icon: 'cabinetGrid'");
+    expect(source).toContain("icon: 'home'");
     expect(source).toContain("icon: 'history'");
     expect(source).toContain("icon: 'accountCircle'");
+    expect(source).not.toContain("screen: 'cabinets'");
+    expect(source).not.toContain("screen: 'scan'");
     expect(source).not.toContain('tabBarLabelStyle');
     expect(globalStyles).toContain("[role='tab']:focus-visible");
     expect(globalStyles).toContain('outline: 2px solid var(--brand)');
@@ -89,7 +91,7 @@ describe('mobile selection and confirmations', () => {
     expect(queryByText(/cabinet/i)).toBeNull();
   });
 
-  it('keeps scan as the single prominent tab action', async () => {
+  it('keeps primary icon rendering available without using it as a tab', async () => {
     const { getByTestId } = await render(
       <BottomTabIcon focused name="scan" primary />,
     );

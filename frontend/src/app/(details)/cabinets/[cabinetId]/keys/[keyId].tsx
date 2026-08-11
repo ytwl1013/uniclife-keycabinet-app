@@ -94,23 +94,42 @@ export default function KeyDetailRoute() {
     }
   };
 
-  const undo = async (eventId: string) => {
-    const confirmed = await confirmation.present({
-      title: t(trKey('activity.undoTitle')),
-      description: t(trKey('activity.undoDescription')),
-      confirmLabel: t(trKey('activity.confirmUndo')),
-      cancelLabel: t(trKey('activity.cancel')),
-    });
-    if (!confirmed) return;
-    try {
-      await app.undoEvent({ eventId });
-    } catch {
+  const deleteKey = async () => {
+    if (key.activeLoan) {
       await confirmation.present({
-        title: t(trKey('activity.actionFailedTitle')),
-        description: t(trKey('activity.actionFailedDescription')),
+        title: t(trKey('key.deleteBlockedTitle')),
+        description: t(trKey('key.deleteBlockedDescription')),
         confirmLabel: t(trKey('loan.done')),
         tone: 'danger',
       });
+      return;
+    }
+    const confirmed = await confirmation.present({
+      title: t(trKey('key.deleteTitle')),
+      description: t(trKey('key.deleteDescription'), { key: key.name }),
+      confirmLabel: t(trKey('key.deleteConfirm')),
+      cancelLabel: t(trKey('loan.cancel')),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    setBusy(true);
+    try {
+      await app.deleteKey({ keyId: key.id });
+      await confirmation.present({
+        title: t(trKey('key.deletedTitle')),
+        description: t(trKey('key.deletedDescription')),
+        confirmLabel: t(trKey('loan.done')),
+      });
+      router.back();
+    } catch {
+      await confirmation.present({
+        title: t(trKey('key.actionFailedTitle')),
+        description: t(trKey('key.actionFailedDescription')),
+        confirmLabel: t(trKey('loan.done')),
+        tone: 'danger',
+      });
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -147,7 +166,10 @@ export default function KeyDetailRoute() {
               <DetailRow label={t(trKey('loan.borrowerName'))} value={key.activeLoan.borrowerName} />
               <DetailRow label={t(trKey('loan.borrowerContact'))} value={maskContact(key.activeLoan.borrowerContact) || t(trKey('loan.notProvided'))} />
               <DetailRow label={t(trKey('loan.checkedOutAt'))} value={formatDate(locale, key.activeLoan.checkedOutAt)} />
-              <DetailRow label={t(trKey('loan.expectedReturnAt'))} value={formatDate(locale, key.activeLoan.expectedReturnAt)} />
+              <DetailRow
+                label={t(trKey('loan.expectedReturnAt'))}
+                value={key.activeLoan.expectedReturnAt ? formatDate(locale, key.activeLoan.expectedReturnAt) : t(trKey('loan.noExpectedReturn'))}
+              />
             </SectionCard>
           ) : null}
 
@@ -156,11 +178,18 @@ export default function KeyDetailRoute() {
             <FormField label={t(trKey('key.nameLabel'))} onChangeText={setName} placeholder={t(trKey('key.namePlaceholder'))} value={name} />
             <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
             <ActionButton disabled={!dirty || busy || app.isOffline} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
+            <ActionButton
+              disabled={Boolean(key.activeLoan) || busy || app.isOffline}
+              icon="error"
+              label={t(trKey('key.deleteAction'))}
+              onPress={() => void deleteKey()}
+              tone="danger"
+            />
           </SectionCard>
 
           <SectionCard>
             <SectionTitle title={t(trKey('key.historyTitle'))} />
-            <PrototypeEventList currentUserId={app.currentUserId} emptyLabel={t(trKey('key.historyEmpty'))} events={history} onUndo={(event) => void undo(event.id)} />
+            <PrototypeEventList emptyLabel={t(trKey('key.historyEmpty'))} events={history} />
           </SectionCard>
         </ScrollView>
         {confirmation.dialog}

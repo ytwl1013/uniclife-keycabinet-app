@@ -3,7 +3,6 @@ import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
-import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
 import { useAppTheme } from '@/styles/theme';
 
 export function ScreenHeader({ title, subtitle, onBack, action }: { title: string; subtitle?: string; onBack?: () => void; action?: ReactNode }) {
@@ -26,21 +25,21 @@ export function ScreenHeader({ title, subtitle, onBack, action }: { title: strin
 export function SegmentControl<T extends string>({ items, value, onChange }: { items: readonly { value: T; label: string }[]; value: T; onChange: (value: T) => void }) {
   return (
     <View className="min-w-0 w-full overflow-hidden rounded-control border border-line bg-surface p-1">
-      <ScrollableChipRow
-        getKey={(item) => item.value}
-        items={items}
-        renderItem={(item, selected) => (
+      <View className="w-full flex-row">
+        {items.map((item) => {
+          const selected = item.value === value;
+          return (
           <Pressable
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            className={`min-h-11 min-w-[78px] items-center justify-center rounded-[10px] px-3 ${selected ? 'bg-brand' : 'bg-transparent'} active:opacity-70`}
+            className={`min-h-11 min-w-0 flex-1 items-center justify-center rounded-[10px] px-2 ${selected ? 'bg-brand' : 'bg-transparent'} active:opacity-70`}
+            key={item.value}
             onPress={() => onChange(item.value)}>
-            <AppText className="text-center" variant="caption" tone={selected ? 'onBrand' : 'muted'}>{item.label}</AppText>
+            <AppText className="text-center" numberOfLines={1} variant="caption" tone={selected ? 'onBrand' : 'muted'}>{item.label}</AppText>
           </Pressable>
-        )}
-        selectedValue={items.find((item) => item.value === value)}
-        testID="cabinet-segment-scroll"
-      />
+          );
+        })}
+      </View>
     </View>
   );
 }

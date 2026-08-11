@@ -25,12 +25,13 @@ const onboardingRoute = '/onboarding' as Href;
 export default function SignUpRoute() {
   const { locale, t } = useTranslation();
   const { actions } = useAuthActions();
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [displayNameError, setDisplayNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmError, setConfirmError] = useState('');
@@ -40,31 +41,33 @@ export default function SignUpRoute() {
 
   async function submit() {
     const nextEmail = normalizeEmail(email);
+    const nextDisplayNameError = displayName.trim() ? '' : t('auth.validation.adminName');
     const nextEmailError = isValidEmail(nextEmail) ? '' : t('auth.validation.email');
     const nextPasswordError = password.length >= 8 ? '' : t('auth.validation.passwordLength');
     const nextConfirmError = password === confirmPassword ? '' : t('auth.validation.passwordMismatch');
     const nextConsentError =
       acceptedTerms && acceptedPrivacy ? '' : t('auth.validation.requiredConsents');
 
+    setDisplayNameError(nextDisplayNameError);
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
     setConfirmError(nextConfirmError);
     setConsentError(nextConsentError);
     setRequestError('');
 
-    if (nextEmailError || nextPasswordError || nextConfirmError || nextConsentError) {
+    if (nextDisplayNameError || nextEmailError || nextPasswordError || nextConfirmError || nextConsentError) {
       return;
     }
 
     setIsSubmitting(true);
     try {
       await actions.register({
+        displayName: displayName.trim(),
         email: nextEmail,
         password,
         locale,
         acceptedTerms,
         acceptedPrivacy,
-        marketingOptIn,
       });
       router.replace(onboardingRoute);
     } catch (error) {
@@ -85,6 +88,21 @@ export default function SignUpRoute() {
           <AuthTextButton label={t('auth.signUp.signIn')} onPress={() => router.replace(signInRoute)} />
         </View>
       }>
+      <AuthField
+        autoCapitalize="words"
+        autoComplete="name"
+        error={displayNameError}
+        label={t('auth.fields.adminName')}
+        onChangeText={(value) => {
+          setDisplayName(value);
+          setDisplayNameError('');
+        }}
+        placeholder={t('auth.fields.adminNamePlaceholder')}
+        returnKeyType="next"
+        textContentType="name"
+        value={displayName}
+      />
+
       <AuthField
         autoCapitalize="none"
         autoComplete="email"
@@ -152,14 +170,6 @@ export default function SignUpRoute() {
             setConsentError('');
           }}
         />
-        <ConsentRow
-          checked={marketingOptIn}
-          label={t('auth.signUp.marketingOptIn')}
-          onPress={() => setMarketingOptIn((value) => !value)}
-        />
-        <AppText variant="caption" tone="muted">
-          {t('auth.signUp.marketingHelper')}
-        </AppText>
       </View>
 
       {consentError ? <AuthErrorNotice text={consentError} /> : null}

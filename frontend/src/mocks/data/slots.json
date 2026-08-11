@@ -1,86 +1,746 @@
 [
-  { "id": "slot-hq-01", "cabinetId": "cabinet-hq", "position": 1, "keyId": "key-front-door" },
-  { "id": "slot-hq-02", "cabinetId": "cabinet-hq", "position": 2, "keyId": "key-mailroom" },
-  { "id": "slot-hq-03", "cabinetId": "cabinet-hq", "position": 3, "keyId": "key-server-room" },
-  { "id": "slot-hq-04", "cabinetId": "cabinet-hq", "position": 4, "keyId": null },
-  { "id": "slot-hq-05", "cabinetId": "cabinet-hq", "position": 5, "keyId": null },
-  { "id": "slot-hq-06", "cabinetId": "cabinet-hq", "position": 6, "keyId": null },
-  { "id": "slot-hq-07", "cabinetId": "cabinet-hq", "position": 7, "keyId": null },
-  { "id": "slot-hq-08", "cabinetId": "cabinet-hq", "position": 8, "keyId": null },
-  { "id": "slot-hq-09", "cabinetId": "cabinet-hq", "position": 9, "keyId": null },
-  { "id": "slot-hq-10", "cabinetId": "cabinet-hq", "position": 10, "keyId": null },
-  { "id": "slot-hq-11", "cabinetId": "cabinet-hq", "position": 11, "keyId": null },
-  { "id": "slot-hq-12", "cabinetId": "cabinet-hq", "position": 12, "keyId": null },
-  { "id": "slot-hq-13", "cabinetId": "cabinet-hq", "position": 13, "keyId": null },
-  { "id": "slot-hq-14", "cabinetId": "cabinet-hq", "position": 14, "keyId": null },
-  { "id": "slot-hq-15", "cabinetId": "cabinet-hq", "position": 15, "keyId": null },
-  { "id": "slot-hq-16", "cabinetId": "cabinet-hq", "position": 16, "keyId": null },
-  { "id": "slot-hq-17", "cabinetId": "cabinet-hq", "position": 17, "keyId": null },
-  { "id": "slot-hq-18", "cabinetId": "cabinet-hq", "position": 18, "keyId": null },
-  { "id": "slot-hq-19", "cabinetId": "cabinet-hq", "position": 19, "keyId": null },
-  { "id": "slot-hq-20", "cabinetId": "cabinet-hq", "position": 20, "keyId": null },
-  { "id": "slot-hq-21", "cabinetId": "cabinet-hq", "position": 21, "keyId": null },
-  { "id": "slot-hq-22", "cabinetId": "cabinet-hq", "position": 22, "keyId": null },
-  { "id": "slot-hq-23", "cabinetId": "cabinet-hq", "position": 23, "keyId": null },
-  { "id": "slot-hq-24", "cabinetId": "cabinet-hq", "position": 24, "keyId": null },
-  { "id": "slot-loft-01", "cabinetId": "cabinet-loft", "position": 1, "keyId": "key-flat-101" },
-  { "id": "slot-loft-02", "cabinetId": "cabinet-loft", "position": 2, "keyId": "key-plant-room" },
-  { "id": "slot-loft-03", "cabinetId": "cabinet-loft", "position": 3, "keyId": null },
-  { "id": "slot-loft-04", "cabinetId": "cabinet-loft", "position": 4, "keyId": null },
-  { "id": "slot-loft-05", "cabinetId": "cabinet-loft", "position": 5, "keyId": null },
-  { "id": "slot-loft-06", "cabinetId": "cabinet-loft", "position": 6, "keyId": null },
-  { "id": "slot-loft-07", "cabinetId": "cabinet-loft", "position": 7, "keyId": null },
-  { "id": "slot-loft-08", "cabinetId": "cabinet-loft", "position": 8, "keyId": null },
-  { "id": "slot-loft-09", "cabinetId": "cabinet-loft", "position": 9, "keyId": null },
-  { "id": "slot-loft-10", "cabinetId": "cabinet-loft", "position": 10, "keyId": null },
-  { "id": "slot-loft-11", "cabinetId": "cabinet-loft", "position": 11, "keyId": null },
-  { "id": "slot-loft-12", "cabinetId": "cabinet-loft", "position": 12, "keyId": null },
-  { "id": "slot-loft-13", "cabinetId": "cabinet-loft", "position": 13, "keyId": null },
-  { "id": "slot-loft-14", "cabinetId": "cabinet-loft", "position": 14, "keyId": null },
-  { "id": "slot-loft-15", "cabinetId": "cabinet-loft", "position": 15, "keyId": null },
-  { "id": "slot-loft-16", "cabinetId": "cabinet-loft", "position": 16, "keyId": null },
-  { "id": "slot-loft-17", "cabinetId": "cabinet-loft", "position": 17, "keyId": null },
-  { "id": "slot-loft-18", "cabinetId": "cabinet-loft", "position": 18, "keyId": null },
-  { "id": "slot-loft-19", "cabinetId": "cabinet-loft", "position": 19, "keyId": null },
-  { "id": "slot-loft-20", "cabinetId": "cabinet-loft", "position": 20, "keyId": null },
-  { "id": "slot-loft-21", "cabinetId": "cabinet-loft", "position": 21, "keyId": null },
-  { "id": "slot-loft-22", "cabinetId": "cabinet-loft", "position": 22, "keyId": null },
-  { "id": "slot-loft-23", "cabinetId": "cabinet-loft", "position": 23, "keyId": null },
-  { "id": "slot-loft-24", "cabinetId": "cabinet-loft", "position": 24, "keyId": null },
-  { "id": "slot-loft-25", "cabinetId": "cabinet-loft", "position": 25, "keyId": null },
-  { "id": "slot-loft-26", "cabinetId": "cabinet-loft", "position": 26, "keyId": null },
-  { "id": "slot-loft-27", "cabinetId": "cabinet-loft", "position": 27, "keyId": null },
-  { "id": "slot-loft-28", "cabinetId": "cabinet-loft", "position": 28, "keyId": null },
-  { "id": "slot-loft-29", "cabinetId": "cabinet-loft", "position": 29, "keyId": null },
-  { "id": "slot-loft-30", "cabinetId": "cabinet-loft", "position": 30, "keyId": null },
-  { "id": "slot-loft-31", "cabinetId": "cabinet-loft", "position": 31, "keyId": null },
-  { "id": "slot-loft-32", "cabinetId": "cabinet-loft", "position": 32, "keyId": null },
-  { "id": "slot-loft-33", "cabinetId": "cabinet-loft", "position": 33, "keyId": null },
-  { "id": "slot-loft-34", "cabinetId": "cabinet-loft", "position": 34, "keyId": null },
-  { "id": "slot-loft-35", "cabinetId": "cabinet-loft", "position": 35, "keyId": null },
-  { "id": "slot-loft-36", "cabinetId": "cabinet-loft", "position": 36, "keyId": null },
-  { "id": "slot-loft-37", "cabinetId": "cabinet-loft", "position": 37, "keyId": null },
-  { "id": "slot-loft-38", "cabinetId": "cabinet-loft", "position": 38, "keyId": null },
-  { "id": "slot-loft-39", "cabinetId": "cabinet-loft", "position": 39, "keyId": null },
-  { "id": "slot-loft-40", "cabinetId": "cabinet-loft", "position": 40, "keyId": null },
-  { "id": "slot-loft-41", "cabinetId": "cabinet-loft", "position": 41, "keyId": null },
-  { "id": "slot-loft-42", "cabinetId": "cabinet-loft", "position": 42, "keyId": null },
-  { "id": "slot-loft-43", "cabinetId": "cabinet-loft", "position": 43, "keyId": null },
-  { "id": "slot-loft-44", "cabinetId": "cabinet-loft", "position": 44, "keyId": null },
-  { "id": "slot-loft-45", "cabinetId": "cabinet-loft", "position": 45, "keyId": null },
-  { "id": "slot-loft-46", "cabinetId": "cabinet-loft", "position": 46, "keyId": null },
-  { "id": "slot-loft-47", "cabinetId": "cabinet-loft", "position": 47, "keyId": null },
-  { "id": "slot-loft-48", "cabinetId": "cabinet-loft", "position": 48, "keyId": null },
-  { "id": "slot-studio-01", "cabinetId": "cabinet-studio", "position": 1, "keyId": "key-camera-locker" },
-  { "id": "slot-studio-02", "cabinetId": "cabinet-studio", "position": 2, "keyId": null },
-  { "id": "slot-studio-03", "cabinetId": "cabinet-studio", "position": 3, "keyId": null },
-  { "id": "slot-studio-04", "cabinetId": "cabinet-studio", "position": 4, "keyId": null },
-  { "id": "slot-studio-05", "cabinetId": "cabinet-studio", "position": 5, "keyId": null },
-  { "id": "slot-studio-06", "cabinetId": "cabinet-studio", "position": 6, "keyId": null },
-  { "id": "slot-studio-07", "cabinetId": "cabinet-studio", "position": 7, "keyId": null },
-  { "id": "slot-studio-08", "cabinetId": "cabinet-studio", "position": 8, "keyId": null },
-  { "id": "slot-studio-09", "cabinetId": "cabinet-studio", "position": 9, "keyId": null },
-  { "id": "slot-studio-10", "cabinetId": "cabinet-studio", "position": 10, "keyId": null },
-  { "id": "slot-studio-11", "cabinetId": "cabinet-studio", "position": 11, "keyId": null },
-  { "id": "slot-studio-12", "cabinetId": "cabinet-studio", "position": 12, "keyId": null }
+  {
+    "id": "slot-hq-01",
+    "cabinetId": "cabinet-hq",
+    "position": 1,
+    "keyId": "key-front-door"
+  },
+  {
+    "id": "slot-hq-02",
+    "cabinetId": "cabinet-hq",
+    "position": 2,
+    "keyId": "key-mailroom"
+  },
+  {
+    "id": "slot-hq-03",
+    "cabinetId": "cabinet-hq",
+    "position": 3,
+    "keyId": "key-server-room"
+  },
+  {
+    "id": "slot-hq-04",
+    "cabinetId": "cabinet-hq",
+    "position": 4,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-05",
+    "cabinetId": "cabinet-hq",
+    "position": 5,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-06",
+    "cabinetId": "cabinet-hq",
+    "position": 6,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-07",
+    "cabinetId": "cabinet-hq",
+    "position": 7,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-08",
+    "cabinetId": "cabinet-hq",
+    "position": 8,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-09",
+    "cabinetId": "cabinet-hq",
+    "position": 9,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-10",
+    "cabinetId": "cabinet-hq",
+    "position": 10,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-11",
+    "cabinetId": "cabinet-hq",
+    "position": 11,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-12",
+    "cabinetId": "cabinet-hq",
+    "position": 12,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-13",
+    "cabinetId": "cabinet-hq",
+    "position": 13,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-14",
+    "cabinetId": "cabinet-hq",
+    "position": 14,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-15",
+    "cabinetId": "cabinet-hq",
+    "position": 15,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-16",
+    "cabinetId": "cabinet-hq",
+    "position": 16,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-17",
+    "cabinetId": "cabinet-hq",
+    "position": 17,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-18",
+    "cabinetId": "cabinet-hq",
+    "position": 18,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-19",
+    "cabinetId": "cabinet-hq",
+    "position": 19,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-20",
+    "cabinetId": "cabinet-hq",
+    "position": 20,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-21",
+    "cabinetId": "cabinet-hq",
+    "position": 21,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-22",
+    "cabinetId": "cabinet-hq",
+    "position": 22,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-23",
+    "cabinetId": "cabinet-hq",
+    "position": 23,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-24",
+    "cabinetId": "cabinet-hq",
+    "position": 24,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-25",
+    "cabinetId": "cabinet-hq",
+    "position": 25,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-26",
+    "cabinetId": "cabinet-hq",
+    "position": 26,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-27",
+    "cabinetId": "cabinet-hq",
+    "position": 27,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-28",
+    "cabinetId": "cabinet-hq",
+    "position": 28,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-29",
+    "cabinetId": "cabinet-hq",
+    "position": 29,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-30",
+    "cabinetId": "cabinet-hq",
+    "position": 30,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-31",
+    "cabinetId": "cabinet-hq",
+    "position": 31,
+    "keyId": null
+  },
+  {
+    "id": "slot-hq-32",
+    "cabinetId": "cabinet-hq",
+    "position": 32,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-01",
+    "cabinetId": "cabinet-loft",
+    "position": 1,
+    "keyId": "key-flat-101"
+  },
+  {
+    "id": "slot-loft-02",
+    "cabinetId": "cabinet-loft",
+    "position": 2,
+    "keyId": "key-plant-room"
+  },
+  {
+    "id": "slot-loft-03",
+    "cabinetId": "cabinet-loft",
+    "position": 3,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-04",
+    "cabinetId": "cabinet-loft",
+    "position": 4,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-05",
+    "cabinetId": "cabinet-loft",
+    "position": 5,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-06",
+    "cabinetId": "cabinet-loft",
+    "position": 6,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-07",
+    "cabinetId": "cabinet-loft",
+    "position": 7,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-08",
+    "cabinetId": "cabinet-loft",
+    "position": 8,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-09",
+    "cabinetId": "cabinet-loft",
+    "position": 9,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-10",
+    "cabinetId": "cabinet-loft",
+    "position": 10,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-11",
+    "cabinetId": "cabinet-loft",
+    "position": 11,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-12",
+    "cabinetId": "cabinet-loft",
+    "position": 12,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-13",
+    "cabinetId": "cabinet-loft",
+    "position": 13,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-14",
+    "cabinetId": "cabinet-loft",
+    "position": 14,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-15",
+    "cabinetId": "cabinet-loft",
+    "position": 15,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-16",
+    "cabinetId": "cabinet-loft",
+    "position": 16,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-17",
+    "cabinetId": "cabinet-loft",
+    "position": 17,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-18",
+    "cabinetId": "cabinet-loft",
+    "position": 18,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-19",
+    "cabinetId": "cabinet-loft",
+    "position": 19,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-20",
+    "cabinetId": "cabinet-loft",
+    "position": 20,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-21",
+    "cabinetId": "cabinet-loft",
+    "position": 21,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-22",
+    "cabinetId": "cabinet-loft",
+    "position": 22,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-23",
+    "cabinetId": "cabinet-loft",
+    "position": 23,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-24",
+    "cabinetId": "cabinet-loft",
+    "position": 24,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-25",
+    "cabinetId": "cabinet-loft",
+    "position": 25,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-26",
+    "cabinetId": "cabinet-loft",
+    "position": 26,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-27",
+    "cabinetId": "cabinet-loft",
+    "position": 27,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-28",
+    "cabinetId": "cabinet-loft",
+    "position": 28,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-29",
+    "cabinetId": "cabinet-loft",
+    "position": 29,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-30",
+    "cabinetId": "cabinet-loft",
+    "position": 30,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-31",
+    "cabinetId": "cabinet-loft",
+    "position": 31,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-32",
+    "cabinetId": "cabinet-loft",
+    "position": 32,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-33",
+    "cabinetId": "cabinet-loft",
+    "position": 33,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-34",
+    "cabinetId": "cabinet-loft",
+    "position": 34,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-35",
+    "cabinetId": "cabinet-loft",
+    "position": 35,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-36",
+    "cabinetId": "cabinet-loft",
+    "position": 36,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-37",
+    "cabinetId": "cabinet-loft",
+    "position": 37,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-38",
+    "cabinetId": "cabinet-loft",
+    "position": 38,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-39",
+    "cabinetId": "cabinet-loft",
+    "position": 39,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-40",
+    "cabinetId": "cabinet-loft",
+    "position": 40,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-41",
+    "cabinetId": "cabinet-loft",
+    "position": 41,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-42",
+    "cabinetId": "cabinet-loft",
+    "position": 42,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-43",
+    "cabinetId": "cabinet-loft",
+    "position": 43,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-44",
+    "cabinetId": "cabinet-loft",
+    "position": 44,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-45",
+    "cabinetId": "cabinet-loft",
+    "position": 45,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-46",
+    "cabinetId": "cabinet-loft",
+    "position": 46,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-47",
+    "cabinetId": "cabinet-loft",
+    "position": 47,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-48",
+    "cabinetId": "cabinet-loft",
+    "position": 48,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-49",
+    "cabinetId": "cabinet-loft",
+    "position": 49,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-50",
+    "cabinetId": "cabinet-loft",
+    "position": 50,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-51",
+    "cabinetId": "cabinet-loft",
+    "position": 51,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-52",
+    "cabinetId": "cabinet-loft",
+    "position": 52,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-53",
+    "cabinetId": "cabinet-loft",
+    "position": 53,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-54",
+    "cabinetId": "cabinet-loft",
+    "position": 54,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-55",
+    "cabinetId": "cabinet-loft",
+    "position": 55,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-56",
+    "cabinetId": "cabinet-loft",
+    "position": 56,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-57",
+    "cabinetId": "cabinet-loft",
+    "position": 57,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-58",
+    "cabinetId": "cabinet-loft",
+    "position": 58,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-59",
+    "cabinetId": "cabinet-loft",
+    "position": 59,
+    "keyId": null
+  },
+  {
+    "id": "slot-loft-60",
+    "cabinetId": "cabinet-loft",
+    "position": 60,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-01",
+    "cabinetId": "cabinet-studio",
+    "position": 1,
+    "keyId": "key-camera-locker"
+  },
+  {
+    "id": "slot-studio-02",
+    "cabinetId": "cabinet-studio",
+    "position": 2,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-03",
+    "cabinetId": "cabinet-studio",
+    "position": 3,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-04",
+    "cabinetId": "cabinet-studio",
+    "position": 4,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-05",
+    "cabinetId": "cabinet-studio",
+    "position": 5,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-06",
+    "cabinetId": "cabinet-studio",
+    "position": 6,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-07",
+    "cabinetId": "cabinet-studio",
+    "position": 7,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-08",
+    "cabinetId": "cabinet-studio",
+    "position": 8,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-09",
+    "cabinetId": "cabinet-studio",
+    "position": 9,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-10",
+    "cabinetId": "cabinet-studio",
+    "position": 10,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-11",
+    "cabinetId": "cabinet-studio",
+    "position": 11,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-12",
+    "cabinetId": "cabinet-studio",
+    "position": 12,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-13",
+    "cabinetId": "cabinet-studio",
+    "position": 13,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-14",
+    "cabinetId": "cabinet-studio",
+    "position": 14,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-15",
+    "cabinetId": "cabinet-studio",
+    "position": 15,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-16",
+    "cabinetId": "cabinet-studio",
+    "position": 16,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-17",
+    "cabinetId": "cabinet-studio",
+    "position": 17,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-18",
+    "cabinetId": "cabinet-studio",
+    "position": 18,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-19",
+    "cabinetId": "cabinet-studio",
+    "position": 19,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-20",
+    "cabinetId": "cabinet-studio",
+    "position": 20,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-21",
+    "cabinetId": "cabinet-studio",
+    "position": 21,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-22",
+    "cabinetId": "cabinet-studio",
+    "position": 22,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-23",
+    "cabinetId": "cabinet-studio",
+    "position": 23,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-24",
+    "cabinetId": "cabinet-studio",
+    "position": 24,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-25",
+    "cabinetId": "cabinet-studio",
+    "position": 25,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-26",
+    "cabinetId": "cabinet-studio",
+    "position": 26,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-27",
+    "cabinetId": "cabinet-studio",
+    "position": 27,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-28",
+    "cabinetId": "cabinet-studio",
+    "position": 28,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-29",
+    "cabinetId": "cabinet-studio",
+    "position": 29,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-30",
+    "cabinetId": "cabinet-studio",
+    "position": 30,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-31",
+    "cabinetId": "cabinet-studio",
+    "position": 31,
+    "keyId": null
+  },
+  {
+    "id": "slot-studio-32",
+    "cabinetId": "cabinet-studio",
+    "position": 32,
+    "keyId": null
+  }
 ]

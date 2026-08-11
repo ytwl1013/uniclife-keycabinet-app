@@ -8,6 +8,8 @@ export const supportedLocales = [
   'pt-PT',
   'nl-NL',
   'pl-PL',
+  'zh-CN',
+  'zh-TW',
 ] as const;
 
 export type SupportedLocale = (typeof supportedLocales)[number];
@@ -37,7 +39,7 @@ export type CabinetQr = {
   id: string;
   code: string;
   skuId: string;
-  cabinetId: string;
+  deviceUuid: string;
   status: 'active' | 'disabled';
   createdAt: string;
 };
@@ -45,7 +47,7 @@ export type CabinetQr = {
 export type Cabinet = {
   id: string;
   skuId: string;
-  qrId: string;
+  deviceUuid: string;
   name: string;
   location: string;
   timeZone: string;
@@ -55,7 +57,7 @@ export type Cabinet = {
   version: number;
 };
 
-export type CabinetRole = 'owner' | 'admin' | 'member';
+export type CabinetRole = 'admin';
 
 export type CabinetMembership = {
   id: string;
@@ -83,9 +85,6 @@ export type Key = {
   status: 'available' | 'borrowed';
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string;
-  recoverableUntil?: string;
-  clearBatchId?: string;
 };
 
 export type Loan = {
@@ -95,7 +94,7 @@ export type Loan = {
   borrowerName: string;
   borrowerContact?: string;
   checkedOutAt: string;
-  expectedReturnAt: string;
+  expectedReturnAt?: string;
   returnedAt?: string;
   status: 'active' | 'returned' | 'cancelled';
   operatorId: string;
@@ -106,17 +105,20 @@ export type Loan = {
 
 export const cabinetEventTypes = [
   'cabinet_bound',
+  'cabinet_renamed',
   'member_removed',
   'member_role_changed',
   'ownership_transferred',
   'key_added',
   'key_updated',
+  'key_deleted',
   'checkout',
   'return',
   'undo_checkout',
   'undo_return',
   'keys_cleared',
   'keys_restored',
+  'keys_deleted',
 ] as const;
 
 export type CabinetEventType = (typeof cabinetEventTypes)[number];
@@ -135,19 +137,7 @@ export type CabinetEvent = {
   summaryData: Record<string, EventSummaryValue>;
 };
 
-export type KeyClearBatch = {
-  id: string;
-  cabinetId: string;
-  actorId: string;
-  clearedAt: string;
-  recoverableUntil: string;
-  restoredAt?: string;
-  status: 'restorable' | 'restored' | 'expired';
-  keySnapshots: Key[];
-  slotKeyMap: { slotId: string; keyId: string }[];
-};
-
-export type ConsentKind = 'terms' | 'privacy' | 'marketing';
+export type ConsentKind = 'terms' | 'privacy';
 
 export type ConsentRecord = {
   id: string;
@@ -170,7 +160,6 @@ export type MockDomainData = {
   keys: Key[];
   loans: Loan[];
   events: CabinetEvent[];
-  clearBatches: KeyClearBatch[];
   consents: ConsentRecord[];
 };
 
@@ -206,7 +195,6 @@ export type RegisterInput = {
   locale: SupportedLocale;
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
-  marketingOptIn: boolean;
 };
 
 export type AddKeyInput = WriteOptions & {
@@ -222,46 +210,22 @@ export type UpdateKeyInput = WriteOptions & {
   note?: string;
 };
 
+export type RenameCabinetInput = WriteOptions & {
+  cabinetId: string;
+  name: string;
+};
+
 export type CheckOutKeyInput = WriteOptions & {
   keyId: string;
   borrowerName: string;
   borrowerContact?: string;
   checkedOutAt?: string;
-  expectedReturnAt: string;
+  expectedReturnAt?: string;
 };
 
 export type ReturnKeyInput = WriteOptions & {
   keyId: string;
   returnedAt?: string;
-};
-
-export type ExportFormat = 'csv' | 'xlsx' | 'pdf';
-
-export type ExportLogOptions = {
-  cabinetId: string;
-  format: ExportFormat;
-  includeFullContact?: boolean;
-  filter?: Omit<EventFilter, 'cabinetId'>;
-  fontBytes?: Uint8Array;
-};
-
-export type ExportArtifact = {
-  filename: string;
-  mimeType: string;
-  bytes: Uint8Array;
-};
-
-export type LogExportRow = {
-  event_id: string;
-  occurred_at: string;
-  operation: CabinetEventType;
-  cabinet_id: string;
-  key_id: string;
-  key_name: string;
-  actor_id: string;
-  actor_name: string;
-  borrower_name: string;
-  borrower_contact: string;
 };
 
 export type MockStorage = {
@@ -273,7 +237,7 @@ export type MockStorage = {
 export type QrResolution = {
   qr: CabinetQr;
   sku: ProductSku;
-  cabinet: Cabinet;
+  cabinet?: Cabinet;
 };
 
 export type BindCabinetResult = {

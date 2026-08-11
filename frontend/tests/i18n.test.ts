@@ -10,6 +10,8 @@ import { it as italian } from '../src/i18n/translations/it';
 import { nl } from '../src/i18n/translations/nl';
 import { pl } from '../src/i18n/translations/pl';
 import { pt } from '../src/i18n/translations/pt';
+import { zhCN } from '../src/i18n/translations/zh-cn';
+import { zhTW } from '../src/i18n/translations/zh-tw';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -25,6 +27,8 @@ const catalog = {
   'pt-PT': pt,
   'nl-NL': nl,
   'pl-PL': pl,
+  'zh-CN': zhCN,
+  'zh-TW': zhTW,
 };
 
 function leafKeys(value: unknown, prefix = ''): string[] {
@@ -35,7 +39,7 @@ function leafKeys(value: unknown, prefix = ''): string[] {
   });
 }
 
-function leafEntries(value: unknown, prefix = ''): Array<[string, string]> {
+function leafEntries(value: unknown, prefix = ''): [string, string][] {
   if (!value || typeof value !== 'object') return [];
   return Object.entries(value).flatMap(([key, child]) => {
     const path = prefix ? `${prefix}.${key}` : key;
@@ -43,10 +47,10 @@ function leafEntries(value: unknown, prefix = ''): Array<[string, string]> {
   });
 }
 
-describe('nine-region localisation', () => {
+describe('eleven-region localisation', () => {
   it('keeps the exact supported locale list and a complete key set for every locale', () => {
     expect(supportedLocales).toEqual([
-      'en-US', 'en-GB', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'pt-PT', 'nl-NL', 'pl-PL',
+      'en-US', 'en-GB', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'pt-PT', 'nl-NL', 'pl-PL', 'zh-CN', 'zh-TW',
     ]);
     const expectedKeys = leafKeys(en).sort();
     for (const locale of supportedLocales) {
@@ -58,6 +62,9 @@ describe('nine-region localisation', () => {
     expect(resolveLocale('en-GB', 'en')).toBe('en-GB');
     expect(resolveLocale('de-AT', 'de')).toBe('de-DE');
     expect(resolveLocale('pt-BR', 'pt')).toBe('pt-PT');
+    expect(resolveLocale('zh-Hans-CN', 'zh')).toBe('zh-CN');
+    expect(resolveLocale('zh-Hant-TW', 'zh')).toBe('zh-TW');
+    expect(resolveLocale('zh-HK', 'zh')).toBe('zh-TW');
     expect(resolveLocale('sv-SE', 'sv')).toBe('en-US');
   });
 
@@ -74,8 +81,8 @@ describe('nine-region localisation', () => {
   });
 
   it('provides long German and Polish labels without missing-key placeholders', () => {
-    expect(de.activity.exportMasked.length).toBeGreaterThan(20);
-    expect(pl.cabinet.backendRestoreOnly.length).toBeGreaterThan(45);
+    expect(de.activity.subtitle.length).toBeGreaterThan(20);
+    expect(pl.cabinet.clearSectionDescription.length).toBeGreaterThan(45);
   });
 
   it('keeps prototype terminology out of normal product copy', () => {
@@ -84,5 +91,15 @@ describe('nine-region localisation', () => {
       const normalCopy = leafEntries(catalog[locale]).filter(([path]) => path !== 'account.simulatedTime');
       expect(normalCopy.filter(([, value]) => forbidden.test(value))).toEqual([]);
     }
+  });
+
+  it('provides sectioned U.S. and European privacy and service terms', () => {
+    expect(en.legal.privacy.rightsBody).toContain('within one month');
+    expect(en.legal.privacy.californiaBody).toContain('do not sell personal information');
+    expect(en.legal.privacy.transferBody).toContain('United States');
+    expect(en.legal.terms.authorizedUseBody).toContain('authorized');
+    expect(en.legal.data.auditBody).toContain('no export or undo action');
+    expect(zhCN.legal.privacy.rightsBody).toContain('GDPR');
+    expect(zhCN.legal.data.auditBody).toContain('不提供导出或撤销');
   });
 });

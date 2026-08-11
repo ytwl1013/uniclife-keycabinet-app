@@ -3,7 +3,7 @@
 Expo SDK 54 React Native app for the UnicLife key cabinet product.
 
 The current implementation is a frontend-only interactive prototype. Accounts,
-QR binding, cabinet synchronisation, loans, audit events, recovery and exports
+QR binding, cabinet synchronisation, loans, and audit events
 are simulated locally; no production email, hardware, database or remote sync
 service is connected.
 
@@ -31,20 +31,29 @@ personnel data in screens.
 ## Prototype walkthrough
 
 1. Open the welcome screen and choose **Sign in**.
-2. Use **Use demo owner account** to enter the seeded workspace without a real
+2. Use **Preview workspace** to enter the seeded workspace without a real
    credential.
 3. Initialize or join a cabinet, or choose **Explore first** to open the main
    tabs immediately.
-4. Use the Scan tab's sample-code action when a camera is unavailable.
-5. Open Account > Demo controls to switch users, simulate offline mode, advance
-   time, restore a cleared batch, or reset the local data.
+4. Use the prominent Scan button on Home; a sample code remains available when a camera is unavailable.
+5. Open Account > Developer settings to switch users, simulate offline mode, show a sample QR, or reset local data.
 
 All seeded identities, contact details, SKU artwork and QR payloads are
 fictional demo data. Generated cabinet artwork is presentation-only and does
 not contain a scannable product code.
 
+## Cabinet QR identity
+
+Cabinet QR payloads use `uniclife://cabinet/<SKU>/<UUID>`. The SKU identifies
+the product model and determines its metadata and slot capacity; the UUID
+uniquely identifies one physical cabinet. Multiple cabinet UUIDs can therefore
+share the same SKU. The first successful binding creates the cabinet record and
+its slots, while later scans of the same SKU/UUID resolve that existing cabinet.
+The local storage schema is v3; v1 and v2 prototype state is migrated to this
+identity model during hydration.
+
 The prototype supports `en-US`, `en-GB`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`,
-`pt-PT`, `nl-NL`, and `pl-PL`, with system-locale selection or an in-app
+`pt-PT`, `nl-NL`, `pl-PL`, `zh-CN`, and `zh-TW`, with system-locale selection or an in-app
 override.
 
 ## UI conventions
@@ -66,8 +75,14 @@ pnpm --filter @uniclife/frontend test
 pnpm --filter @uniclife/frontend exec expo export --platform web
 ```
 
-The export service creates CSV, XLSX and PDF files. Web uses a Blob download;
-iOS and Android use the file cache and system share sheet. Member exports mask
-borrower contact details, while Owner/Admin full-detail exports require an
-additional confirmation. PDF generation lazily embeds Noto Sans so Latin
-Extended names remain readable across the nine supported locales.
+Activity logs are read-only in the app and cannot be downloaded. All cabinet
+memberships use the single Admin role. Key deletion is permanent; cabinet,
+historical loan, and immutable audit records remain available for accountability.
+Activity entries cannot be undone. Bulk deletion of cabinet key information does
+not require active loans to be returned and retains those loan references.
+
+Privacy Policy, Terms of Use, and How your data is used are presented as
+effective-date, sectioned legal documents covering U.S. and European privacy
+baselines. The contracting entity, legal address, governing law, transfer
+mechanism, and dedicated legal contact must match the executed customer agreement
+before production release.

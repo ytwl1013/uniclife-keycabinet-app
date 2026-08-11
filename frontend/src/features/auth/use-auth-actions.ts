@@ -7,10 +7,10 @@ export type AuthCredentials = {
 };
 
 export type RegistrationInput = AuthCredentials & {
+  displayName: string;
   locale: string;
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
-  marketingOptIn: boolean;
 };
 
 type ResetFlow = {
@@ -40,11 +40,6 @@ export function clearResetChallenge(challengeId: string) {
   transientResetFlows.delete(challengeId);
 }
 
-function displayNameFromEmail(email: string) {
-  const candidate = email.split('@')[0]?.replace(/[._-]+/g, ' ').trim();
-  return candidate || email;
-}
-
 export function useAuthActions() {
   const { actions, currentUser, state } = useMockApp();
 
@@ -56,7 +51,7 @@ export function useAuthActions() {
       register: (input: RegistrationInput) =>
         actions.register({
           ...input,
-          displayName: displayNameFromEmail(input.email),
+          displayName: input.displayName.trim(),
           locale: input.locale as Parameters<typeof actions.register>[0]['locale'],
         }),
       signOut: () => actions.signOut(),

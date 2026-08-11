@@ -10,6 +10,7 @@ import { Pill } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
 import {
   ActionButton,
+  FormField,
   Notice,
   ScreenHeader,
   SectionCard,
@@ -97,17 +98,21 @@ function ProductConfirmation({
   binding,
   expectedOwner,
   onBind,
+  onNameChange,
   onOpen,
   onReset,
   resolution,
+  cabinetName,
 }: {
   alreadyBound: boolean;
   binding: boolean;
   expectedOwner: boolean;
   onBind: () => void;
+  onNameChange: (value: string) => void;
   onOpen: () => void;
   onReset: () => void;
   resolution: QrResolution;
+  cabinetName: string;
 }) {
   const { t } = useTranslation();
 
@@ -127,7 +132,7 @@ function ProductConfirmation({
               {resolution.sku.name}
             </AppText>
             <AppText variant="caption" tone="muted">
-              {resolution.cabinet.name}
+              {resolution.cabinet?.name ?? t('scan.unboundDevice')}
             </AppText>
             {!alreadyBound ? (
               <View className="self-start pt-1">
@@ -148,6 +153,15 @@ function ProductConfirmation({
           />
         </View>
         <ProductDatum label={t('scan.color')} value={resolution.sku.color} />
+        <ProductDatum label={t('scan.deviceUuid')} value={resolution.qr.deviceUuid} />
+        {expectedOwner ? (
+          <FormField
+            label={t('scan.cabinetName')}
+            onChangeText={onNameChange}
+            placeholder={t('scan.cabinetNamePlaceholder')}
+            value={cabinetName}
+          />
+        ) : null}
 
         <View className="self-start">
           <Pill tone="green">
@@ -200,6 +214,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const [errorKind, setErrorKind] = useState<ScanErrorKind | null>(null);
   const [resolving, setResolving] = useState(false);
   const [binding, setBinding] = useState(false);
+  const [cabinetName, setCabinetName] = useState('');
   const scanLockRef = useRef(false);
   const systemScannerSubscriptionRef = useRef<ReturnType<typeof CameraView.onModernBarcodeScanned> | undefined>(undefined);
   const requestSequenceRef = useRef(0);
@@ -232,19 +247,36 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
 
   const demoCode = useMemo(() => {
     const unboundQr = state.qrs.find(
-      (qr) => qr.status === 'active' && !selectors.membershipForCurrentUser(qr.cabinetId),
+      (qr) =>
+        qr.status === 'active' &&
+        !state.cabinets.some(
+          (cabinet) =>
+            cabinet.skuId === qr.skuId && cabinet.deviceUuid === qr.deviceUuid,
+        ),
     );
     return unboundQr?.code ?? state.qrs.find((qr) => qr.status === 'active')?.code;
-  }, [selectors, state.qrs]);
+  }, [state.cabinets, state.qrs]);
   const alreadyBound = resolution
-    ? Boolean(selectors.membershipForCurrentUser(resolution.cabinet.id))
+    ? Boolean(
+        resolution.cabinet &&
+          selectors.membershipForCurrentUser(resolution.cabinet.id),
+      )
     : false;
   const expectedOwner = resolution
-    ? !state.memberships.some(
+    ? !resolution.cabinet ||
+      !state.memberships.some(
         (membership) =>
-          membership.cabinetId === resolution.cabinet.id && membership.active,
+          membership.cabinetId === resolution.cabinet?.id && membership.active,
       )
     : mode === 'initialize';
+
+  useEffect(() => {
+    if (!resolution) {
+      setCabinetName('');
+      return;
+    }
+    setCabinetName(`Uniclife ${resolution.sku.capacity} Position Key Cabinet`);
+  }, [resolution]);
 
   const openCabinet = useCallback(
     (cabinetId: string) => {
@@ -263,6 +295,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     setErrorKind(null);
     setResolving(false);
     setBinding(false);
+    setCabinetName('');
   }, []);
 
   useEffect(() => {
@@ -340,7 +373,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   }, [binding, resolveCode, resolving]);
 
   const bindCabinet = useCallback(async () => {
-    if (!resolution || binding) {
+    if (!resolution || binding || (expectedOwner && !cabinetName.trim())) {
       return;
     }
     setBinding(true);
@@ -350,6 +383,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     try {
       await actions.bindCabinet({
         expectedVersion: state.version,
+        name: expectedOwner ? cabinetName.trim() : undefined,
         qrCode: resolution.qr.code,
         requestId: `scan-bind-${resolution.qr.id}-${requestSequenceRef.current}`,
       });
@@ -359,7 +393,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     } finally {
       setBinding(false);
     }
-  }, [actions, binding, classifyError, resolution, router, state.version]);
+  }, [actions, binding, cabinetName, classifyError, expectedOwner, resolution, router, state.version]);
 
   const sessionUnavailable =
     state.sessionStatus !== 'authenticated' || currentUser === null;
@@ -421,9 +455,15 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
         binding={binding}
         expectedOwner={expectedOwner}
         onBind={() => void bindCabinet()}
-        onOpen={() => openCabinet(resolution.cabinet.id)}
+        onNameChange={setCabinetName}
+        onOpen={() => {
+          if (resolution.cabinet) {
+            openCabinet(resolution.cabinet.id);
+          }
+        }}
         onReset={resetScanner}
         resolution={resolution}
+        cabinetName={cabinetName}
       />
     );
   } else if (resolving) {

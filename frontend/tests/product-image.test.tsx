@@ -19,20 +19,20 @@ describe('SKU product images', () => {
   it('maps every SKU to one unique, supported product asset', () => {
     const skus = getSeedData().skus;
     expect(skus.map((sku) => [sku.model, sku.imageAsset])).toEqual([
-      ['UC-2400', 'cabinet-24-white'],
-      ['UC-4800', 'cabinet-48-navy'],
-      ['UC-1200', 'cabinet-12-blue'],
+      ['BG5163-BK', 'cabinet-bg5163-bk'],
+      ['BG0680-BK', 'cabinet-bg0680-bk'],
     ]);
-    expect(new Set(skus.map((sku) => sku.imageAsset)).size).toBe(3);
-    expect(Object.keys(productImageAssets)).toHaveLength(3);
+    expect(skus.map((sku) => sku.capacity)).toEqual([32, 60]);
+    expect(new Set(skus.map((sku) => sku.imageAsset)).size).toBe(2);
+    expect(Object.keys(productImageAssets)).toHaveLength(2);
     for (const sku of skus) expect(isProductImageAssetKey(sku.imageAsset)).toBe(true);
   });
 
   it('uses contain and an explicit numeric container size', async () => {
     const { getByTestId } = await render(
       <ProductImage
-        accessibilityLabel="UC-2400 Arctic White key cabinet"
-        assetKey="cabinet-24-white"
+        accessibilityLabel="Uniclife 32 Position Key Cabinet"
+        assetKey="cabinet-bg5163-bk"
         variant="card"
       />,
     );
