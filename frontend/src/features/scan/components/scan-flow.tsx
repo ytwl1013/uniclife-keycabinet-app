@@ -538,7 +538,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       <View className="bg-background">
         <View className="mx-auto w-full max-w-content px-screen py-3">
-          <ScreenHeader title={t('scan.title')} />
+          <ScreenHeader onBack={() => router.back()} title={t('scan.title')} />
         </View>
       </View>
 
