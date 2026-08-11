@@ -8,7 +8,6 @@ import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
 import { PrototypeEventEmpty, PrototypeEventRow } from '@/features/cabinet-prototype/components/event-list';
-import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
 import { FilterChip, Notice, SectionCard, SectionTitle, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { CabinetEventKind } from '@/features/cabinet-prototype/types';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
@@ -30,7 +29,6 @@ export default function ActivityRoute() {
   const [actorId, setActorId] = useState('all');
   const [time, setTime] = useState<TimeFilter>('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const confirmation = usePrototypeDialog();
 
   const operators = useMemo(() => {
     const seen = new Set<string>();
@@ -61,26 +59,6 @@ export default function ActivityRoute() {
     actorId !== 'all' ? { id: 'actor', label: operators.find((item) => item.id === actorId)?.name ?? '', clear: () => setActorId('all') } : null,
     time !== 'all' ? { id: 'time', label: t(trKey(`activity.time.${time}`)), clear: () => setTime('all') } : null,
   ].filter((filter): filter is { id: string; label: string; clear: () => void } => Boolean(filter));
-
-  const undo = async (eventId: string) => {
-    const confirmed = await confirmation.present({
-      title: t(trKey('activity.undoTitle')),
-      description: t(trKey('activity.undoDescription')),
-      confirmLabel: t(trKey('activity.confirmUndo')),
-      cancelLabel: t(trKey('activity.cancel')),
-    });
-    if (!confirmed) return;
-    try {
-      await app.undoEvent({ eventId });
-    } catch {
-      await confirmation.present({
-        title: t(trKey('activity.actionFailedTitle')),
-        description: t(trKey('activity.actionFailedDescription')),
-        confirmLabel: t(trKey('loan.done')),
-        tone: 'danger',
-      });
-    }
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
@@ -142,10 +120,8 @@ export default function ActivityRoute() {
         renderItem={({ index, item }) => (
           <SectionCard>
             <PrototypeEventRow
-              currentUserId={app.currentUserId}
               event={item}
               isLast={index === events.length - 1}
-              onUndo={(event) => void undo(event.id)}
             />
           </SectionCard>
         )}
@@ -177,7 +153,6 @@ export default function ActivityRoute() {
           </View>
         </View>
       </BottomSheet>
-      {confirmation.dialog}
     </SafeAreaView>
   );
 }

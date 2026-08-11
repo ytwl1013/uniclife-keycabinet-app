@@ -6,7 +6,7 @@
     "actorId": "user-admin",
     "type": "checkout",
     "occurredAt": "2026-07-21T06:30:00.000Z",
-    "reversible": true,
+    "reversible": false,
     "relatedLoanId": "loan-front-door-returned",
     "summaryData": { "borrowerName": "Taylor Reed" }
   },
@@ -17,7 +17,7 @@
     "actorId": "user-admin",
     "type": "return",
     "occurredAt": "2026-07-21T07:30:00.000Z",
-    "reversible": true,
+    "reversible": false,
     "relatedLoanId": "loan-front-door-returned",
     "summaryData": {}
   },
@@ -28,7 +28,7 @@
     "actorId": "user-owner",
     "type": "checkout",
     "occurredAt": "2026-07-21T07:45:00.000Z",
-    "reversible": true,
+    "reversible": false,
     "relatedLoanId": "loan-mailroom-active",
     "summaryData": { "borrowerName": "Jordan Lee" }
   }

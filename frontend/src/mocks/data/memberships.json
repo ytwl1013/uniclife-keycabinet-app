@@ -3,7 +3,7 @@
     "id": "membership-hq-owner",
     "cabinetId": "cabinet-hq",
     "userId": "user-owner",
-    "role": "owner",
+    "role": "admin",
     "active": true,
     "joinedAt": "2026-05-05T08:05:00.000Z"
   },
@@ -19,7 +19,7 @@
     "id": "membership-hq-member",
     "cabinetId": "cabinet-hq",
     "userId": "user-member",
-    "role": "member",
+    "role": "admin",
     "active": true,
     "joinedAt": "2026-05-06T09:00:00.000Z"
   },
@@ -27,7 +27,7 @@
     "id": "membership-loft-owner",
     "cabinetId": "cabinet-loft",
     "userId": "user-owner",
-    "role": "owner",
+    "role": "admin",
     "active": true,
     "joinedAt": "2026-05-06T08:05:00.000Z"
   },
@@ -35,7 +35,7 @@
     "id": "membership-loft-member",
     "cabinetId": "cabinet-loft",
     "userId": "user-demo",
-    "role": "member",
+    "role": "admin",
     "active": true,
     "joinedAt": "2026-05-07T09:00:00.000Z"
   },
@@ -43,7 +43,7 @@
     "id": "membership-studio-owner",
     "cabinetId": "cabinet-studio",
     "userId": "user-member",
-    "role": "owner",
+    "role": "admin",
     "active": true,
     "joinedAt": "2026-05-07T08:05:00.000Z"
   }

@@ -35,7 +35,7 @@ export default function SignInRoute() {
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const demoOwner = state.users.find((user) =>
-    state.memberships.some((membership) => membership.userId === user.id && membership.role === 'owner'),
+    state.memberships.some((membership) => membership.userId === user.id && membership.role === 'admin'),
   );
 
   async function submit() {

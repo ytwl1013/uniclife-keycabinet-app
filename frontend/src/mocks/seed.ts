@@ -1,5 +1,4 @@
 import cabinets from './data/cabinets.json';
-import clearBatches from './data/clear-batches.json';
 import consents from './data/consents.json';
 import events from './data/events.json';
 import keys from './data/keys.json';
@@ -22,7 +21,6 @@ const seedInput = {
   keys,
   loans,
   events,
-  clearBatches,
   consents,
 };
 
@@ -46,7 +44,7 @@ export function createInitialMockState(options?: {
     currentUserId,
     sessionStatus: currentUserId ? 'authenticated' : 'anonymous',
     online: true,
-    now: options?.now ?? '2026-07-21T09:00:00.000Z',
+    now: options?.now ?? new Date().toISOString(),
     version: 1,
   };
 }

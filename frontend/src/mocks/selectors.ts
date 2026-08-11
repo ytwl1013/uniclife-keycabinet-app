@@ -5,7 +5,6 @@ import {
   EventFilter,
   Key,
   KeySlot,
-  LogExportRow,
   MockAppState,
   ProductSku,
   UserAccount,
@@ -103,13 +102,8 @@ export function createMockSelectors(state: MockAppState) {
   const keyById = (keyId: string): Key | undefined =>
     state.keys.find((key) => key.id === keyId);
 
-  const keysForCabinet = (
-    cabinetId: string,
-    options?: { includeDeleted?: boolean },
-  ): Key[] =>
-    state.keys.filter(
-      (key) => key.cabinetId === cabinetId && (options?.includeDeleted || !key.deletedAt),
-    );
+  const keysForCabinet = (cabinetId: string): Key[] =>
+    state.keys.filter((key) => key.cabinetId === cabinetId);
 
   const slotsForCabinet = (cabinetId: string): KeySlot[] =>
     state.slots
@@ -137,30 +131,12 @@ export function createMockSelectors(state: MockAppState) {
   };
 
   const canManageCabinet = (cabinetId: string): boolean => {
-    const role = membershipForUser(cabinetId)?.role;
-    return role === 'owner' || role === 'admin';
-  };
-
-  const canUndoEvent = (eventId: string): boolean => {
-    const event = state.events.find((candidate) => candidate.id === eventId);
-    if (
-      !event ||
-      !event.keyId ||
-      !event.reversible ||
-      event.reversedByEventId ||
-      event.actorId !== authenticatedUserId ||
-      (event.type !== 'checkout' && event.type !== 'return')
-    ) {
-      return false;
-    }
-    const latestKeyEvent = [...state.events].reverse().find((candidate) => candidate.keyId === event.keyId);
-    return latestKeyEvent?.id === event.id;
+    return membershipForUser(cabinetId)?.role === 'admin';
   };
 
   const borrowedKeys = (cabinetId?: string): Key[] =>
     state.keys.filter(
       (key) =>
-        !key.deletedAt &&
         key.status === 'borrowed' &&
         currentCabinetIds.has(key.cabinetId) &&
         (!cabinetId || key.cabinetId === cabinetId),
@@ -173,7 +149,7 @@ export function createMockSelectors(state: MockAppState) {
     const borrowed = keys.filter((key) => key.status === 'borrowed').length;
     const overdue = keys.filter((key) => {
       const loan = currentLoanForKey(key.id);
-      return loan && Date.parse(loan.expectedReturnAt) < now;
+      return Boolean(loan?.expectedReturnAt && Date.parse(loan.expectedReturnAt) < now);
     }).length;
     const capacity = cabinet ? skuById(cabinet.skuId)?.capacity ?? 0 : 0;
     return {
@@ -185,29 +161,6 @@ export function createMockSelectors(state: MockAppState) {
       overdue,
     };
   };
-
-  const logRows = (filter: EventFilter, includeFullContact = false): LogExportRow[] =>
-    events(filter).map((event) => {
-      const actor = state.users.find((user) => user.id === event.actorId);
-      const key = event.keyId ? keyById(event.keyId) : undefined;
-      const loan = event.relatedLoanId
-        ? state.loans.find((candidate) => candidate.id === event.relatedLoanId)
-        : undefined;
-      return {
-        event_id: event.id,
-        occurred_at: event.occurredAt,
-        operation: event.type,
-        cabinet_id: event.cabinetId,
-        key_id: event.keyId ?? '',
-        key_name: key?.name ?? '',
-        actor_id: event.actorId,
-        actor_name: actor?.displayName ?? '',
-        borrower_name: loan?.borrowerName ?? '',
-        borrower_contact: includeFullContact
-          ? loan?.borrowerContact ?? ''
-          : maskContact(loan?.borrowerContact),
-      };
-    });
 
   return {
     currentUser,
@@ -222,9 +175,7 @@ export function createMockSelectors(state: MockAppState) {
     cabinetsForCurrentUser,
     membershipForCurrentUser: (cabinetId: string) => membershipForUser(cabinetId),
     canManageCabinet,
-    canUndoEvent,
     borrowedKeys,
     cabinetMetrics,
-    logRows,
   };
 }

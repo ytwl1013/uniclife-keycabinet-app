@@ -1,4 +1,4 @@
-export type CabinetRole = 'owner' | 'admin' | 'member';
+export type CabinetRole = 'admin';
 
 export type CabinetStatus = 'online' | 'offline' | 'maintenance';
 
@@ -22,7 +22,6 @@ export type CabinetView = {
   availableCount: number;
   checkedOutCount: number;
   overdueCount: number;
-  clearRestoreUntil?: string;
 };
 
 export type SlotView = {
@@ -53,7 +52,7 @@ export type LoanView = {
   borrowerName: string;
   borrowerContact?: string;
   checkedOutAt: string;
-  expectedReturnAt: string;
+  expectedReturnAt?: string;
   returnedAt?: string;
   operatorUserId: string;
 };
@@ -93,7 +92,6 @@ export type EventView = {
   title: string;
   detail?: string;
   borrowerContact?: string;
-  reversible?: boolean;
 };
 
 export type ActivityFilters = {
@@ -105,21 +103,13 @@ export type ActivityFilters = {
   to?: string;
 };
 
-export type ExportFormat = 'csv' | 'xlsx' | 'pdf';
-
 export type CheckoutInput = {
   cabinetId: string;
   keyId: string;
   borrowerName: string;
   borrowerContact?: string;
   checkedOutAt: string;
-  expectedReturnAt: string;
-};
-
-export type ExportArtifactView = {
-  filename: string;
-  mimeType: string;
-  bytes: Uint8Array;
+  expectedReturnAt?: string;
 };
 
 export type PrototypeSnapshot = {
@@ -139,14 +129,12 @@ export type PrototypeSnapshot = {
 export type PrototypeActions = {
   addKey(input: { cabinetId: string; slotId: string; name: string; note: string }): Promise<void>;
   updateKey(input: { keyId: string; name: string; note: string }): Promise<void>;
+  deleteKey(input: { keyId: string }): Promise<void>;
+  renameCabinet(input: { cabinetId: string; name: string }): Promise<void>;
   checkoutKey(input: CheckoutInput): Promise<void>;
   returnKey(input: { cabinetId: string; keyId: string; returnedAt?: string }): Promise<void>;
-  undoEvent(input: { eventId: string }): Promise<void>;
-  setMemberRole(input: { cabinetId: string; membershipId: string; role: 'admin' | 'member' }): Promise<void>;
   removeMember(input: { cabinetId: string; membershipId: string }): Promise<void>;
-  clearKeys(input: { cabinetId: string }): Promise<void>;
-  restoreLastClear(input: { cabinetId: string }): Promise<void>;
-  exportLog(input: { cabinetId: string; format: ExportFormat; includeFullContact: boolean }): Promise<ExportArtifactView>;
+  deleteAllKeys(input: { cabinetId: string }): Promise<void>;
 };
 
 export type PrototypeApp = PrototypeSnapshot & PrototypeActions;

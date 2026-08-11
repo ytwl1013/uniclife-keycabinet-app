@@ -38,7 +38,7 @@ export const cabinetQrSchema = z.object({
   id,
   code: z.string().trim().refine((value) => parseCabinetQrPayload(value) !== null, 'Invalid cabinet QR payload'),
   skuId: id,
-  cabinetId: id,
+  deviceUuid: z.string().uuid(),
   status: z.enum(['active', 'disabled']),
   createdAt: isoDate,
 });
@@ -46,7 +46,7 @@ export const cabinetQrSchema = z.object({
 export const cabinetSchema = z.object({
   id,
   skuId: id,
-  qrId: id,
+  deviceUuid: z.string().uuid(),
   name: z.string().trim().min(1),
   location: z.string(),
   timeZone: z.string().trim().min(1),
@@ -60,7 +60,7 @@ export const membershipSchema = z.object({
   id,
   cabinetId: id,
   userId: id,
-  role: z.enum(['owner', 'admin', 'member']),
+  role: z.literal('admin'),
   active: z.boolean(),
   joinedAt: isoDate,
   removedAt: isoDate.optional(),
@@ -82,9 +82,6 @@ export const keySchema = z.object({
   status: z.enum(['available', 'borrowed']),
   createdAt: isoDate,
   updatedAt: isoDate,
-  deletedAt: isoDate.optional(),
-  recoverableUntil: isoDate.optional(),
-  clearBatchId: id.optional(),
 });
 
 export const loanSchema = z.object({
@@ -94,7 +91,7 @@ export const loanSchema = z.object({
   borrowerName: z.string().trim().min(1),
   borrowerContact: z.string().trim().min(1).optional(),
   checkedOutAt: isoDate,
-  expectedReturnAt: isoDate,
+  expectedReturnAt: isoDate.optional(),
   returnedAt: isoDate.optional(),
   status: z.enum(['active', 'returned', 'cancelled']),
   operatorId: id,
@@ -123,22 +120,10 @@ export const cabinetEventSchema = z.object({
   summaryData: z.record(eventSummaryValueSchema),
 });
 
-export const keyClearBatchSchema = z.object({
-  id,
-  cabinetId: id,
-  actorId: id,
-  clearedAt: isoDate,
-  recoverableUntil: isoDate,
-  restoredAt: isoDate.optional(),
-  status: z.enum(['restorable', 'restored', 'expired']),
-  keySnapshots: z.array(keySchema),
-  slotKeyMap: z.array(z.object({ slotId: id, keyId: id })),
-});
-
 export const consentRecordSchema = z.object({
   id,
   userId: id,
-  kind: z.enum(['terms', 'privacy', 'marketing']),
+  kind: z.enum(['terms', 'privacy']),
   granted: z.boolean(),
   policyVersion: z.string().trim().min(1),
   locale: localeSchema,
@@ -156,7 +141,6 @@ export const domainDataSchema = z.object({
   keys: z.array(keySchema),
   loans: z.array(loanSchema),
   events: z.array(cabinetEventSchema),
-  clearBatches: z.array(keyClearBatchSchema),
   consents: z.array(consentRecordSchema),
 });
 
@@ -183,7 +167,6 @@ function validateReferences(data: MockDomainData): string[] {
   const userIds = new Set(data.users.map((item) => item.id));
   const skuIds = new Set(data.skus.map((item) => item.id));
   const cabinetIds = new Set(data.cabinets.map((item) => item.id));
-  const slotIds = new Set(data.slots.map((item) => item.id));
   const keyIds = new Set(data.keys.map((item) => item.id));
   const loanIds = new Set(data.loans.map((item) => item.id));
   const eventIds = new Set(data.events.map((item) => item.id));
@@ -194,7 +177,9 @@ function validateReferences(data: MockDomainData): string[] {
   unique(data.skus.map((item) => item.sku), 'sku.sku', issues);
   unique(data.qrs.map((item) => item.id), 'qr.id', issues);
   unique(data.qrs.map((item) => item.code), 'qr.code', issues);
+  unique(data.qrs.map((item) => item.deviceUuid), 'qr.device_uuid', issues);
   unique(data.cabinets.map((item) => item.id), 'cabinet.id', issues);
+  unique(data.cabinets.map((item) => item.deviceUuid), 'cabinet.device_uuid', issues);
   unique(data.memberships.map((item) => item.id), 'membership.id', issues);
   unique(
     data.memberships.map((item) => `${item.cabinetId}:${item.userId}`),
@@ -208,16 +193,15 @@ function validateReferences(data: MockDomainData): string[] {
     issues,
   );
   unique(data.keys.map((item) => item.id), 'key.id', issues);
-  unique(data.keys.filter((item) => !item.deletedAt).map((item) => item.slotId), 'key.slot', issues);
+  unique(data.keys.map((item) => item.slotId), 'key.slot', issues);
   unique(data.loans.map((item) => item.id), 'loan.id', issues);
   unique(data.events.map((item) => item.id), 'event.id', issues);
-  unique(data.clearBatches.map((item) => item.id), 'clear_batch.id', issues);
   unique(data.consents.map((item) => item.id), 'consent.id', issues);
 
   for (const cabinet of data.cabinets) {
-    const qr = data.qrs.find((item) => item.id === cabinet.qrId);
+    const qr = data.qrs.find((item) => item.deviceUuid === cabinet.deviceUuid);
     const sku = data.skus.find((item) => item.id === cabinet.skuId);
-    if (!skuIds.has(cabinet.skuId) || !qr || qr.cabinetId !== cabinet.id || qr.skuId !== cabinet.skuId) {
+    if (!skuIds.has(cabinet.skuId) || !qr || qr.skuId !== cabinet.skuId) {
       issues.push(`cabinet_reference:${cabinet.id}`);
     }
     const cabinetSlots = data.slots.filter((item) => item.cabinetId === cabinet.id);
@@ -226,7 +210,14 @@ function validateReferences(data: MockDomainData): string[] {
     }
   }
   for (const qr of data.qrs) {
-    if (!skuIds.has(qr.skuId) || !cabinetIds.has(qr.cabinetId)) {
+    const sku = data.skus.find((item) => item.id === qr.skuId);
+    const payload = parseCabinetQrPayload(qr.code);
+    if (
+      !sku ||
+      !payload ||
+      payload.sku !== sku.sku ||
+      payload.uuid !== qr.deviceUuid
+    ) {
       issues.push(`qr_reference:${qr.id}`);
     }
   }
@@ -245,21 +236,21 @@ function validateReferences(data: MockDomainData): string[] {
     if (!cabinetIds.has(key.cabinetId) || !slot || slot.cabinetId !== key.cabinetId) {
       issues.push(`key_reference:${key.id}`);
     }
-    if (!key.deletedAt && slot?.keyId !== key.id) {
+    if (slot?.keyId !== key.id) {
       issues.push(`key_slot_mismatch:${key.id}`);
     }
   }
   for (const loan of data.loans) {
     if (
       !cabinetIds.has(loan.cabinetId) ||
-      !keyIds.has(loan.keyId) ||
+      (loan.status === 'active' && !keyIds.has(loan.keyId)) ||
       !userIds.has(loan.operatorId) ||
       !eventIds.has(loan.checkoutEventId) ||
       (loan.returnEventId && !eventIds.has(loan.returnEventId))
     ) {
       issues.push(`loan_reference:${loan.id}`);
     }
-    if (Date.parse(loan.expectedReturnAt) <= Date.parse(loan.checkedOutAt)) {
+    if (loan.expectedReturnAt && Date.parse(loan.expectedReturnAt) <= Date.parse(loan.checkedOutAt)) {
       issues.push(`loan_expected_return:${loan.id}`);
     }
     if (loan.status === 'returned' && (!loan.returnedAt || !loan.returnEventId)) {
@@ -270,7 +261,6 @@ function validateReferences(data: MockDomainData): string[] {
     if (
       !cabinetIds.has(event.cabinetId) ||
       !userIds.has(event.actorId) ||
-      (event.keyId && !keyIds.has(event.keyId)) ||
       (event.relatedLoanId && !loanIds.has(event.relatedLoanId)) ||
       (event.reversedByEventId && !eventIds.has(event.reversedByEventId))
     ) {
@@ -282,24 +272,6 @@ function validateReferences(data: MockDomainData): string[] {
       issues.push(`consent_reference:${consent.id}`);
     }
   }
-  for (const batch of data.clearBatches) {
-    if (!cabinetIds.has(batch.cabinetId) || !userIds.has(batch.actorId)) {
-      issues.push(`clear_batch_reference:${batch.id}`);
-    }
-    if (batch.slotKeyMap.some((item) => !slotIds.has(item.slotId))) {
-      issues.push(`clear_batch_slot:${batch.id}`);
-    }
-  }
-
-  for (const cabinet of data.cabinets) {
-    const activeOwners = data.memberships.filter(
-      (item) => item.cabinetId === cabinet.id && item.active && item.role === 'owner',
-    );
-    if (activeOwners.length > 1) {
-      issues.push(`multiple_owners:${cabinet.id}`);
-    }
-  }
-
   for (const key of data.keys) {
     const activeLoans = data.loans.filter(
       (loan) => loan.keyId === key.id && loan.status === 'active',
@@ -307,11 +279,8 @@ function validateReferences(data: MockDomainData): string[] {
     if (activeLoans.length > 1) {
       issues.push(`multiple_active_loans:${key.id}`);
     }
-    if (!key.deletedAt && (key.status === 'borrowed') !== (activeLoans.length === 1)) {
+    if ((key.status === 'borrowed') !== (activeLoans.length === 1)) {
       issues.push(`key_loan_state:${key.id}`);
-    }
-    if (key.deletedAt && activeLoans.length > 0) {
-      issues.push(`deleted_key_active_loan:${key.id}`);
     }
   }
 

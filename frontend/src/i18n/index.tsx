@@ -12,17 +12,20 @@ import { it } from './translations/it';
 import { nl } from './translations/nl';
 import { pl } from './translations/pl';
 import { pt } from './translations/pt';
+import { zhCN } from './translations/zh-cn';
+import { zhTW } from './translations/zh-tw';
 
-export const supportedLocales = ['en-US', 'en-GB', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'pt-PT', 'nl-NL', 'pl-PL'] as const;
+export const supportedLocales = ['en-US', 'en-GB', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'pt-PT', 'nl-NL', 'pl-PL', 'zh-CN', 'zh-TW'] as const;
 export type SupportedLocale = (typeof supportedLocales)[number];
 export type LocalePreference = SupportedLocale | 'system';
 
 export const localeLabels: Record<SupportedLocale, string> = {
   'en-US': 'English (US)', 'en-GB': 'English (UK)', 'de-DE': 'Deutsch', 'fr-FR': 'Français', 'es-ES': 'Español',
   'it-IT': 'Italiano', 'pt-PT': 'Português', 'nl-NL': 'Nederlands', 'pl-PL': 'Polski',
+  'zh-CN': '简体中文', 'zh-TW': '繁體中文',
 };
 
-const translations = { 'en-US': en, 'en-GB': enGB, 'de-DE': de, 'fr-FR': fr, 'es-ES': es, 'it-IT': it, 'pt-PT': pt, 'nl-NL': nl, 'pl-PL': pl };
+const translations = { 'en-US': en, 'en-GB': enGB, 'de-DE': de, 'fr-FR': fr, 'es-ES': es, 'it-IT': it, 'pt-PT': pt, 'nl-NL': nl, 'pl-PL': pl, 'zh-CN': zhCN, 'zh-TW': zhTW };
 const i18n = new I18n(translations);
 i18n.defaultLocale = 'en-US';
 i18n.enableFallback = true;
@@ -32,6 +35,7 @@ export function resolveLocale(languageTag?: string | null, languageCode?: string
   const tag = (languageTag ?? '').toLowerCase();
   const code = (languageCode ?? tag.split('-')[0] ?? '').toLowerCase();
   if (tag.startsWith('en-gb')) return 'en-GB';
+  if (code === 'zh') return tag.includes('tw') || tag.includes('hk') || tag.includes('hant') ? 'zh-TW' : 'zh-CN';
   if (code === 'de') return 'de-DE';
   if (code === 'fr') return 'fr-FR';
   if (code === 'es') return 'es-ES';

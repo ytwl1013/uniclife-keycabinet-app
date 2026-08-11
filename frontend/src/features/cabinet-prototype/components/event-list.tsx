@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { AppIcon, AppIconName, AppIconTone } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
@@ -23,7 +23,7 @@ const eventConfig: Record<CabinetEventKind, { icon: AppIconName; tone: AppIconTo
   admin: { icon: 'settings', tone: 'accent', pill: 'purple' },
 };
 
-export function PrototypeEventList({ events, currentUserId, onUndo, emptyLabel }: { events: EventView[]; currentUserId: string; onUndo?: (event: EventView) => void; emptyLabel: string }) {
+export function PrototypeEventList({ events, emptyLabel }: { events: EventView[]; emptyLabel: string }) {
   if (!events.length) {
     return <PrototypeEventEmpty label={emptyLabel} />;
   }
@@ -32,11 +32,9 @@ export function PrototypeEventList({ events, currentUserId, onUndo, emptyLabel }
     <View>
       {events.map((event, index) => (
         <PrototypeEventRow
-          currentUserId={currentUserId}
           event={event}
           isLast={index === events.length - 1}
           key={event.id}
-          onUndo={onUndo}
         />
       ))}
     </View>
@@ -53,19 +51,14 @@ export function PrototypeEventEmpty({ label }: { label: string }) {
 }
 
 export function PrototypeEventRow({
-  currentUserId,
   event,
   isLast,
-  onUndo,
 }: {
-  currentUserId: string;
   event: EventView;
   isLast: boolean;
-  onUndo?: (event: EventView) => void;
 }) {
   const { locale, t } = useTranslation();
   const style = eventConfig[event.kind];
-  const canUndo = Boolean(onUndo && event.reversible && event.actorUserId === currentUserId);
 
   return (
     <View className="min-h-[98px] flex-row gap-3">
@@ -84,14 +77,7 @@ export function PrototypeEventRow({
         </View>
         <AppText variant="label" tone="foreground">{event.title}</AppText>
         {event.detail ? <AppText variant="caption" tone="content">{event.detail}</AppText> : null}
-        <View className="flex-row items-center justify-between gap-2">
-          <AppText variant="caption" tone="muted">{event.actorName}</AppText>
-          {canUndo ? (
-            <Pressable accessibilityRole="button" className="min-h-9 justify-center rounded-control border border-line px-3 active:opacity-70" onPress={() => onUndo?.(event)}>
-              <AppText variant="caption" tone="brand">{t(trKey('activity.undo'))}</AppText>
-            </Pressable>
-          ) : null}
-        </View>
+        <AppText variant="caption" tone="muted">{event.actorName}</AppText>
       </View>
     </View>
   );

@@ -5,20 +5,20 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { Pill } from '@/components/ui/pill';
 import { SwipeSegmentPager } from '@/components/ui/swipe-segment-pager';
-import { CabinetActivity, CabinetKeys, CabinetOverview, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
+import { CabinetActivity, CabinetKeys, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
 import { ActionButton, Notice, ScreenHeader, SegmentControl, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
 import { TranslationKey, useTranslation } from '@/i18n';
 
 const trKey = (key: string) => key as TranslationKey;
-type CabinetSegment = 'overview' | 'keys' | 'activity' | 'settings';
+type CabinetSegment = 'keys' | 'activity' | 'settings';
 
 export default function CabinetDetailRoute() {
   const params = useLocalSearchParams<{ cabinetId: string }>();
   const cabinetId = Array.isArray(params.cabinetId) ? params.cabinetId[0] : params.cabinetId;
   const { t } = useTranslation();
   const app = usePrototypeApp();
-  const [segment, setSegment] = useState<CabinetSegment>('overview');
+  const [segment, setSegment] = useState<CabinetSegment>('keys');
   const cabinet = app.cabinets.find((candidate) => candidate.id === cabinetId);
 
   if (app.isLoading) {
@@ -46,7 +46,7 @@ export default function CabinetDetailRoute() {
           showsVerticalScrollIndicator={false}>
           <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.notFoundTitle'))} />
           <StatePanel
-            action={<ActionButton label={t(trKey('cabinet.backToList'))} onPress={() => router.replace('/(tabs)/cabinets')} tone="neutral" />}
+            action={<ActionButton label={t(trKey('cabinet.backToList'))} onPress={() => router.replace('/(tabs)')} tone="neutral" />}
             description={t(trKey('cabinet.notFoundDescription'))}
             icon="cabinet"
             title={t(trKey('cabinet.notFoundTitle'))}
@@ -56,12 +56,11 @@ export default function CabinetDetailRoute() {
     );
   }
 
-  const segments = (['overview', 'keys', 'activity', 'settings'] as const).map((value) => ({
+  const segments = (['keys', 'activity', 'settings'] as const).map((value) => ({
     value,
     label: t(trKey(`cabinet.segment.${value}`)),
   }));
   const pages = [
-    { value: 'overview', content: <CabinetOverview app={app} cabinet={cabinet} /> },
     { value: 'keys', content: <CabinetKeys app={app} cabinet={cabinet} /> },
     { value: 'activity', content: <CabinetActivity app={app} cabinet={cabinet} /> },
     { value: 'settings', content: <CabinetSettings app={app} cabinet={cabinet} /> },

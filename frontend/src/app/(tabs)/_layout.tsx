@@ -10,8 +10,6 @@ import { navigationMetrics, useAppTheme } from '@/styles/theme';
 
 const tabRoutes = [
   { id: 'home', screen: 'index', titleKey: 'navigation.home', icon: 'home' },
-  { id: 'cabinets', screen: 'cabinets', titleKey: 'navigation.cabinets', icon: 'cabinetGrid' },
-  { id: 'scan', screen: 'scan', titleKey: 'navigation.scan', icon: 'scan' },
   { id: 'activity', screen: 'activity', titleKey: 'navigation.activity', icon: 'history' },
   { id: 'account', screen: 'account', titleKey: 'navigation.account', icon: 'accountCircle' },
 ] as const satisfies readonly {
@@ -67,7 +65,7 @@ export default function TabLayout() {
             tabBarButtonTestID: `bottom-tab-${route.id}`,
             title: t(route.titleKey),
             tabBarIcon: ({ focused }) => (
-              <BottomTabIcon focused={focused} name={route.icon} primary={route.id === 'scan'} />
+              <BottomTabIcon focused={focused} name={route.icon} />
             ),
           }}
         />

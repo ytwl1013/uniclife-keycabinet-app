@@ -1,8 +1,6 @@
-import { generateExportArtifact, saveExportArtifact } from './exports';
 import { assertMock, MockAppError } from './errors';
 import { developerToolsEnabled as defaultDeveloperToolsEnabled } from './developer-tools';
 import { parseCabinetQrPayload } from './qr-payload';
-import { createMockSelectors } from './selectors';
 import { createInitialMockState } from './seed';
 import {
   asyncStorageAdapter,
@@ -13,19 +11,17 @@ import {
 import {
   AddKeyInput,
   BindCabinetResult,
+  Cabinet,
   CabinetEvent,
   CabinetMembership,
-  CabinetRole,
   CheckOutKeyInput,
   ConsentKind,
-  ExportArtifact,
-  ExportLogOptions,
   Key,
-  KeyClearBatch,
   MockAppState,
   MockStorage,
   QrResolution,
   RegisterInput,
+  RenameCabinetInput,
   ReturnKeyInput,
   UpdateKeyInput,
   UserAccount,
@@ -33,9 +29,7 @@ import {
   supportedLocales,
 } from './types';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const LEGAL_POLICY_VERSION = 'legal-draft-2026-07';
-const MARKETING_POLICY_VERSION = 'marketing-draft-2026-07';
 
 type ResetChallenge = {
   id: string;
@@ -60,34 +54,20 @@ export type MockAppActions = {
   verifyReset(input: { challengeId: string; code: string }): Promise<{ resetToken: string }>;
   resetPassword(input: { resetToken: string; newPassword: string }): Promise<void>;
   changePassword(input: { currentPassword: string; newPassword: string }): Promise<void>;
-  deleteAccount(input?: { releaseSoleCabinets?: boolean } & WriteOptions): Promise<void>;
-  setMarketingConsent(input: { granted: boolean } & WriteOptions): Promise<void>;
+  deleteAccount(input?: WriteOptions): Promise<void>;
   resolveQr(input: { code: string } | string): Promise<QrResolution>;
-  bindCabinet(input: { qrCode: string } & WriteOptions): Promise<BindCabinetResult>;
+  bindCabinet(input: { qrCode: string; name?: string } & WriteOptions): Promise<BindCabinetResult>;
+  renameCabinet(input: RenameCabinetInput): Promise<Cabinet>;
   removeMember(input: { cabinetId: string; membershipId: string } & WriteOptions): Promise<void>;
-  setMemberRole(input: {
-    cabinetId: string;
-    membershipId: string;
-    role: Extract<CabinetRole, 'admin' | 'member'>;
-  } & WriteOptions): Promise<CabinetMembership>;
-  transferOwnership(input: {
-    cabinetId: string;
-    newOwnerUserId: string;
-  } & WriteOptions): Promise<void>;
   addKey(input: AddKeyInput): Promise<Key>;
   updateKey(input: UpdateKeyInput): Promise<Key>;
+  deleteKey(input: { keyId: string } & WriteOptions): Promise<void>;
   checkOutKey(input: CheckOutKeyInput): Promise<{ key: Key; event: CabinetEvent }>;
   returnKey(input: ReturnKeyInput): Promise<{ key: Key; event: CabinetEvent }>;
-  undoEvent(input: { eventId: string } & WriteOptions): Promise<CabinetEvent>;
-  clearCabinetKeys(input: { cabinetId: string } & WriteOptions): Promise<KeyClearBatch>;
-  restoreClearBatch(input: { batchId: string } & WriteOptions): Promise<KeyClearBatch>;
-  exportCabinetLog(input: ExportLogOptions): Promise<ExportArtifact>;
-  downloadCabinetLog(input: ExportLogOptions): Promise<string>;
-  saveExport(artifact: ExportArtifact): Promise<string>;
+  deleteCabinetKeys(input: { cabinetId: string } & WriteOptions): Promise<{ deletedCount: number }>;
   switchAccount(input: { userId: string }): Promise<UserAccount>;
   setOnline(input: { online: boolean }): Promise<void>;
   expireSession(): Promise<void>;
-  advanceTime(input: { days?: number; milliseconds?: number }): Promise<string>;
   resetData(): Promise<void>;
 };
 
@@ -103,6 +83,7 @@ export type CreateMockAppServiceOptions = {
   initialState?: MockAppState;
   resetCodeFactory?: () => string;
   developerToolsEnabled?: boolean;
+  now?: () => Date;
 };
 
 function clone<T>(value: T): T {
@@ -131,6 +112,7 @@ export function createMockAppService(
   const latencyMs = options.latencyMs ?? 240;
   const developerToolsEnabled =
     options.developerToolsEnabled ?? defaultDeveloperToolsEnabled;
+  const now = options.now ?? (() => new Date());
   let state = clone(options.initialState ?? createInitialMockState());
   const listeners = new Set<() => void>();
   const requestResults = new Map<string, unknown>();
@@ -152,7 +134,6 @@ export function createMockAppService(
       state.keys,
       state.loans,
       state.events,
-      state.clearBatches,
       state.consents,
     ];
     return collections.some((collection) => collection.some((entity) => entity.id === candidateId));
@@ -245,9 +226,7 @@ export function createMockAppService(
     cabinetId: string,
     userId: string,
   ): CabinetMembership => {
-    const membership = assertMember(draft, cabinetId, userId);
-    assertMock(membership.role === 'owner' || membership.role === 'admin', 'PERMISSION_DENIED');
-    return membership;
+    return assertMember(draft, cabinetId, userId);
   };
 
   const touchCabinet = (draft: MockAppState, cabinetId: string) => {
@@ -300,6 +279,7 @@ export function createMockAppService(
         });
       }
       const draft = clone(state);
+      draft.now = now().toISOString();
       const result = mutate(draft, user);
       draft.version += 1;
       await replaceState(draft);
@@ -313,7 +293,9 @@ export function createMockAppService(
   const hydrate = async () => {
     try {
       const overlay = await loadStateOverlay(storage);
-      state = overlay ? { ...overlay, hydrated: true } : { ...state, hydrated: true };
+      state = overlay
+        ? { ...overlay, hydrated: true, now: now().toISOString() }
+        : { ...state, hydrated: true, now: now().toISOString() };
     } catch {
       await clearStateOverlay(storage);
       state = { ...createInitialMockState(), hydrated: true };
@@ -379,7 +361,6 @@ export function createMockAppService(
     };
     recordConsent('terms', true, LEGAL_POLICY_VERSION);
     recordConsent('privacy', true, LEGAL_POLICY_VERSION);
-    recordConsent('marketing', input.marketingOptIn, MARKETING_POLICY_VERSION);
     draft.currentUserId = user.id;
     draft.sessionStatus = 'authenticated';
     draft.version += 1;
@@ -478,20 +459,6 @@ export function createMockAppService(
   const deleteAccount: MockAppActions['deleteAccount'] = async (input = {}) => {
     const deletingUserId = state.currentUserId;
     await commit('delete-account', input, (draft, user) => {
-      const owned = draft.memberships.filter(
-        (membership) => membership.userId === user.id && membership.active && membership.role === 'owner',
-      );
-      for (const membership of owned) {
-        const others = draft.memberships.filter(
-          (candidate) =>
-            candidate.cabinetId === membership.cabinetId &&
-            candidate.userId !== user.id &&
-            candidate.active,
-        );
-        if (others.length > 0 || !input.releaseSoleCabinets) {
-          throw new MockAppError('OWNER_TRANSFER_REQUIRED', { cabinetId: membership.cabinetId });
-        }
-      }
       const membershipsToRemove = draft.memberships.filter(
         (candidate) => candidate.userId === user.id && candidate.active,
       );
@@ -546,25 +513,6 @@ export function createMockAppService(
     }
   };
 
-  const setMarketingConsent: MockAppActions['setMarketingConsent'] = async (input) =>
-    commit('marketing-consent', input, (draft, user) => {
-      const current = [...draft.consents]
-        .reverse()
-        .find((record) => record.userId === user.id && record.kind === 'marketing');
-      if (current?.granted && !input.granted && !current.withdrawnAt) {
-        current.withdrawnAt = draft.now;
-      }
-      draft.consents.push({
-        id: id('consent-marketing'),
-        userId: user.id,
-        kind: 'marketing',
-        granted: input.granted,
-        policyVersion: MARKETING_POLICY_VERSION,
-        locale: user.locale,
-        recordedAt: draft.now,
-      });
-    });
-
   const resolveQr: MockAppActions['resolveQr'] = async (input) => {
     const initialUser = assertNetworkSession();
     const initialSessionRevision = sessionRevision;
@@ -577,13 +525,20 @@ export function createMockAppService(
     const code = typeof input === 'string' ? input : input.code;
     const parsed = parseCabinetQrPayload(code);
     assertMock(parsed, 'QR_NOT_FOUND');
-    const qr = state.qrs.find((candidate) => candidate.code === parsed.canonical);
+    const sku = state.skus.find((candidate) => candidate.sku === parsed.sku);
+    assertMock(sku, 'SKU_NOT_FOUND');
+    const qr = state.qrs.find(
+      (candidate) =>
+        candidate.code === parsed.canonical &&
+        candidate.skuId === sku.id &&
+        candidate.deviceUuid === parsed.uuid,
+    );
     assertMock(qr, 'QR_NOT_FOUND');
     assertMock(qr.status === 'active', 'QR_DISABLED');
-    const sku = state.skus.find((candidate) => candidate.id === qr.skuId);
-    const cabinet = state.cabinets.find((candidate) => candidate.id === qr.cabinetId);
-    assertMock(sku, 'SKU_NOT_FOUND');
-    assertMock(cabinet, 'CABINET_NOT_FOUND');
+    const cabinet = state.cabinets.find(
+      (candidate) =>
+        candidate.skuId === sku.id && candidate.deviceUuid === qr.deviceUuid,
+    );
     return clone({ qr, sku, cabinet });
   };
 
@@ -598,21 +553,69 @@ export function createMockAppService(
     );
     const parsed = parseCabinetQrPayload(input.qrCode);
     assertMock(parsed, 'QR_NOT_FOUND');
-    const qr = state.qrs.find((candidate) => candidate.code === parsed.canonical);
+    const sku = state.skus.find((candidate) => candidate.sku === parsed.sku);
+    assertMock(sku, 'SKU_NOT_FOUND');
+    const qr = state.qrs.find(
+      (candidate) =>
+        candidate.code === parsed.canonical &&
+        candidate.skuId === sku.id &&
+        candidate.deviceUuid === parsed.uuid,
+    );
     assertMock(qr, 'QR_NOT_FOUND');
     assertMock(qr.status === 'active', 'QR_DISABLED');
-    const existing = state.memberships.find(
-      (membership) =>
-        membership.cabinetId === qr.cabinetId && membership.userId === user.id && membership.active,
+    const existingCabinet = state.cabinets.find(
+      (candidate) =>
+        candidate.skuId === sku.id && candidate.deviceUuid === qr.deviceUuid,
     );
-    if (existing) {
-      const cabinet = state.cabinets.find((candidate) => candidate.id === qr.cabinetId);
-      assertMock(cabinet, 'CABINET_NOT_FOUND');
-      return clone({ cabinet, membership: existing });
+    const existing = existingCabinet
+      ? state.memberships.find(
+          (membership) =>
+            membership.cabinetId === existingCabinet.id &&
+            membership.userId === user.id &&
+            membership.active,
+        )
+      : undefined;
+    if (existing && existingCabinet) {
+      return clone({ cabinet: existingCabinet, membership: existing });
     }
     return commit('bind-cabinet', omitWriteOptions(input), (draft, currentUser) => {
-      const cabinet = draft.cabinets.find((candidate) => candidate.id === qr.cabinetId);
-      assertMock(cabinet, 'CABINET_NOT_FOUND');
+      const draftSku = draft.skus.find((candidate) => candidate.sku === parsed.sku);
+      const draftQr = draft.qrs.find(
+        (candidate) =>
+          candidate.code === parsed.canonical &&
+          candidate.skuId === draftSku?.id &&
+          candidate.deviceUuid === parsed.uuid,
+      );
+      assertMock(draftSku, 'SKU_NOT_FOUND');
+      assertMock(draftQr, 'QR_NOT_FOUND');
+      let cabinet = draft.cabinets.find(
+        (candidate) =>
+          candidate.skuId === draftSku.id && candidate.deviceUuid === draftQr.deviceUuid,
+      );
+      if (!cabinet) {
+        const cabinetId = id('cabinet');
+        cabinet = {
+          id: cabinetId,
+          skuId: draftSku.id,
+          deviceUuid: draftQr.deviceUuid,
+          name: input.name?.trim() || draftSku.name,
+          location: '',
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+          status: 'online',
+          lastSyncedAt: draft.now,
+          createdAt: draft.now,
+          version: 0,
+        };
+        draft.cabinets.push(cabinet);
+        for (let position = 1; position <= draftSku.capacity; position += 1) {
+          draft.slots.push({
+            id: id('slot'),
+            cabinetId,
+            position,
+            keyId: null,
+          });
+        }
+      }
       const previousMembership = draft.memberships.find(
         (membership) =>
           membership.cabinetId === cabinet.id && membership.userId === currentUser.id,
@@ -623,18 +626,22 @@ export function createMockAppService(
       const hasMembers = draft.memberships.some(
         (membership) => membership.cabinetId === cabinet.id && membership.active,
       );
+      if (!hasMembers && input.name !== undefined) {
+        assertMock(input.name.trim().length > 0, 'INVALID_INPUT');
+        cabinet.name = input.name.trim();
+      }
       const membership: CabinetMembership = previousMembership ?? {
         id: id('membership'),
         cabinetId: cabinet.id,
         userId: currentUser.id,
-        role: hasMembers ? 'member' : 'owner',
+        role: 'admin',
         active: true,
         joinedAt: draft.now,
       };
       if (previousMembership) {
         previousMembership.active = true;
         previousMembership.joinedAt = draft.now;
-        previousMembership.role = hasMembers ? 'member' : 'owner';
+        previousMembership.role = 'admin';
         delete previousMembership.removedAt;
       } else {
         draft.memberships.push(membership);
@@ -644,16 +651,40 @@ export function createMockAppService(
         actorId: currentUser.id,
         type: 'cabinet_bound',
         reversible: false,
-        summaryData: { membershipId: membership.id, role: membership.role },
+        summaryData: {
+          membershipId: membership.id,
+          role: membership.role,
+          sku: draftSku.sku,
+          deviceUuid: draftQr.deviceUuid,
+        },
       });
       touchCabinet(draft, cabinet.id);
       return { cabinet, membership };
     });
   };
 
+  const renameCabinet: MockAppActions['renameCabinet'] = async (input) =>
+    commit('rename-cabinet', input, (draft, user) => {
+      assertManager(draft, input.cabinetId, user.id);
+      assertMock(input.name.trim().length > 0, 'INVALID_INPUT');
+      const cabinet = draft.cabinets.find((candidate) => candidate.id === input.cabinetId);
+      assertMock(cabinet, 'CABINET_NOT_FOUND');
+      const previousName = cabinet.name;
+      cabinet.name = input.name.trim();
+      appendEvent(draft, {
+        cabinetId: cabinet.id,
+        actorId: user.id,
+        type: 'cabinet_renamed',
+        reversible: false,
+        summaryData: { previousName, nextName: cabinet.name },
+      });
+      touchCabinet(draft, cabinet.id);
+      return cabinet;
+    });
+
   const removeMember: MockAppActions['removeMember'] = async (input) =>
     commit('remove-member', input, (draft, user) => {
-      const actor = assertManager(draft, input.cabinetId, user.id);
+      assertManager(draft, input.cabinetId, user.id);
       const target = draft.memberships.find(
         (membership) =>
           membership.id === input.membershipId &&
@@ -661,8 +692,7 @@ export function createMockAppService(
           membership.active,
       );
       assertMock(target, 'MEMBER_NOT_FOUND');
-      assertMock(target.userId !== user.id && target.role !== 'owner', 'CANNOT_REMOVE_OWNER');
-      assertMock(actor.role === 'owner' || target.role === 'member', 'PERMISSION_DENIED');
+      assertMock(target.userId !== user.id, 'PERMISSION_DENIED');
       target.active = false;
       target.removedAt = draft.now;
       appendEvent(draft, {
@@ -671,53 +701,6 @@ export function createMockAppService(
         type: 'member_removed',
         reversible: false,
         summaryData: { membershipId: target.id, removedUserId: target.userId },
-      });
-      touchCabinet(draft, input.cabinetId);
-    });
-
-  const setMemberRole: MockAppActions['setMemberRole'] = async (input) =>
-    commit('set-member-role', input, (draft, user) => {
-      const actor = assertMember(draft, input.cabinetId, user.id);
-      assertMock(actor.role === 'owner', 'PERMISSION_DENIED');
-      const target = draft.memberships.find(
-        (membership) =>
-          membership.id === input.membershipId &&
-          membership.cabinetId === input.cabinetId &&
-          membership.active,
-      );
-      assertMock(target, 'MEMBER_NOT_FOUND');
-      assertMock(target.role !== 'owner', 'PERMISSION_DENIED');
-      target.role = input.role;
-      appendEvent(draft, {
-        cabinetId: input.cabinetId,
-        actorId: user.id,
-        type: 'member_role_changed',
-        reversible: false,
-        summaryData: { membershipId: target.id, role: target.role },
-      });
-      touchCabinet(draft, input.cabinetId);
-      return target;
-    });
-
-  const transferOwnership: MockAppActions['transferOwnership'] = async (input) =>
-    commit('transfer-ownership', input, (draft, user) => {
-      const current = assertMember(draft, input.cabinetId, user.id);
-      assertMock(current.role === 'owner', 'PERMISSION_DENIED');
-      const next = draft.memberships.find(
-        (membership) =>
-          membership.cabinetId === input.cabinetId &&
-          membership.userId === input.newOwnerUserId &&
-          membership.active,
-      );
-      assertMock(next, 'MEMBER_NOT_FOUND');
-      current.role = 'admin';
-      next.role = 'owner';
-      appendEvent(draft, {
-        cabinetId: input.cabinetId,
-        actorId: user.id,
-        type: 'ownership_transferred',
-        reversible: false,
-        summaryData: { previousOwnerId: user.id, newOwnerId: next.userId },
       });
       touchCabinet(draft, input.cabinetId);
     });
@@ -759,7 +742,6 @@ export function createMockAppService(
     commit('update-key', input, (draft, user) => {
       const key = draft.keys.find((candidate) => candidate.id === input.keyId);
       assertMock(key, 'KEY_NOT_FOUND');
-      assertMock(!key.deletedAt, 'KEY_DELETED');
       assertMember(draft, key.cabinetId, user.id);
       const previousName = key.name;
       const previousNote = key.note;
@@ -791,21 +773,45 @@ export function createMockAppService(
       return key;
     });
 
+  const deleteKey: MockAppActions['deleteKey'] = async (input) =>
+    commit('delete-key', input, (draft, user) => {
+      const key = draft.keys.find((candidate) => candidate.id === input.keyId);
+      assertMock(key, 'KEY_NOT_FOUND');
+      assertManager(draft, key.cabinetId, user.id);
+      assertMock(
+        !draft.loans.some((loan) => loan.keyId === key.id && loan.status === 'active'),
+        'ACTIVE_LOANS_BLOCK_CLEAR',
+      );
+      const slot = draft.slots.find((candidate) => candidate.id === key.slotId);
+      if (slot) slot.keyId = null;
+      draft.keys = draft.keys.filter((candidate) => candidate.id !== key.id);
+      appendEvent(draft, {
+        cabinetId: key.cabinetId,
+        keyId: key.id,
+        actorId: user.id,
+        type: 'key_deleted',
+        reversible: false,
+        summaryData: { keyName: key.name, slotId: key.slotId },
+      });
+      touchCabinet(draft, key.cabinetId);
+    });
+
   const checkOutKey: MockAppActions['checkOutKey'] = async (input) =>
     commit('checkout-key', input, (draft, user) => {
       const key = draft.keys.find((candidate) => candidate.id === input.keyId);
       assertMock(key, 'KEY_NOT_FOUND');
-      assertMock(!key.deletedAt, 'KEY_DELETED');
       assertMember(draft, key.cabinetId, user.id);
       assertMock(key.status === 'available', 'KEY_NOT_AVAILABLE');
       assertMock(input.borrowerName.trim().length > 0, 'INVALID_INPUT');
       const checkedOutAt = input.checkedOutAt ?? draft.now;
-      assertMock(
-        Number.isFinite(Date.parse(checkedOutAt)) &&
+      assertMock(Number.isFinite(Date.parse(checkedOutAt)), 'INVALID_INPUT');
+      if (input.expectedReturnAt) {
+        assertMock(
           Number.isFinite(Date.parse(input.expectedReturnAt)) &&
-          Date.parse(input.expectedReturnAt) > Date.parse(checkedOutAt),
-        'EXPECTED_RETURN_INVALID',
-      );
+            Date.parse(input.expectedReturnAt) > Date.parse(checkedOutAt),
+          'EXPECTED_RETURN_INVALID',
+        );
+      }
       const loanId = id('loan');
       const event = appendEvent(draft, {
         cabinetId: key.cabinetId,
@@ -813,7 +819,7 @@ export function createMockAppService(
         actorId: user.id,
         type: 'checkout',
         occurredAt: checkedOutAt,
-        reversible: true,
+        reversible: false,
         relatedLoanId: loanId,
         summaryData: { borrowerName: input.borrowerName.trim(), keyName: key.name },
       });
@@ -839,7 +845,6 @@ export function createMockAppService(
     commit('return-key', input, (draft, user) => {
       const key = draft.keys.find((candidate) => candidate.id === input.keyId);
       assertMock(key, 'KEY_NOT_FOUND');
-      assertMock(!key.deletedAt, 'KEY_DELETED');
       assertMember(draft, key.cabinetId, user.id);
       assertMock(key.status === 'borrowed', 'KEY_NOT_BORROWED');
       const loan = draft.loans.find(
@@ -857,7 +862,7 @@ export function createMockAppService(
         actorId: user.id,
         type: 'return',
         occurredAt: returnedAt,
-        reversible: true,
+        reversible: false,
         relatedLoanId: loan.id,
         summaryData: { keyName: key.name },
       });
@@ -871,177 +876,27 @@ export function createMockAppService(
       return { key, event };
     });
 
-  const undoEvent: MockAppActions['undoEvent'] = async (input) =>
-    commit('undo-event', input, (draft, user) => {
-      const original = draft.events.find((candidate) => candidate.id === input.eventId);
-      assertMock(
-        original?.keyId &&
-          original.actorId === user.id &&
-          original.reversible &&
-          !original.reversedByEventId &&
-          (original.type === 'checkout' || original.type === 'return'),
-        'UNDO_NOT_ALLOWED',
-      );
-      assertMember(draft, original.cabinetId, user.id);
-      const latestKeyEvent = [...draft.events]
-        .reverse()
-        .find((candidate) => candidate.keyId === original.keyId);
-      assertMock(latestKeyEvent?.id === original.id, 'UNDO_NOT_ALLOWED');
-      const key = draft.keys.find((candidate) => candidate.id === original.keyId);
-      const loan = original.relatedLoanId
-        ? draft.loans.find((candidate) => candidate.id === original.relatedLoanId)
-        : undefined;
-      assertMock(key && loan, 'UNDO_NOT_ALLOWED');
-
-      if (original.type === 'checkout') {
-        assertMock(loan.status === 'active' && key.status === 'borrowed', 'UNDO_NOT_ALLOWED');
-        loan.status = 'cancelled';
-        key.status = 'available';
-      } else {
-        assertMock(
-          loan.status === 'returned' && loan.returnEventId === original.id && key.status === 'available',
-          'UNDO_NOT_ALLOWED',
-        );
-        loan.status = 'active';
-        delete loan.returnedAt;
-        delete loan.returnOperatorId;
-        delete loan.returnEventId;
-        key.status = 'borrowed';
-      }
-      key.updatedAt = draft.now;
-      const reversal = appendEvent(draft, {
-        cabinetId: original.cabinetId,
-        keyId: original.keyId,
-        actorId: user.id,
-        type: original.type === 'checkout' ? 'undo_checkout' : 'undo_return',
-        reversible: false,
-        relatedLoanId: loan.id,
-        summaryData: { keyName: key.name, originalEventId: original.id },
-      });
-      original.reversedByEventId = reversal.id;
-      original.reversible = false;
-      touchCabinet(draft, original.cabinetId);
-      return reversal;
-    });
-
-  const clearCabinetKeys: MockAppActions['clearCabinetKeys'] = async (input) =>
-    commit('clear-cabinet-keys', input, (draft, user) => {
+  const deleteCabinetKeys: MockAppActions['deleteCabinetKeys'] = async (input) =>
+    commit('delete-cabinet-keys', input, (draft, user) => {
       assertManager(draft, input.cabinetId, user.id);
-      assertMock(
-        !draft.loans.some(
-          (loan) => loan.cabinetId === input.cabinetId && loan.status === 'active',
-        ),
-        'ACTIVE_LOANS_BLOCK_CLEAR',
-      );
-      const keys = draft.keys.filter(
-        (key) => key.cabinetId === input.cabinetId && !key.deletedAt,
-      );
+      const keys = draft.keys.filter((key) => key.cabinetId === input.cabinetId);
       assertMock(keys.length > 0, 'NO_KEYS_TO_CLEAR');
-      const batchId = id('clear-batch');
-      const recoverableUntil = new Date(Date.parse(draft.now) + 7 * DAY_MS).toISOString();
-      const batch: KeyClearBatch = {
-        id: batchId,
-        cabinetId: input.cabinetId,
-        actorId: user.id,
-        clearedAt: draft.now,
-        recoverableUntil,
-        status: 'restorable',
-        keySnapshots: clone(keys),
-        slotKeyMap: keys.map((key) => ({ slotId: key.slotId, keyId: key.id })),
-      };
-      draft.clearBatches.push(batch);
+      const deletedIds = new Set(keys.map((key) => key.id));
       for (const key of keys) {
-        key.deletedAt = draft.now;
-        key.recoverableUntil = recoverableUntil;
-        key.clearBatchId = batchId;
-        key.updatedAt = draft.now;
         const slot = draft.slots.find((candidate) => candidate.id === key.slotId);
-        if (slot) {
-          slot.keyId = null;
-        }
+        if (slot) slot.keyId = null;
       }
+      draft.keys = draft.keys.filter((key) => !deletedIds.has(key.id));
       appendEvent(draft, {
         cabinetId: input.cabinetId,
         actorId: user.id,
-        type: 'keys_cleared',
+        type: 'keys_deleted',
         reversible: false,
-        summaryData: {
-          batchId,
-          keyCount: keys.length,
-          recoverableUntil,
-        },
+        summaryData: { keyCount: keys.length },
       });
       touchCabinet(draft, input.cabinetId);
-      return batch;
+      return { deletedCount: keys.length };
     });
-
-  const restoreClearBatch: MockAppActions['restoreClearBatch'] = async (input) =>
-    commit('restore-clear-batch', input, (draft, user) => {
-      const batch = draft.clearBatches.find((candidate) => candidate.id === input.batchId);
-      assertMock(batch, 'CLEAR_BATCH_NOT_FOUND');
-      assertMember(draft, batch.cabinetId, user.id);
-      assertMock(batch.status !== 'restored', 'CLEAR_BATCH_ALREADY_RESTORED');
-      assertMock(
-        batch.status === 'restorable' && Date.parse(draft.now) <= Date.parse(batch.recoverableUntil),
-        'CLEAR_BATCH_EXPIRED',
-      );
-      for (const mapping of batch.slotKeyMap) {
-        const slot = draft.slots.find((candidate) => candidate.id === mapping.slotId);
-        assertMock(slot, 'SLOT_NOT_FOUND');
-        assertMock(!slot.keyId || slot.keyId === mapping.keyId, 'RESTORE_CONFLICT', {
-          slotId: mapping.slotId,
-        });
-      }
-      for (const snapshot of batch.keySnapshots) {
-        const index = draft.keys.findIndex((candidate) => candidate.id === snapshot.id);
-        const restored = { ...clone(snapshot), updatedAt: draft.now };
-        if (index >= 0) {
-          draft.keys[index] = restored;
-        } else {
-          draft.keys.push(restored);
-        }
-        const slot = draft.slots.find((candidate) => candidate.id === snapshot.slotId);
-        assertMock(slot, 'SLOT_NOT_FOUND');
-        slot.keyId = snapshot.id;
-      }
-      batch.status = 'restored';
-      batch.restoredAt = draft.now;
-      appendEvent(draft, {
-        cabinetId: batch.cabinetId,
-        actorId: user.id,
-        type: 'keys_restored',
-        reversible: false,
-        summaryData: { batchId: batch.id, keyCount: batch.keySnapshots.length },
-      });
-      touchCabinet(draft, batch.cabinetId);
-      return batch;
-    });
-
-  const exportCabinetLog: MockAppActions['exportCabinetLog'] = async (input) => {
-    const user = assertSession();
-    const membership = assertMember(state, input.cabinetId, user.id);
-    if (input.includeFullContact) {
-      assertMock(
-        membership.role === 'owner' || membership.role === 'admin',
-        'EXPORT_FULL_CONTACT_FORBIDDEN',
-      );
-    }
-    const selectors = createMockSelectors(state);
-    const rows = selectors.logRows(
-      { ...input.filter, cabinetId: input.cabinetId },
-      input.includeFullContact ?? false,
-    );
-    return generateExportArtifact({
-      cabinetId: input.cabinetId,
-      format: input.format,
-      rows,
-      generatedAt: state.now,
-      fontBytes: input.fontBytes,
-    });
-  };
-
-  const downloadCabinetLog: MockAppActions['downloadCabinetLog'] = async (input) =>
-    saveExportArtifact(await exportCabinetLog(input));
 
   const switchAccount: MockAppActions['switchAccount'] = async ({ userId }) => {
     const user = state.users.find(
@@ -1062,21 +917,6 @@ export function createMockAppService(
 
   const expireSession = async () => {
     await replaceState({ ...state, currentUserId: null, sessionStatus: 'expired' });
-  };
-
-  const advanceTime: MockAppActions['advanceTime'] = async ({ days = 0, milliseconds = 0 }) => {
-    const increment = days * DAY_MS + milliseconds;
-    assertMock(Number.isFinite(increment) && increment >= 0, 'INVALID_INPUT');
-    const now = new Date(Date.parse(state.now) + increment).toISOString();
-    const draft = clone(state);
-    draft.now = now;
-    for (const batch of draft.clearBatches) {
-      if (batch.status === 'restorable' && Date.parse(now) > Date.parse(batch.recoverableUntil)) {
-        batch.status = 'expired';
-      }
-    }
-    await replaceState(draft);
-    return now;
   };
 
   const resetData = async () => {
@@ -1108,26 +948,19 @@ export function createMockAppService(
     resetPassword,
     changePassword,
     deleteAccount,
-    setMarketingConsent,
     resolveQr,
     bindCabinet,
+    renameCabinet,
     removeMember,
-    setMemberRole,
-    transferOwnership,
     addKey,
     updateKey,
+    deleteKey,
     checkOutKey,
     returnKey,
-    undoEvent,
-    clearCabinetKeys,
-    restoreClearBatch,
-    exportCabinetLog,
-    downloadCabinetLog,
-    saveExport: saveExportArtifact,
+    deleteCabinetKeys,
     switchAccount,
     setOnline,
     expireSession,
-    advanceTime,
     resetData,
   };
 

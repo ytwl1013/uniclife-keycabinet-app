@@ -1,35 +1,24 @@
 [
   {
-    "id": "sku-uc24-white",
-    "sku": "UL-KC-24-WH",
-    "model": "UC-2400",
-    "name": "UnicLife Key Cabinet 24",
-    "color": "Arctic White",
-    "capacity": 24,
-    "description": "Connected compact cabinet for offices and shared workspaces.",
-    "manualUrl": "https://example.com/manuals/uc-2400",
-    "imageAsset": "cabinet-24-white"
+    "id": "sku-bg5163-bk",
+    "sku": "BG5163-BK",
+    "model": "BG5163-BK",
+    "name": "Uniclife 32 Position Key Cabinet",
+    "color": "Black",
+    "capacity": 32,
+    "description": "Uniclife wall-mounted key cabinet with 32 numbered positions.",
+    "manualUrl": "https://example.com/manuals/bg5163-bk",
+    "imageAsset": "cabinet-bg5163-bk"
   },
   {
-    "id": "sku-uc48-navy",
-    "sku": "UL-KC-48-NV",
-    "model": "UC-4800",
-    "name": "UnicLife Key Cabinet 48",
-    "color": "Midnight Navy",
-    "capacity": 48,
-    "description": "Connected cabinet for property and facilities teams.",
-    "manualUrl": "https://example.com/manuals/uc-4800",
-    "imageAsset": "cabinet-48-navy"
-  },
-  {
-    "id": "sku-uc12-blue",
-    "sku": "UL-KC-12-BL",
-    "model": "UC-1200",
-    "name": "UnicLife Key Cabinet 12",
-    "color": "Cobalt Blue",
-    "capacity": 12,
-    "description": "Portable connected cabinet for small teams.",
-    "manualUrl": "https://example.com/manuals/uc-1200",
-    "imageAsset": "cabinet-12-blue"
+    "id": "sku-bg0680-bk",
+    "sku": "BG0680-BK",
+    "model": "BG0680-BK",
+    "name": "Uniclife 60 Position Key Cabinet",
+    "color": "Black",
+    "capacity": 60,
+    "description": "Uniclife wall-mounted key cabinet with 60 numbered positions.",
+    "manualUrl": "https://example.com/manuals/bg0680-bk",
+    "imageAsset": "cabinet-bg0680-bk"
   }
 ]

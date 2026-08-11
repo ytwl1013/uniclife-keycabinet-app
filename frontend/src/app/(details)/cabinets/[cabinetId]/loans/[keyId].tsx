@@ -6,7 +6,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { DateTimeField } from '@/components/ui/date-time-field';
 import { isExpectedReturnAfter } from '@/components/ui/date-time';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
-import { ActionButton, FormField, Notice, ScreenHeader, SectionCard, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
+import { ActionButton, FilterChip, FormField, Notice, ScreenHeader, SectionCard, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
 import { TranslationKey, useTranslation } from '@/i18n';
 
@@ -21,14 +21,15 @@ export default function CheckOutKeyRoute() {
   const cabinet = app.cabinets.find((candidate) => candidate.id === cabinetId);
   const key = app.keys.find((candidate) => candidate.id === keyId && candidate.cabinetId === cabinetId);
   const defaults = useMemo(() => {
-    const start = new Date(app.now);
+    const start = new Date();
     const due = new Date(start.getTime() + 24 * 60 * 60 * 1000);
     return { start: start.toISOString(), due: due.toISOString() };
-  }, [app.now]);
+  }, []);
   const [borrowerName, setBorrowerName] = useState('');
   const [borrowerContact, setBorrowerContact] = useState('');
   const [checkedOutAt, setCheckedOutAt] = useState(defaults.start);
   const [expectedReturnAt, setExpectedReturnAt] = useState(defaults.due);
+  const [noExpectedReturn, setNoExpectedReturn] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const confirmation = usePrototypeDialog();
@@ -53,11 +54,11 @@ export default function CheckOutKeyRoute() {
   const validate = () => {
     const next: Record<string, string> = {};
     const checkedOut = new Date(checkedOutAt);
-    const due = new Date(expectedReturnAt);
+    const due = noExpectedReturn ? null : new Date(expectedReturnAt);
     if (!borrowerName.trim()) next.borrowerName = t(trKey('loan.borrowerRequired'));
     if (Number.isNaN(checkedOut.getTime())) next.checkedOutAt = t(trKey('loan.invalidDate'));
-    if (Number.isNaN(due.getTime())) next.expectedReturnAt = t(trKey('loan.invalidDate'));
-    if (!next.checkedOutAt && !next.expectedReturnAt && !isExpectedReturnAfter(checkedOutAt, expectedReturnAt)) next.expectedReturnAt = t(trKey('loan.dueAfterCheckout'));
+    if (due && Number.isNaN(due.getTime())) next.expectedReturnAt = t(trKey('loan.invalidDate'));
+    if (!noExpectedReturn && !next.checkedOutAt && !next.expectedReturnAt && !isExpectedReturnAfter(checkedOutAt, expectedReturnAt)) next.expectedReturnAt = t(trKey('loan.dueAfterCheckout'));
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -72,7 +73,7 @@ export default function CheckOutKeyRoute() {
         borrowerName: borrowerName.trim(),
         borrowerContact: borrowerContact.trim() || undefined,
         checkedOutAt: new Date(checkedOutAt).toISOString(),
-        expectedReturnAt: new Date(expectedReturnAt).toISOString(),
+        expectedReturnAt: noExpectedReturn ? undefined : new Date(expectedReturnAt).toISOString(),
       });
       await confirmation.present({
         title: t(trKey('loan.checkedOutTitle')),
@@ -133,13 +134,23 @@ export default function CheckOutKeyRoute() {
             timeZone={cabinet.timezone}
             value={checkedOutAt}
           />
-          <DateTimeField
-            error={errors.expectedReturnAt}
-            label={t(trKey('loan.expectedReturnAt'))}
-            onChange={(value) => { setExpectedReturnAt(value); setErrors((current) => ({ ...current, expectedReturnAt: '' })); }}
-            timeZone={cabinet.timezone}
-            value={expectedReturnAt}
+          <FilterChip
+            label={t(trKey('loan.noExpectedReturnOption'))}
+            onPress={() => {
+              setNoExpectedReturn((current) => !current);
+              setErrors((current) => ({ ...current, expectedReturnAt: '' }));
+            }}
+            selected={noExpectedReturn}
           />
+          {!noExpectedReturn ? (
+            <DateTimeField
+              error={errors.expectedReturnAt}
+              label={t(trKey('loan.expectedReturnAt'))}
+              onChange={(value) => { setExpectedReturnAt(value); setErrors((current) => ({ ...current, expectedReturnAt: '' })); }}
+              timeZone={cabinet.timezone}
+              value={expectedReturnAt}
+            />
+          ) : null}
             </SectionCard>
           </ScrollView>
           {confirmation.dialog}

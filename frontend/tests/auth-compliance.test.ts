@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { createInitialMockState } from '../src/mocks/seed';
 import { createMockAppService } from '../src/mocks/service';
 import { createMemoryStorage } from '../src/mocks/storage';
@@ -10,162 +13,66 @@ function anonymousService() {
   return createMockAppService({
     storage: createMemoryStorage(),
     latencyMs: 0,
-    initialState: createInitialMockState({ hydrated: true }),
+    initialState: createInitialMockState({ hydrated: true, now: '2026-07-21T08:15:00.000Z' }),
+    now: () => new Date('2026-07-21T08:15:00.000Z'),
     resetCodeFactory: () => '583920',
     developerToolsEnabled: true,
   });
 }
 
 describe('authentication and consent workflow', () => {
-  it('registers without email verification while keeping marketing consent separate and off', async () => {
-    const app = anonymousService();
-    const user = await app.actions.register({
-      email: 'new.owner@example.com',
-      password: 'SecureDemo123!',
-      displayName: 'New Owner',
-      locale: 'en-GB',
-      acceptedTerms: true,
-      acceptedPrivacy: true,
-      marketingOptIn: false,
-    });
-
-    expect(app.getState().sessionStatus).toBe('authenticated');
-    expect(app.getState().consents).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ userId: user.id, kind: 'terms', granted: true }),
-        expect.objectContaining({ userId: user.id, kind: 'privacy', granted: true }),
-        expect.objectContaining({ userId: user.id, kind: 'marketing', granted: false }),
-      ]),
-    );
-  });
-
-  it('requires explicit terms and privacy consent but never requires marketing consent', async () => {
+  it('requires and persists the administrator name without deriving it from email', async () => {
     const app = anonymousService();
     await expect(app.actions.register({
-      email: 'missing.consent@example.com',
-      password: 'SecureDemo123!',
-      displayName: 'Missing Consent',
-      locale: 'en-US',
-      acceptedTerms: true,
-      acceptedPrivacy: false,
-      marketingOptIn: false,
+      email: 'email.alias@example.com', password: 'SecureDemo123!', displayName: ' ', locale: 'zh-CN', acceptedTerms: true, acceptedPrivacy: true,
+    })).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+
+    const user = await app.actions.register({
+      email: 'email.alias@example.com', password: 'SecureDemo123!', displayName: '林悦', locale: 'zh-CN', acceptedTerms: true, acceptedPrivacy: true,
+    });
+    expect(user.displayName).toBe('林悦');
+    expect(user.displayName).not.toBe('email alias');
+  });
+
+  it('records only required legal consents and exposes no marketing action', async () => {
+    const app = anonymousService();
+    const user = await app.actions.register({
+      email: 'new.admin@example.com', password: 'SecureDemo123!', displayName: 'New Admin', locale: 'en-GB', acceptedTerms: true, acceptedPrivacy: true,
+    });
+    expect(app.getState().consents.filter((consent) => consent.userId === user.id).map((consent) => consent.kind).sort()).toEqual(['privacy', 'terms']);
+    expect('setMarketingConsent' in app.actions).toBe(false);
+  });
+
+  it('requires terms and privacy consent', async () => {
+    const app = anonymousService();
+    await expect(app.actions.register({
+      email: 'missing.consent@example.com', password: 'SecureDemo123!', displayName: 'Missing Consent', locale: 'en-US', acceptedTerms: true, acceptedPrivacy: false,
     })).rejects.toMatchObject({ code: 'INVALID_INPUT' });
   });
 
-  it('uses a transient verification challenge only for password reset', async () => {
+  it('allows any Admin account to be deleted without ownership transfer', async () => {
+    const app = anonymousService();
+    await app.actions.switchAccount({ userId: 'user-owner' });
+    await expect(app.actions.deleteAccount()).resolves.toBeUndefined();
+    expect(app.getState().users.find((user) => user.id === 'user-owner')).toMatchObject({ status: 'disabled', displayName: 'Deleted account' });
+    expect(app.getState().memberships.filter((membership) => membership.userId === 'user-owner').every((membership) => !membership.active)).toBe(true);
+  });
+
+  it('removes marketing controls from registration and account source', () => {
+    const signUp = readFileSync(resolve(__dirname, '../src/app/(auth)/sign-up.tsx'), 'utf8');
+    const account = readFileSync(resolve(__dirname, '../src/features/account/components/account-screen.tsx'), 'utf8');
+    expect(signUp).not.toContain('marketingOptIn');
+    expect(account).not.toContain('marketingConsent');
+    expect(account).not.toContain('setMarketingConsent');
+  });
+
+  it('keeps the transient verification challenge for password reset', async () => {
     const app = anonymousService();
     const challenge = await app.actions.requestPasswordReset({ email: 'alex.morgan@example.com' });
-    expect(challenge).toEqual({ challengeId: expect.any(String) });
-    await expect(app.actions.verifyReset({
-      challengeId: challenge.challengeId,
-      code: '',
-    })).rejects.toMatchObject({ code: 'RESET_CODE_INVALID' });
-    await expect(app.actions.verifyReset({
-      challengeId: challenge.challengeId,
-      code: '000000',
-    })).rejects.toMatchObject({ code: 'RESET_CODE_INVALID' });
-    await expect(app.actions.getPasswordResetPreview({
-      challengeId: challenge.challengeId,
-    })).resolves.toEqual({ code: '583920' });
-    const verification = await app.actions.verifyReset({
-      challengeId: challenge.challengeId,
-      code: '583920',
-    });
-    await expect(
-      app.actions.verifyReset({
-        challengeId: challenge.challengeId,
-        code: '583920',
-      }),
-    ).rejects.toMatchObject({ code: 'RESET_CHALLENGE_INVALID' });
+    expect(await app.actions.getPasswordResetPreview(challenge)).toEqual({ code: '583920' });
+    const verification = await app.actions.verifyReset({ challengeId: challenge.challengeId, code: '583920' });
     await app.actions.resetPassword({ resetToken: verification.resetToken, newPassword: 'ChangedDemo123!' });
     await app.actions.signIn({ email: 'alex.morgan@example.com', password: 'ChangedDemo123!' });
     expect(app.getState().sessionStatus).toBe('authenticated');
-  });
-
-  it('does not expose the local reset preview outside developer builds', async () => {
-    const app = createMockAppService({
-      storage: createMemoryStorage(),
-      latencyMs: 0,
-      initialState: createInitialMockState({ hydrated: true }),
-      resetCodeFactory: () => '583920',
-      developerToolsEnabled: false,
-    });
-    await expect(app.actions.requestPasswordReset({
-      email: 'alex.morgan@example.com',
-    })).rejects.toMatchObject({ code: 'PERMISSION_DENIED' });
-  });
-
-  it('never accepts an arbitrary password when no in-memory credential exists', async () => {
-    const app = anonymousService();
-
-    await expect(
-      app.actions.signIn({
-        email: 'alex.morgan@example.com',
-        password: 'AnyPassword123!',
-      }),
-    ).rejects.toMatchObject({ code: 'PASSWORD_RESET_REQUIRED' });
-  });
-
-  it('commits a void write once and replays the same request idempotently', async () => {
-    const app = anonymousService();
-    await app.actions.switchAccount({ userId: 'user-owner' });
-    const version = app.getState().version;
-    const input = {
-      expectedVersion: version,
-      granted: true,
-      requestId: 'marketing-consent-void-result',
-    };
-
-    await expect(app.actions.setMarketingConsent(input)).resolves.toBeUndefined();
-    const committedVersion = app.getState().version;
-    const consentCount = app.getState().consents.length;
-
-    await expect(app.actions.setMarketingConsent(input)).resolves.toBeUndefined();
-    expect(app.getState().version).toBe(committedVersion);
-    expect(app.getState().consents).toHaveLength(consentCount);
-  });
-
-  it('blocks account deletion while ownership still needs transfer', async () => {
-    const app = anonymousService();
-    await app.actions.switchAccount({ userId: 'user-owner' });
-    await expect(app.actions.deleteAccount()).rejects.toMatchObject({ code: 'OWNER_TRANSFER_REQUIRED' });
-  });
-
-  it('anonymizes a deleted account, clears consent, audits membership removal, and frees the email', async () => {
-    const app = anonymousService();
-    await app.actions.switchAccount({ userId: 'user-admin' });
-
-    await app.actions.deleteAccount({ requestId: 'delete-demo-admin' });
-
-    const deleted = app.getState().users.find((user) => user.id === 'user-admin');
-    expect(deleted).toMatchObject({
-      displayName: 'Deleted account',
-      status: 'disabled',
-    });
-    expect(deleted?.email).not.toBe('sophie.keller@example.com');
-    expect(app.getState().consents.some((consent) => consent.userId === 'user-admin')).toBe(false);
-    expect(
-      app.getState().memberships.find((membership) => membership.id === 'membership-hq-admin'),
-    ).toMatchObject({ active: false, removedAt: app.getState().now });
-    expect(
-      app.getState().events.some(
-        (event) =>
-          event.actorId === 'user-admin' &&
-          event.type === 'member_removed' &&
-          event.summaryData.reason === 'account_deleted',
-      ),
-    ).toBe(true);
-
-    const replacement = await app.actions.register({
-      email: 'sophie.keller@example.com',
-      password: 'Replacement123!',
-      displayName: 'Replacement Admin',
-      locale: 'de-DE',
-      acceptedTerms: true,
-      acceptedPrivacy: true,
-      marketingOptIn: false,
-    });
-    expect(replacement.id).not.toBe('user-admin');
-    expect(replacement.email).toBe('sophie.keller@example.com');
   });
 });

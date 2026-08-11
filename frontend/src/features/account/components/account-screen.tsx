@@ -1,5 +1,5 @@
 import { Href, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
@@ -22,10 +22,9 @@ import {
   ConfirmationPanel,
   FeedbackBanner,
   SettingsAction,
-  ToggleRow,
 } from './account-ui';
 
-type PendingAction = 'language' | 'marketing' | 'sign-out' | null;
+type PendingAction = 'language' | 'sign-out' | null;
 
 const accountRoutes = {
   changePassword: '/(details)/account/change-password' as Href,
@@ -58,14 +57,6 @@ export function AccountScreen() {
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [feedback, setFeedback] = useState<{ message: string; tone: 'success' | 'danger' } | null>(null);
 
-  const marketingConsent = useMemo(() => {
-    if (!currentUser) return false;
-    return [...state.consents]
-      .reverse()
-      .find((record) => record.userId === currentUser.id && record.kind === 'marketing')
-      ?.granted ?? false;
-  }, [currentUser, state.consents]);
-
   if (!state.hydrated) {
     return <AccountLoading label={t('common.loading')} />;
   }
@@ -97,23 +88,6 @@ export function AccountScreen() {
     try {
       await setLocalePreference(next);
       setLanguageOpen(false);
-    } catch (caught) {
-      fail(caught);
-    } finally {
-      setPending(null);
-    }
-  };
-
-  const updateMarketing = async (granted: boolean) => {
-    setPending('marketing');
-    setFeedback(null);
-    try {
-      await actions.setMarketingConsent({
-        expectedVersion: state.version,
-        granted,
-        requestId: `marketing-${currentUser.id}-${state.version}-${granted}`,
-      });
-      setFeedback({ message: t('account.actionComplete'), tone: 'success' });
     } catch (caught) {
       fail(caught);
     } finally {
@@ -156,10 +130,7 @@ export function AccountScreen() {
         <View className="w-full flex-row items-start">
           <AccountMetric label={t('navigation.cabinets')} value={memberships.length} />
           <AccountMetric label={t('account.languageTitle')} value={locale.split('-')[0].toUpperCase()} />
-          <AccountMetric
-            label={t('account.marketingTitle')}
-            value={t(marketingConsent ? 'account.marketingOn' : 'account.marketingOff')}
-          />
+          <AccountMetric label={t('account.adminRole')} value={t('cabinet.role.admin')} />
         </View>
       </View>
 
@@ -184,17 +155,6 @@ export function AccountScreen() {
           icon="notification"
           label={t('account.dataUse')}
           onPress={() => router.push(accountRoutes.data)}
-        />
-      </AccountSection>
-
-      <AccountSection icon="settings" title={t('account.preferencesTitle')}>
-        <ToggleRow
-          description={t('account.marketingShortDescription')}
-          disabled={!state.online || pending === 'marketing'}
-          label={t('account.marketingOptIn')}
-          onChange={(next) => void updateMarketing(next)}
-          value={marketingConsent}
-          valueLabel={marketingConsent ? t('account.marketingOn') : t('account.marketingOff')}
         />
       </AccountSection>
 

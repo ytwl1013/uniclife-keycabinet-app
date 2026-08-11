@@ -19,11 +19,11 @@ import {
   SettingsAction,
 } from './account-ui';
 
-type PendingAction = 'network' | 'switch-account' | 'advance-time' | 'restore' | 'reset' | null;
+type PendingAction = 'network' | 'switch-account' | 'reset' | null;
 
 export function DeveloperSettingsScreen() {
   const router = useRouter();
-  const { formatDateTime, t } = useTranslation();
+  const { t } = useTranslation();
   const { actions, currentUser, state } = useMockApp();
   const [pending, setPending] = useState<PendingAction>(null);
   const [showAccounts, setShowAccounts] = useState(false);
@@ -32,12 +32,6 @@ export function DeveloperSettingsScreen() {
   const [feedback, setFeedback] = useState<{ message: string; tone: 'success' | 'danger' } | null>(null);
 
   const activeUsers = useMemo(() => state.users.filter((user) => user.status === 'active'), [state.users]);
-  const recoverableBatch = useMemo(
-    () => state.clearBatches
-      .filter((batch) => batch.status === 'restorable' && Date.parse(batch.recoverableUntil) >= Date.parse(state.now))
-      .sort((left, right) => Date.parse(right.clearedAt) - Date.parse(left.clearedAt))[0],
-    [state.clearBatches, state.now],
-  );
   const sampleQr = useMemo(
     () => state.qrs.find((qr) => qr.status === 'active'),
     [state.qrs],
@@ -77,37 +71,6 @@ export function DeveloperSettingsScreen() {
       await actions.switchAccount({ userId });
       setShowAccounts(false);
       complete();
-    } catch (caught) {
-      fail(caught);
-    } finally {
-      setPending(null);
-    }
-  };
-
-  const advanceTime = async () => {
-    setPending('advance-time');
-    setFeedback(null);
-    try {
-      await actions.advanceTime({ days: 8 });
-      complete();
-    } catch (caught) {
-      fail(caught);
-    } finally {
-      setPending(null);
-    }
-  };
-
-  const restoreLatestBatch = async () => {
-    if (!recoverableBatch) return;
-    setPending('restore');
-    setFeedback(null);
-    try {
-      await actions.restoreClearBatch({
-        batchId: recoverableBatch.id,
-        expectedVersion: state.version,
-        requestId: `restore-${recoverableBatch.id}-${state.version}`,
-      });
-      setFeedback({ message: t('account.recoverySuccess'), tone: 'success' });
     } catch (caught) {
       fail(caught);
     } finally {
@@ -176,20 +139,6 @@ export function DeveloperSettingsScreen() {
             })}
           </View>
         ) : null}
-        <SettingsAction
-          detail={formatDateTime(state.now)}
-          disabled={pending === 'advance-time'}
-          icon="calendar"
-          label={t('account.advanceTime')}
-          onPress={() => void advanceTime()}
-        />
-        <SettingsAction
-          detail={recoverableBatch ? formatDateTime(recoverableBatch.recoverableUntil) : t('account.noRecovery')}
-          disabled={!recoverableBatch || !state.online || pending === 'restore'}
-          icon="return"
-          label={t('account.restoreClear')}
-          onPress={() => void restoreLatestBatch()}
-        />
         <SettingsAction
           detail={t('account.sampleQrDescription')}
           icon="scan"

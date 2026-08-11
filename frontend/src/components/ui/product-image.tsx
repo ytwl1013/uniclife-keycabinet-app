@@ -4,9 +4,8 @@ import { View } from 'react-native';
 import { AppIcon } from '@/components/ui/app-icon';
 
 export const productImageAssets = {
-  'cabinet-12-blue': require('@/assets/images/keycabinet-k12.png'),
-  'cabinet-24-white': require('@/assets/images/keycabinet-k24.png'),
-  'cabinet-48-navy': require('@/assets/images/keycabinet-k48.png'),
+  'cabinet-bg5163-bk': require('@/assets/images/bg5163-bk.jpg'),
+  'cabinet-bg0680-bk': require('@/assets/images/bg0680-bk.jpg'),
 } as const satisfies Record<string, ImageSource>;
 
 export type ProductImageAssetKey = keyof typeof productImageAssets;
@@ -51,6 +50,7 @@ export function ProductImage({ accessibilityLabel, assetKey, variant }: ProductI
       contentFit="contain"
       source={productImageAssets[assetKey]}
       style={size}
+      testID="product-image"
       transition={120}
     />
   );
