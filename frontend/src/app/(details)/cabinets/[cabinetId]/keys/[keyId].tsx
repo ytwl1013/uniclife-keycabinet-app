@@ -67,16 +67,25 @@ export default function KeyDetailRoute() {
   };
 
   const returnKey = async () => {
+    const loan = key.activeLoan;
+    if (!loan) return;
+    const returnedAt = new Date().toISOString();
     const confirmed = await confirmation.present({
       title: t(trKey('loan.returnTitle')),
-      description: t(trKey('loan.returnDescription'), { key: key.name }),
+      description: t(trKey('borrowed.returnConfirmationDescription'), {
+        key: key.name,
+        cabinet: cabinet.name,
+        borrower: loan.borrowerName,
+        checkedOutAt: formatDate(locale, loan.checkedOutAt),
+        returnedAt: formatDate(locale, returnedAt),
+      }),
       confirmLabel: t(trKey('loan.confirmReturn')),
       cancelLabel: t(trKey('loan.cancel')),
     });
     if (!confirmed) return;
     setBusy(true);
     try {
-      await app.returnKey({ cabinetId, keyId: key.id, returnedAt: app.now });
+      await app.returnKey({ cabinetId, keyId: key.id, returnedAt });
       await confirmation.present({
         title: t(trKey('loan.returnedTitle')),
         description: t(trKey('loan.returnedDescription')),

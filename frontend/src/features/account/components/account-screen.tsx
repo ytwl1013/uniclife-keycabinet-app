@@ -28,6 +28,7 @@ type PendingAction = 'language' | 'sign-out' | null;
 
 const accountRoutes = {
   changePassword: '/(details)/account/change-password' as Href,
+  contactSupport: '/(details)/account/contact-support' as Href,
   data: '/(details)/account/data' as Href,
   delete: '/(details)/account/delete' as Href,
   developer: '/(details)/account/developer-settings' as Href,
@@ -35,23 +36,10 @@ const accountRoutes = {
   terms: '/(details)/account/terms' as Href,
 };
 
-function AccountMetric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <View className="min-w-0 flex-1 items-center gap-1 px-1">
-      <AppText numberOfLines={1} variant="metric" tone="foreground">
-        {value}
-      </AppText>
-      <AppText className="text-center" numberOfLines={1} variant="caption" tone="muted">
-        {label}
-      </AppText>
-    </View>
-  );
-}
-
 export function AccountScreen() {
   const router = useRouter();
   const { locale, preference, setLocalePreference, t } = useTranslation();
-  const { actions, currentUser, selectors, state } = useMockApp();
+  const { actions, currentUser, state } = useMockApp();
   const [pending, setPending] = useState<PendingAction>(null);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -73,7 +61,6 @@ export function AccountScreen() {
     );
   }
 
-  const memberships = selectors.cabinetsForCurrentUser();
   const initials = currentUser.displayName
     .split(/\s+/)
     .slice(0, 2)
@@ -120,45 +107,21 @@ export function AccountScreen() {
           </AppText>
         </View>
         <View className="w-full items-center gap-1 px-4">
-          <AppText className="text-center" numberOfLines={1} variant="pageTitle" tone="foreground">
-            {currentUser.displayName}
-          </AppText>
+          <View className="max-w-full flex-row items-start justify-center gap-2">
+            <AppText className="min-w-0 shrink text-center" numberOfLines={1} variant="pageTitle" tone="foreground">
+              {currentUser.displayName}
+            </AppText>
+            <View className="mt-0.5 rounded-pill bg-accent-soft px-2.5 py-1">
+              <AppText variant="caption" tone="accent">{t('cabinet.role.admin')}</AppText>
+            </View>
+          </View>
           <AppText className="text-center" numberOfLines={1} variant="caption" tone="muted">
             {currentUser.email}
           </AppText>
         </View>
-        <View className="w-full flex-row items-start">
-          <AccountMetric label={t('navigation.cabinets')} value={memberships.length} />
-          <AccountMetric label={t('account.languageTitle')} value={locale.split('-')[0].toUpperCase()} />
-          <AccountMetric label={t('account.adminRole')} value={t('cabinet.role.admin')} />
-        </View>
       </View>
 
-      <AccountSection icon="person" title={t('account.profileTitle')}>
-        <SettingsAction
-          detail={localeLabels[locale]}
-          icon="settings"
-          label={t('account.languageTitle')}
-          onPress={() => setLanguageOpen(true)}
-        />
-        <SettingsAction
-          icon="shield"
-          label={t('account.privacyPolicy')}
-          onPress={() => router.push(accountRoutes.privacy)}
-        />
-        <SettingsAction
-          icon="audit"
-          label={t('account.terms')}
-          onPress={() => router.push(accountRoutes.terms)}
-        />
-        <SettingsAction
-          icon="notification"
-          label={t('account.dataUse')}
-          onPress={() => router.push(accountRoutes.data)}
-        />
-      </AccountSection>
-
-      <AccountSection icon="settings" title={t('account.securityTitle')}>
+      <AccountSection icon="person" title={t('account.personalAccountTitle')}>
         <SettingsAction
           icon="settings"
           label={t('account.changePassword')}
@@ -184,15 +147,45 @@ export function AccountScreen() {
         ) : null}
       </AccountSection>
 
-      {developerToolsEnabled ? (
-        <AccountSection icon="settings" title={t('account.appSettingsTitle')}>
+      <AccountSection icon="settings" title={t('account.appSettingsTitle')}>
+        <SettingsAction
+          detail={localeLabels[locale]}
+          icon="settings"
+          label={t('account.languageTitle')}
+          onPress={() => setLanguageOpen(true)}
+        />
+        {developerToolsEnabled ? (
           <SettingsAction
             icon="settings"
             label={t('account.developerSettings')}
             onPress={() => router.push(accountRoutes.developer)}
           />
-        </AccountSection>
-      ) : null}
+        ) : null}
+      </AccountSection>
+
+      <AccountSection icon="support" title={t('account.serviceSupportTitle')}>
+        <SettingsAction
+          detail={t('account.contactSupportDescription')}
+          icon="support"
+          label={t('account.contactSupport')}
+          onPress={() => router.push(accountRoutes.contactSupport)}
+        />
+        <SettingsAction
+          icon="shield"
+          label={t('account.privacyPolicy')}
+          onPress={() => router.push(accountRoutes.privacy)}
+        />
+        <SettingsAction
+          icon="audit"
+          label={t('account.terms')}
+          onPress={() => router.push(accountRoutes.terms)}
+        />
+        <SettingsAction
+          icon="notification"
+          label={t('account.dataUse')}
+          onPress={() => router.push(accountRoutes.data)}
+        />
+      </AccountSection>
 
       <BottomSheet
         closeLabel={t('common.done')}

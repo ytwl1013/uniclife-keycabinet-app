@@ -7,6 +7,7 @@ import '../../global.css';
 
 import { AppUiProvider } from '@/components/ui/app-ui-provider';
 import { I18nProvider, useTranslation } from '@/i18n';
+import { NotificationsProvider } from '@/features/notifications/notifications-provider';
 import { MockAppProvider, useMockApp } from '@/mocks';
 import { useAppTheme } from '@/styles/theme';
 
@@ -70,7 +71,9 @@ export default function RootLayout() {
     <AppUiProvider>
       <I18nProvider>
         <MockAppProvider>
-          <AppNavigationGate />
+          <NotificationsProvider>
+            <AppNavigationGate />
+          </NotificationsProvider>
         </MockAppProvider>
       </I18nProvider>
     </AppUiProvider>

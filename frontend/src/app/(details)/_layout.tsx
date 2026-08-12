@@ -21,7 +21,10 @@ export default function DetailRoutesLayout() {
       <Stack.Screen name="account/developer-settings" />
       <Stack.Screen name="account/change-password" />
       <Stack.Screen name="account/delete" />
+      <Stack.Screen name="account/contact-support" />
+      <Stack.Screen name="notifications" />
       <Stack.Screen name="scan" />
+      <Stack.Screen name="loans/index" />
       <Stack.Screen name="cabinets/[cabinetId]/index" />
       <Stack.Screen name="cabinets/[cabinetId]/keys/new" />
       <Stack.Screen name="cabinets/[cabinetId]/keys/[keyId]" />
