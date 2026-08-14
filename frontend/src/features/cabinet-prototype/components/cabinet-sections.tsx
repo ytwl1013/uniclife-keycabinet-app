@@ -9,6 +9,7 @@ import { Pill, PillTone } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
 import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
 import { TranslationKey, useTranslation } from '@/i18n';
+import { SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 
 import { CabinetEventKind, CabinetView, PrototypeApp } from '../types';
 import { PrototypeEventEmpty, PrototypeEventList, PrototypeEventRow } from './event-list';
@@ -120,7 +121,17 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
   );
 }
 
-export function CabinetKeys({ app, cabinet }: { app: PrototypeApp; cabinet: CabinetView }) {
+export function CabinetKeys({
+  app,
+  cabinet,
+  onSpotlightRect,
+  spotlightSlotId,
+}: {
+  app: PrototypeApp;
+  cabinet: CabinetView;
+  onSpotlightRect?: (rect: SpotlightRect) => void;
+  spotlightSlotId?: string;
+}) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | 'available' | 'checkedOut' | 'overdue' | 'empty'>('all');
@@ -156,7 +167,9 @@ export function CabinetKeys({ app, cabinet }: { app: PrototypeApp; cabinet: Cabi
           <SectionTitle description={t(trKey('key.slotCount'), { count: slots.length })} title={t(trKey('key.gridTitle'))} />
         </View>
       )}
+      onSpotlightRect={onSpotlightRect}
       slots={slots}
+      spotlightSlotId={spotlightSlotId}
     />
   );
 }

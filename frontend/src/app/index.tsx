@@ -28,5 +28,5 @@ export default function AppEntryRoute() {
 
   return state.sessionStatus === 'authenticated'
     ? <Redirect href="/(tabs)" />
-    : <Redirect href="/(auth)/welcome" />;
+    : <Redirect href="/(auth)/sign-in" />;
 }

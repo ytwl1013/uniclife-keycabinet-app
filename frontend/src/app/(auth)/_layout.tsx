@@ -4,7 +4,7 @@ import { useTranslation } from '@/i18n';
 import { useAppTheme } from '@/styles/theme';
 
 export const unstable_settings = {
-  initialRouteName: 'welcome',
+  initialRouteName: 'sign-in',
 };
 
 export default function AuthLayout() {
@@ -22,7 +22,6 @@ export default function AuthLayout() {
         headerStyle: { backgroundColor: palette.background },
         headerTintColor: palette.foreground,
       }}>
-      <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="sign-in" options={{ title: t('auth.signIn.title') }} />
       <Stack.Screen name="sign-up" options={{ title: t('auth.signUp.title') }} />
       <Stack.Screen

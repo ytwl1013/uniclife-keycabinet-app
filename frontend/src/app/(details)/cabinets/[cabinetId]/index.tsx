@@ -1,11 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { Pill } from '@/components/ui/pill';
 import { SwipeSegmentPager } from '@/components/ui/swipe-segment-pager';
 import { CabinetActivity, CabinetKeys, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
+import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { ActionButton, Notice, ScreenHeader, SegmentControl, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
 import { TranslationKey, useTranslation } from '@/i18n';
@@ -14,12 +16,16 @@ const trKey = (key: string) => key as TranslationKey;
 type CabinetSegment = 'keys' | 'activity' | 'settings';
 
 export default function CabinetDetailRoute() {
-  const params = useLocalSearchParams<{ cabinetId: string }>();
+  const params = useLocalSearchParams<{ cabinetId: string; guide?: string }>();
   const cabinetId = Array.isArray(params.cabinetId) ? params.cabinetId[0] : params.cabinetId;
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const app = usePrototypeApp();
   const [segment, setSegment] = useState<CabinetSegment>('keys');
+  const [guideRect, setGuideRect] = useState<SpotlightRect>();
+  const [guideVisible, setGuideVisible] = useState(params.guide === 'register-key');
   const cabinet = app.cabinets.find((candidate) => candidate.id === cabinetId);
+  const guideSlot = app.slots.find((slot) => slot.cabinetId === cabinetId && !slot.keyId);
 
   if (app.isLoading) {
     return (
@@ -61,7 +67,17 @@ export default function CabinetDetailRoute() {
     label: t(trKey(`cabinet.segment.${value}`)),
   }));
   const pages = [
-    { value: 'keys', content: <CabinetKeys app={app} cabinet={cabinet} /> },
+    {
+      value: 'keys',
+      content: (
+        <CabinetKeys
+          app={app}
+          cabinet={cabinet}
+          onSpotlightRect={guideVisible ? setGuideRect : undefined}
+          spotlightSlotId={guideVisible ? guideSlot?.id : undefined}
+        />
+      ),
+    },
     { value: 'activity', content: <CabinetActivity app={app} cabinet={cabinet} /> },
     { value: 'settings', content: <CabinetSettings app={app} cabinet={cabinet} /> },
   ] as const;
@@ -94,6 +110,23 @@ export default function CabinetDetailRoute() {
           value={segment}
         />
       </View>
+
+      <HomeSpotlightGuide
+        onBack={() => {
+          setGuideVisible(false);
+          router.replace({
+            pathname: '/(tabs)',
+            params: { guideStep: 'manage-cabinet' },
+          });
+        }}
+        onClose={() => setGuideVisible(false)}
+        onNext={() => setGuideVisible(false)}
+        rect={guideRect}
+        rectOffsetY={insets.top}
+        step={2}
+        total={3}
+        visible={guideVisible}
+      />
     </SafeAreaView>
   );
 }

@@ -35,8 +35,9 @@ personnel data in screens.
    credential.
 3. Initialize or join a cabinet, or choose **Explore first** to open the main
    tabs immediately.
-4. Use the prominent Scan button on Home; a sample code remains available when a camera is unavailable.
-5. Open Account > Developer settings to switch users, simulate offline mode, show a sample QR, or reset local data.
+4. Use **Add cabinet** below the Home cabinet list to open the scanner; a sample code remains available when a camera is unavailable.
+5. Use the Home loan summary to open the searchable checked-out-key list, filter by cabinet, status, or check-out time, and confirm a quick return.
+6. Open Account > Developer settings to switch users, simulate offline mode, show a sample QR, or reset local data.
 
 All seeded identities, contact details, SKU artwork and QR payloads are
 fictional demo data. Generated cabinet artwork is presentation-only and does

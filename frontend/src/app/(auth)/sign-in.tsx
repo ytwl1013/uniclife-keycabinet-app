@@ -130,7 +130,12 @@ export default function SignInRoute() {
           onPress={() => {
             setIsSubmitting(true);
             void workspaceActions.switchAccount({ userId: demoOwner.id })
-              .then(() => router.replace(onboardingRoute))
+              .then(() =>
+                router.push({
+                  pathname: '/onboarding',
+                  params: { preview: '1' },
+                }),
+              )
               .catch((error) => setRequestError(t(authErrorKey(error))))
               .finally(() => setIsSubmitting(false));
           }}

@@ -42,7 +42,7 @@ export function DeleteAccountScreen() {
         expectedVersion: state.version,
         requestId: `delete-account-${currentUser.id}-${state.version}`,
       });
-      router.replace('/(auth)/welcome');
+      router.replace('/(auth)/sign-in');
     } catch (caught) {
       setError(t(authErrorKey(caught)));
       setConfirming(false);

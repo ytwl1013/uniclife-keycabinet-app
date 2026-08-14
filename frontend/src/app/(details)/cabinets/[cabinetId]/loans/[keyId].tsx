@@ -1,8 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
+import { AppText } from '@/components/ui/app-text';
 import { DateTimeField } from '@/components/ui/date-time-field';
 import { isExpectedReturnAfter } from '@/components/ui/date-time';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
@@ -11,6 +12,8 @@ import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app'
 import { TranslationKey, useTranslation } from '@/i18n';
 
 const trKey = (key: string) => key as TranslationKey;
+const quickReturnOptions = [1, 3, 7] as const;
+type QuickReturnDays = (typeof quickReturnOptions)[number];
 
 export default function CheckOutKeyRoute() {
   const params = useLocalSearchParams<{ cabinetId: string; keyId: string }>();
@@ -20,16 +23,16 @@ export default function CheckOutKeyRoute() {
   const app = usePrototypeApp();
   const cabinet = app.cabinets.find((candidate) => candidate.id === cabinetId);
   const key = app.keys.find((candidate) => candidate.id === keyId && candidate.cabinetId === cabinetId);
-  const defaults = useMemo(() => {
-    const start = new Date();
-    const due = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-    return { start: start.toISOString(), due: due.toISOString() };
+  const defaultCheckedOutAt = useMemo(() => {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    return now.toISOString();
   }, []);
   const [borrowerName, setBorrowerName] = useState('');
   const [borrowerContact, setBorrowerContact] = useState('');
-  const [checkedOutAt, setCheckedOutAt] = useState(defaults.start);
-  const [expectedReturnAt, setExpectedReturnAt] = useState(defaults.due);
-  const [noExpectedReturn, setNoExpectedReturn] = useState(false);
+  const [checkedOutAt, setCheckedOutAt] = useState(defaultCheckedOutAt);
+  const [expectedReturnAt, setExpectedReturnAt] = useState<string>();
+  const [quickReturnDays, setQuickReturnDays] = useState<QuickReturnDays>();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const confirmation = usePrototypeDialog();
@@ -54,11 +57,11 @@ export default function CheckOutKeyRoute() {
   const validate = () => {
     const next: Record<string, string> = {};
     const checkedOut = new Date(checkedOutAt);
-    const due = noExpectedReturn ? null : new Date(expectedReturnAt);
+    const due = expectedReturnAt ? new Date(expectedReturnAt) : null;
     if (!borrowerName.trim()) next.borrowerName = t(trKey('loan.borrowerRequired'));
     if (Number.isNaN(checkedOut.getTime())) next.checkedOutAt = t(trKey('loan.invalidDate'));
     if (due && Number.isNaN(due.getTime())) next.expectedReturnAt = t(trKey('loan.invalidDate'));
-    if (!noExpectedReturn && !next.checkedOutAt && !next.expectedReturnAt && !isExpectedReturnAfter(checkedOutAt, expectedReturnAt)) next.expectedReturnAt = t(trKey('loan.dueAfterCheckout'));
+    if (expectedReturnAt && !next.checkedOutAt && !next.expectedReturnAt && !isExpectedReturnAfter(checkedOutAt, expectedReturnAt)) next.expectedReturnAt = t(trKey('loan.dueAfterCheckout'));
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -73,7 +76,7 @@ export default function CheckOutKeyRoute() {
         borrowerName: borrowerName.trim(),
         borrowerContact: borrowerContact.trim() || undefined,
         checkedOutAt: new Date(checkedOutAt).toISOString(),
-        expectedReturnAt: noExpectedReturn ? undefined : new Date(expectedReturnAt).toISOString(),
+        expectedReturnAt: expectedReturnAt ? new Date(expectedReturnAt).toISOString() : undefined,
       });
       await confirmation.present({
         title: t(trKey('loan.checkedOutTitle')),
@@ -93,79 +96,122 @@ export default function CheckOutKeyRoute() {
     }
   };
 
-  return (
-    <KeyboardAvoidingView
-      behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1">
-      <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-        <View className="border-b border-line bg-background">
-          <View className="mx-auto w-full max-w-content px-screen py-3">
-            <ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />
-          </View>
-        </View>
+  const updateCheckedOutAt = (value: string) => {
+    setCheckedOutAt(value);
+    if (quickReturnDays) setExpectedReturnAt(addLocalDays(value, quickReturnDays));
+    setErrors((current) => ({ ...current, checkedOutAt: '', expectedReturnAt: '' }));
+  };
 
-        <View className="mx-auto min-w-0 w-full max-w-content flex-1 px-screen pb-screen pt-screen">
-          <ScrollView
-            automaticallyAdjustKeyboardInsets
-            className="min-w-0 flex-1"
-            contentContainerClassName="gap-4 pb-4"
-            contentInsetAdjustmentBehavior="never"
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-            {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
-            <SectionCard>
-          <FormField
-            error={errors.borrowerName}
-            label={t(trKey('loan.borrowerName'))}
-            onChangeText={(value) => { setBorrowerName(value); setErrors((current) => ({ ...current, borrowerName: '' })); }}
-            placeholder={t(trKey('loan.borrowerNamePlaceholder'))}
-            value={borrowerName}
-          />
-          <FormField
-            label={t(trKey('loan.borrowerContactOptional'))}
-            onChangeText={setBorrowerContact}
-            placeholder={t(trKey('loan.borrowerContactPlaceholder'))}
-            value={borrowerContact}
-          />
-          <DateTimeField
-            error={errors.checkedOutAt}
-            label={t(trKey('loan.checkedOutAt'))}
-            onChange={(value) => { setCheckedOutAt(value); setErrors((current) => ({ ...current, checkedOutAt: '' })); }}
-            timeZone={cabinet.timezone}
-            value={checkedOutAt}
-          />
-          <FilterChip
-            label={t(trKey('loan.noExpectedReturnOption'))}
-            onPress={() => {
-              setNoExpectedReturn((current) => !current);
-              setErrors((current) => ({ ...current, expectedReturnAt: '' }));
-            }}
-            selected={noExpectedReturn}
-          />
-          {!noExpectedReturn ? (
+  const setQuickReturn = (days: QuickReturnDays) => {
+    setExpectedReturnAt(addLocalDays(checkedOutAt, days));
+    setQuickReturnDays(days);
+    setErrors((current) => ({ ...current, expectedReturnAt: '' }));
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <View className="border-b border-line bg-background">
+        <View className="mx-auto w-full max-w-content px-screen py-3">
+          <ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />
+        </View>
+      </View>
+
+      <View className="mx-auto min-w-0 w-full max-w-content flex-1 px-screen pb-screen pt-screen">
+        <ScrollView
+          automaticallyAdjustKeyboardInsets
+          className="min-w-0 flex-1"
+          contentContainerClassName="gap-4 pb-4"
+          contentInsetAdjustmentBehavior="never"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
+          <SectionCard>
+            <FormField
+              error={errors.borrowerName}
+              label={t(trKey('loan.borrowerName'))}
+              onChangeText={(value) => { setBorrowerName(value); setErrors((current) => ({ ...current, borrowerName: '' })); }}
+              placeholder={t(trKey('loan.borrowerNamePlaceholder'))}
+              value={borrowerName}
+            />
+            <FormField
+              label={t(trKey('loan.borrowerContactOptional'))}
+              onChangeText={setBorrowerContact}
+              placeholder={t(trKey('loan.borrowerContactPlaceholder'))}
+              value={borrowerContact}
+            />
             <DateTimeField
+              error={errors.checkedOutAt}
+              label={t(trKey('loan.checkedOutAt'))}
+              onChange={updateCheckedOutAt}
+              value={checkedOutAt}
+            />
+            <DateTimeField
+              emptyLabel={t(trKey('loan.noExpectedReturnOption'))}
               error={errors.expectedReturnAt}
               label={t(trKey('loan.expectedReturnAt'))}
-              onChange={(value) => { setExpectedReturnAt(value); setErrors((current) => ({ ...current, expectedReturnAt: '' })); }}
-              timeZone={cabinet.timezone}
+              minimumDate={minuteAfter(checkedOutAt)}
+              onChange={(value) => {
+                setExpectedReturnAt(value);
+                setQuickReturnDays(undefined);
+                setErrors((current) => ({ ...current, expectedReturnAt: '' }));
+              }}
               value={expectedReturnAt}
             />
-          ) : null}
-            </SectionCard>
-          </ScrollView>
-          {confirmation.dialog}
-        </View>
+            <View className="gap-2">
+              <AppText variant="caption" tone="muted">{t(trKey('loan.quickReturnTime'))}</AppText>
+              <View className="flex-row flex-wrap gap-2">
+                {quickReturnOptions.map((days) => (
+                  <FilterChip
+                    key={days}
+                    label={t(trKey('loan.quickReturnDays'), { count: days })}
+                    onPress={() => setQuickReturn(days)}
+                    selected={quickReturnDays === days}
+                  />
+              ))}
+              <FilterChip
+                  label={t(trKey('loan.quickNoExpectedReturn'))}
+                  onPress={() => {
+                    setExpectedReturnAt(undefined);
+                    setQuickReturnDays(undefined);
+                    setErrors((current) => ({ ...current, expectedReturnAt: '' }));
+                  }}
+                  selected={!expectedReturnAt}
+                />
+              </View>
+            </View>
+          </SectionCard>
+        </ScrollView>
+        {confirmation.dialog}
+      </View>
 
-        <SafeAreaView className="border-t border-line bg-background" edges={['bottom']}>
-          <View className="mx-auto w-full max-w-content px-screen py-3">
-            <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />
-          </View>
-        </SafeAreaView>
+      <SafeAreaView className="border-t border-line bg-background" edges={['bottom']}>
+        <View className="mx-auto w-full max-w-content px-screen pt-3">
+          <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />
+        </View>
       </SafeAreaView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 function first(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+function validDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function addLocalDays(value: string, days: QuickReturnDays) {
+  const base = validDate(value) ?? new Date();
+  base.setDate(base.getDate() + days);
+  return base.toISOString();
+}
+
+function minuteAfter(value: string) {
+  const date = validDate(value);
+  if (!date) return undefined;
+  date.setSeconds(0, 0);
+  date.setMinutes(date.getMinutes() + 1);
+  return date;
 }

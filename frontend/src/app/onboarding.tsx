@@ -1,4 +1,4 @@
-import { Href, router } from 'expo-router';
+import { Href, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -18,19 +18,26 @@ const homeRoute = '/(tabs)' as Href;
 export default function OnboardingRoute() {
   const { t } = useTranslation();
   const { actions, currentUser, hydrated } = useAuthActions();
+  const params = useLocalSearchParams<{ preview?: string | string[] }>();
   const [requestError, setRequestError] = useState('');
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const rawPreview = Array.isArray(params.preview) ? params.preview[0] : params.preview;
+  const isPreview = rawPreview === '1';
 
   function openScanner(mode: 'initialize' | 'join') {
-    router.replace({ pathname: '/(details)/scan', params: { mode } } as unknown as Href);
+    router.push({ pathname: '/(details)/scan', params: { mode } } as unknown as Href);
   }
 
-  async function signOut() {
+  async function signOut(returnToPrevious = false) {
     setRequestError('');
     setIsSigningOut(true);
     try {
       await actions.signOut();
-      router.replace(signInRoute);
+      if (returnToPrevious) {
+        router.back();
+      } else {
+        router.replace(signInRoute);
+      }
     } catch (error) {
       setRequestError(t(authErrorKey(error)));
     } finally {
@@ -69,6 +76,7 @@ export default function OnboardingRoute() {
 
   return (
     <StandaloneAuthScreen
+      backLabel={isPreview ? t('auth.common.back') : undefined}
       description={t('onboarding.description')}
       footer={
         <AuthTextButton
@@ -79,6 +87,15 @@ export default function OnboardingRoute() {
             }
           }}
         />
+      }
+      onBack={
+        isPreview
+          ? () => {
+              if (!isSigningOut) {
+                void signOut(true);
+              }
+            }
+          : undefined
       }
       title={t('onboarding.title')}>
       <View className="gap-3">

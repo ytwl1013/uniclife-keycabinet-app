@@ -53,6 +53,8 @@ export type MockAppActions = {
   getPasswordResetPreview(input: { challengeId: string }): Promise<{ code: string }>;
   verifyReset(input: { challengeId: string; code: string }): Promise<{ resetToken: string }>;
   resetPassword(input: { resetToken: string; newPassword: string }): Promise<void>;
+  updateProfile(input: { displayName: string; avatarUri?: string | null } & WriteOptions): Promise<UserAccount>;
+  updateEmail(input: { email: string } & WriteOptions): Promise<UserAccount>;
   changePassword(input: { currentPassword: string; newPassword: string }): Promise<void>;
   deleteAccount(input?: WriteOptions): Promise<void>;
   resolveQr(input: { code: string } | string): Promise<QrResolution>;
@@ -437,6 +439,43 @@ export function createMockAppService(
     resetTokens.delete(resetToken);
   };
 
+  const updateProfile: MockAppActions['updateProfile'] = async (input) => {
+    return commit('update-profile', omitWriteOptions(input), (draft, user) => {
+      const displayName = input.displayName.trim();
+      assertMock(displayName.length > 0, 'INVALID_INPUT');
+      const account = draft.users.find((candidate) => candidate.id === user.id);
+      assertMock(account, 'USER_NOT_FOUND');
+      account.displayName = displayName;
+      if (input.avatarUri !== undefined) {
+        const avatarUri = input.avatarUri?.trim();
+        if (avatarUri) {
+          account.avatarUri = avatarUri;
+        } else {
+          delete account.avatarUri;
+        }
+      }
+      return account;
+    });
+  };
+
+  const updateEmail: MockAppActions['updateEmail'] = async (input) => {
+    return commit('update-email', omitWriteOptions(input), (draft, user) => {
+      const email = normalizedEmail(input.email);
+      assertMock(isEmail(email), 'INVALID_INPUT');
+      assertMock(
+        !draft.users.some(
+          (candidate) =>
+            candidate.id !== user.id && candidate.email.toLowerCase() === email,
+        ),
+        'EMAIL_ALREADY_REGISTERED',
+      );
+      const account = draft.users.find((candidate) => candidate.id === user.id);
+      assertMock(account, 'USER_NOT_FOUND');
+      account.email = email;
+      return account;
+    });
+  };
+
   const changePassword: MockAppActions['changePassword'] = async ({
     currentPassword,
     newPassword,
@@ -493,6 +532,7 @@ export function createMockAppService(
       }
       account.email = deletedEmail;
       account.displayName = 'Deleted account';
+      delete account.avatarUri;
       account.status = 'disabled';
       draft.consents = draft.consents.filter((consent) => consent.userId !== user.id);
       draft.currentUserId = null;
@@ -946,6 +986,8 @@ export function createMockAppService(
     getPasswordResetPreview,
     verifyReset,
     resetPassword,
+    updateProfile,
+    updateEmail,
     changePassword,
     deleteAccount,
     resolveQr,

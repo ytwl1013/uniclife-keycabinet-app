@@ -17,6 +17,7 @@ export const userAccountSchema = z.object({
   id,
   email: z.string().trim().email(),
   displayName: z.string().trim().min(1),
+  avatarUri: z.string().trim().min(1).optional(),
   locale: localeSchema,
   status: z.enum(['active', 'disabled']),
   createdAt: isoDate,

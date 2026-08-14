@@ -7,6 +7,7 @@ import '../../global.css';
 
 import { AppUiProvider } from '@/components/ui/app-ui-provider';
 import { I18nProvider, useTranslation } from '@/i18n';
+import { NotificationsProvider } from '@/features/notifications/notifications-provider';
 import { MockAppProvider, useMockApp } from '@/mocks';
 import { useAppTheme } from '@/styles/theme';
 
@@ -16,7 +17,9 @@ export const unstable_settings = {
 
 function AppNavigation() {
   const { t } = useTranslation();
+  const { state } = useMockApp();
   const { mode, navigationTheme, palette } = useAppTheme();
+  const authenticated = state.sessionStatus === 'authenticated';
 
   return (
     <View
@@ -25,14 +28,18 @@ function AppNavigation() {
       <NavigationThemeProvider value={navigationTheme}>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false,headerShadowVisible: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false,headerShadowVisible: false }} />
-          <Stack.Screen name="onboarding" options={{ headerShown: false,headerShadowVisible: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false,headerShadowVisible: false }} />
-          <Stack.Screen name="(details)" options={{ headerShown: false,headerShadowVisible: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: 'modal', title: t('navigation.actionModal') }}
-          />
+          <Stack.Protected guard={!authenticated}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false,headerShadowVisible: false }} />
+          </Stack.Protected>
+          <Stack.Protected guard={authenticated}>
+            <Stack.Screen name="onboarding" options={{ headerShown: false,headerShadowVisible: false }} />
+            <Stack.Screen name="(tabs)" options={{ gestureEnabled: false, headerShown: false, headerShadowVisible: false }} />
+            <Stack.Screen name="(details)" options={{ headerShown: false,headerShadowVisible: false }} />
+            <Stack.Screen
+              name="modal"
+              options={{ presentation: 'modal', title: t('navigation.actionModal') }}
+            />
+          </Stack.Protected>
         </Stack>
         <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       </NavigationThemeProvider>
@@ -70,7 +77,9 @@ export default function RootLayout() {
     <AppUiProvider>
       <I18nProvider>
         <MockAppProvider>
-          <AppNavigationGate />
+          <NotificationsProvider>
+            <AppNavigationGate />
+          </NotificationsProvider>
         </MockAppProvider>
       </I18nProvider>
     </AppUiProvider>

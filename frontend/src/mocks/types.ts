@@ -18,6 +18,7 @@ export type UserAccount = {
   id: string;
   email: string;
   displayName: string;
+  avatarUri?: string;
   locale: SupportedLocale;
   status: 'active' | 'disabled';
   createdAt: string;
