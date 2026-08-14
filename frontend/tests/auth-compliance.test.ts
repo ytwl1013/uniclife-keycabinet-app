@@ -58,6 +58,26 @@ describe('authentication and consent workflow', () => {
     expect(app.getState().memberships.filter((membership) => membership.userId === 'user-owner').every((membership) => !membership.active)).toBe(true);
   });
 
+  it('updates the signed-in user profile and login email through validated actions', async () => {
+    const app = anonymousService();
+    await app.actions.switchAccount({ userId: 'user-owner' });
+
+    await app.actions.updateProfile({
+      displayName: 'Alex Chen',
+      avatarUri: 'file:///profile-photo.jpg',
+    });
+    await app.actions.updateEmail({ email: 'alex.chen@example.com' });
+
+    expect(app.getState().users.find((user) => user.id === 'user-owner')).toMatchObject({
+      avatarUri: 'file:///profile-photo.jpg',
+      displayName: 'Alex Chen',
+      email: 'alex.chen@example.com',
+    });
+    await expect(app.actions.updateEmail({ email: 'sophie.keller@example.com' })).rejects.toMatchObject({
+      code: 'EMAIL_ALREADY_REGISTERED',
+    });
+  });
+
   it('removes marketing controls from registration and account source', () => {
     const signUp = readFileSync(resolve(__dirname, '../src/app/(auth)/sign-up.tsx'), 'utf8');
     const account = readFileSync(resolve(__dirname, '../src/features/account/components/account-screen.tsx'), 'utf8');

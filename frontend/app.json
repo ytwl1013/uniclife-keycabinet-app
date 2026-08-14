@@ -35,6 +35,14 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow UnicLife to choose a profile photo. The selected photo is used only for your account profile.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-localization",
         {
           "supportedLocales": {

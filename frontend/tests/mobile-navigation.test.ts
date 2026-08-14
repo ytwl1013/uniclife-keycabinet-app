@@ -28,6 +28,9 @@ describe('simplified mobile navigation architecture', () => {
 
   it('puts the borrowed summary and Add cabinet action around the unfiltered cabinet list on Home', () => {
     const home = source('src/app/(tabs)/index.tsx');
+    expect(home).toContain('testID="home-account-avatar-button"');
+    expect(home).toContain('avatarUri={currentUser.avatarUri}');
+    expect(home).toContain('size="compact"');
     expect(home).not.toContain('testID="home-primary-scan"');
     expect(home).toContain('testID="home-borrowed-summary"');
     expect(home).toContain('testID="home-return-borrowed-key"');
@@ -58,6 +61,7 @@ describe('simplified mobile navigation architecture', () => {
     expect(home).not.toContain('setTimeout');
     expect(cabinet).toContain("params.guide === 'register-key'");
     expect(cabinet).toContain('step={2}');
+    expect(cabinet).toContain('rectOffsetY={insets.top}');
     expect(slotGrid).toContain('testID={spotlighted ? \'cabinet-guide-register-slot\' : undefined}');
     expect(slotGrid).not.toContain('setTimeout');
     expect(home).not.toContain('QuickAction');
@@ -71,6 +75,7 @@ describe('simplified mobile navigation architecture', () => {
     expect(guide).toContain('useSafeAreaInsets');
     expect(guide).toContain('top: insets.top + 16');
     expect(guide).toContain('if (!visible || !rect) return null');
+    expect(guide).toContain('rect.y + rectOffsetY - padding');
   });
 
   it('routes Home notifications and Account support into the details stack', () => {
@@ -83,11 +88,19 @@ describe('simplified mobile navigation architecture', () => {
     expect(home).toContain("router.push('/(details)/notifications' as Href)");
     expect(layout).toContain('<Stack.Screen name="notifications"');
     expect(layout).toContain('<Stack.Screen name="account/contact-support"');
+    expect(layout).toContain('<Stack.Screen name="account/profile"');
+    expect(layout).toContain('<Stack.Screen name="account/security"');
+    expect(layout).toContain('<Stack.Screen name="account/change-email"');
     expect(notifications).toContain("type NotificationTab = 'unread' | 'read'");
     expect(account).toContain("title={t('account.personalAccountTitle')}");
+    expect(account).toContain('accountRoutes.security');
+    expect(account).toContain('accountRoutes.profile');
     expect(account).toContain("title={t('account.appSettingsTitle')}");
     expect(account).toContain("title={t('account.serviceSupportTitle')}");
     expect(account).toContain('accountRoutes.contactSupport');
+    expect(account).toContain('testID="support-email-modal"');
+    expect(account).toContain('Clipboard.setStringAsync(supportEmail)');
+    expect(account.indexOf("title={t('account.serviceSupportTitle')}")).toBeLessThan(account.indexOf("{t('account.signOut')}"));
     expect(account).not.toContain('<AccountMetric');
     expect(support).toContain('<TextInput');
     expect(support).toContain('sender === \'user\'');

@@ -19,6 +19,9 @@ export default function DetailRoutesLayout() {
       <Stack.Screen name="account/terms" />
       <Stack.Screen name="account/data" />
       <Stack.Screen name="account/developer-settings" />
+      <Stack.Screen name="account/profile" />
+      <Stack.Screen name="account/security" />
+      <Stack.Screen name="account/change-email" />
       <Stack.Screen name="account/change-password" />
       <Stack.Screen name="account/delete" />
       <Stack.Screen name="account/contact-support" />

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { Pill } from '@/components/ui/pill';
@@ -18,6 +19,7 @@ export default function CabinetDetailRoute() {
   const params = useLocalSearchParams<{ cabinetId: string; guide?: string }>();
   const cabinetId = Array.isArray(params.cabinetId) ? params.cabinetId[0] : params.cabinetId;
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const app = usePrototypeApp();
   const [segment, setSegment] = useState<CabinetSegment>('keys');
   const [guideRect, setGuideRect] = useState<SpotlightRect>();
@@ -120,6 +122,7 @@ export default function CabinetDetailRoute() {
         onClose={() => setGuideVisible(false)}
         onNext={() => setGuideVisible(false)}
         rect={guideRect}
+        rectOffsetY={insets.top}
         step={2}
         total={3}
         visible={guideVisible}

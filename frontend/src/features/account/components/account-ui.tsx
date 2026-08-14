@@ -1,10 +1,60 @@
-import { PropsWithChildren, ReactNode } from 'react';
+import { Image } from 'expo-image';
+import { PropsWithChildren, ReactNode, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
 import { useAppTheme } from '@/styles/theme';
+
+export function UserAvatar({
+  accessibilityLabel,
+  avatarUri,
+  displayName,
+  size = 'large',
+}: {
+  accessibilityLabel: string;
+  avatarUri?: string;
+  displayName: string;
+  size?: 'compact' | 'large';
+}) {
+  const [failedImageUri, setFailedImageUri] = useState<string>();
+  const imageSize = size === 'compact' ? 48 : 112;
+  const sizeClassName = size === 'compact' ? 'h-12 w-12' : 'h-28 w-28';
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.slice(0, 1).toUpperCase())
+    .join('');
+
+  const showImage = Boolean(avatarUri && avatarUri !== failedImageUri);
+
+  return (
+    <View
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="image"
+      className={`${sizeClassName} items-center justify-center overflow-hidden rounded-pill ${
+        showImage ? 'bg-brand-soft' : 'bg-brand'
+      }`}
+      testID="user-avatar">
+      {avatarUri && showImage ? (
+        <Image
+          contentFit="cover"
+          onError={() => setFailedImageUri(avatarUri)}
+          source={{ uri: avatarUri }}
+          style={{ height: imageSize, width: imageSize }}
+          testID="user-avatar-image"
+          transition={160}
+        />
+      ) : (
+        <AppText variant={size === 'compact' ? 'label' : 'display'} tone="onBrand">
+          {initials}
+        </AppText>
+      )}
+    </View>
+  );
+}
 
 type AccountPageProps = PropsWithChildren<{
   title: string;

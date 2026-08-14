@@ -7,6 +7,7 @@ import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { ProductImage } from '@/components/ui/product-image';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { UserAvatar } from '@/features/account/components/account-ui';
 import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { useNotifications } from '@/features/notifications/notifications-provider';
 import { useTranslation } from '@/i18n';
@@ -31,11 +32,6 @@ export default function HomeRoute() {
   const guideRequest = useRef(0);
   const guideFrame = useRef<number | undefined>(undefined);
   const resumedGuide = useRef(false);
-  const initials = currentUser?.displayName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.slice(0, 1).toUpperCase())
-    .join('') ?? '';
   const overdueCount = borrowedKeys.filter((key) => {
     const loan = state.loans.find((candidate) => candidate.keyId === key.id && candidate.status === 'active');
     return Boolean(loan?.expectedReturnAt && Date.parse(loan.expectedReturnAt) < Date.parse(state.now));
@@ -129,9 +125,21 @@ export default function HomeRoute() {
             <Pressable
               accessibilityLabel={t('navigation.account')}
               accessibilityRole="button"
-              className="h-12 w-12 items-center justify-center rounded-pill bg-brand active:opacity-75"
-              onPress={() => router.push('/(tabs)/account' as Href)}>
-              <AppText variant="label" tone="onBrand">{initials}</AppText>
+              className="h-12 w-12 items-center justify-center rounded-pill active:opacity-75"
+              onPress={() => router.push('/(tabs)/account' as Href)}
+              testID="home-account-avatar-button">
+              {currentUser ? (
+                <UserAvatar
+                  accessibilityLabel={t('account.avatarAccessibilityLabel', { name: currentUser.displayName })}
+                  avatarUri={currentUser.avatarUri}
+                  displayName={currentUser.displayName}
+                  size="compact"
+                />
+              ) : (
+                <View className="h-12 w-12 items-center justify-center rounded-pill bg-brand">
+                  <AppIcon name="person" size={22} tone="onBrand" />
+                </View>
+              )}
             </Pressable>
             <View className="flex-row items-center gap-2">
               <Pressable
