@@ -190,9 +190,10 @@ export function AccountScreen() {
       <BottomSheet
         closeLabel={t('common.done')}
         onClose={() => setLanguageOpen(false)}
+        size="large"
         title={t('account.languageTitle')}
         visible={languageOpen}>
-        <View accessibilityRole="radiogroup" className="gap-2">
+        <View accessibilityRole="radiogroup" className="gap-2 pb-2">
           <ChoiceChip
             label={t('account.systemLanguage')}
             onPress={() => void updateLanguage('system')}

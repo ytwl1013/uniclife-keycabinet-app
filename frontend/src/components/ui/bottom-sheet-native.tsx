@@ -9,12 +9,14 @@ import { BottomSheetContent } from './bottom-sheet-content';
 import type { BottomSheetProps } from './bottom-sheet-types';
 
 const NATIVE_SHEET_SNAP_POINTS = ['55%', '82%'];
+const LARGE_SHEET_SNAP_POINTS = ['82%'];
 
 export function BottomSheet({
   children,
   closeLabel,
   footer,
   onClose,
+  size = 'default',
   title,
   visible,
 }: BottomSheetProps) {
@@ -46,7 +48,7 @@ export function BottomSheet({
           enableDynamicSizing={false}
           handleIndicatorStyle={{ backgroundColor: palette.line }}
           index={0}
-          snapPoints={NATIVE_SHEET_SNAP_POINTS}>
+          snapPoints={size === 'large' ? LARGE_SHEET_SNAP_POINTS : NATIVE_SHEET_SNAP_POINTS}>
           <BottomSheetContent
             closeLabel={closeLabel}
             fillAvailable

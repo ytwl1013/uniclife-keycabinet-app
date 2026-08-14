@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -19,9 +19,11 @@ export function BottomSheet({
   closeLabel,
   footer,
   onClose,
+  size = 'default',
   title,
   visible,
 }: BottomSheetProps) {
+  const { height } = useWindowDimensions();
   const [mounted, setMounted] = useState(visible);
   const [contentVisible, setContentVisible] = useState(visible);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,9 +91,11 @@ export function BottomSheet({
               )}
               exiting={SlideOutDown.duration(SHEET_EXIT_DURATION).easing(
                 Easing.in(Easing.cubic),
-              )}>
+              )}
+              style={size === 'large' ? { height: height * 0.82 } : undefined}>
               <BottomSheetContent
                 closeLabel={closeLabel}
+                fillAvailable={size === 'large'}
                 footer={footer}
                 onClose={onClose}
                 roundedTop

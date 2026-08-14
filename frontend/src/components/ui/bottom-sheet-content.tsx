@@ -8,7 +8,7 @@ import { useAppTheme } from '@/styles/theme';
 
 import type { BottomSheetProps } from './bottom-sheet-types';
 
-type BottomSheetContentProps = Omit<BottomSheetProps, 'visible'> & {
+type BottomSheetContentProps = Omit<BottomSheetProps, 'size' | 'visible'> & {
   fillAvailable?: boolean;
   renderBody?: (children: ReactNode) => ReactNode;
   roundedTop?: boolean;

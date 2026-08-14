@@ -6,4 +6,5 @@ export type BottomSheetProps = PropsWithChildren<{
   closeLabel: string;
   onClose: () => void;
   footer?: ReactNode;
+  size?: 'default' | 'large';
 }>;

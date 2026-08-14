@@ -59,6 +59,17 @@ describe('mobile selection and confirmations', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('uses one scroll container inside a fixed-height language sheet', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../src/features/account/components/account-screen.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('size="large"');
+    expect(source).not.toContain('<ScrollView');
+    expect(source).toContain('accessibilityRole="radiogroup"');
+  });
+
   it('uses icon-only tabs with translated accessibility names', () => {
     const source = readFileSync(
       resolve(__dirname, '../src/app/(tabs)/_layout.tsx'),
