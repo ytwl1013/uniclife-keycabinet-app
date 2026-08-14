@@ -4,10 +4,9 @@ import { Pressable, ScrollView, SectionList, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
-import { DateRangeCalendar } from '@/components/ui/date-range-calendar';
+import { DateRangePickerModal } from '@/components/ui/date-range-picker-modal';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
-import { BorrowedKeysFilterMenu } from '@/features/cabinet-prototype/components/borrowed-keys-filter-menu';
+import { BorrowedKeysDateFilterButton, BorrowedKeysFilterMenu } from '@/features/cabinet-prototype/components/borrowed-keys-filter-menu';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
 import { Notice, SearchInput, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { CabinetView, KeyView } from '@/features/cabinet-prototype/types';
@@ -75,7 +74,6 @@ export function BorrowedKeysScreen() {
     return keys.length ? [{ cabinet, title: cabinet.name, data: keys }] : [];
   }), [app.cabinets, filteredKeys]);
   const selectedCabinet = app.cabinets.find((cabinet) => cabinet.id === cabinetId);
-  const customRangeValid = Date.parse(customFrom) <= Date.parse(customTo);
   const timeLabel = time === 'custom'
     ? t(trKey('borrowed.time.customValue'), {
         from: formatDateOnly(locale, customFrom),
@@ -158,7 +156,7 @@ export function BorrowedKeysScreen() {
           selectedId={status}
           onSelect={(value) => setStatus(value as StatusFilter)}
         />
-        <FilterMenuButton active={time !== 'all'} label={timeLabel} onPress={() => setCalendarOpen(true)} />
+        <BorrowedKeysDateFilterButton active={time !== 'all'} label={timeLabel} onPress={() => setCalendarOpen(true)} />
       </ScrollView>
 
       <View className="mx-auto min-w-0 w-full max-w-content flex-1">
@@ -202,62 +200,31 @@ export function BorrowedKeysScreen() {
         />
       </View>
 
-      <BottomSheet
-        closeLabel={t(trKey('common.done'))}
-        footer={(
-          <View className="flex-row gap-3">
-            <Pressable
-              accessibilityRole="button"
-              className="min-h-12 flex-1 items-center justify-center rounded-control border border-line bg-surface px-4 active:opacity-70"
-              onPress={() => {
-                setTime('all');
-                setCalendarOpen(false);
-              }}>
-              <AppText variant="label" tone="foreground">{t(trKey('borrowed.time.clear'))}</AppText>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !customRangeValid }}
-              className={`min-h-12 flex-1 items-center justify-center rounded-control bg-brand px-4 ${customRangeValid ? 'active:opacity-75' : 'opacity-40'}`}
-              disabled={!customRangeValid}
-              onPress={() => {
-                setTime('custom');
-                setCalendarOpen(false);
-              }}>
-              <AppText variant="label" tone="onBrand">{t(trKey('borrowed.time.apply'))}</AppText>
-            </Pressable>
-          </View>
-        )}
+      <DateRangePickerModal
+        applyLabel={t(trKey('borrowed.time.apply'))}
+        clearLabel={t(trKey('borrowed.time.clear'))}
+        errorLabel={t(trKey('borrowed.time.invalidRange'))}
+        from={customFrom}
+        fromLabel={t(trKey('borrowed.time.from'))}
+        locale={locale}
+        onApply={(range) => {
+          setCustomFrom(range.from);
+          setCustomTo(range.to);
+          setTime('custom');
+          setCalendarOpen(false);
+        }}
+        onClear={() => {
+          setTime('all');
+          setCalendarOpen(false);
+        }}
         onClose={() => setCalendarOpen(false)}
         title={t(trKey('borrowed.filterTitle.time'))}
-        visible={calendarOpen}>
-        <DateRangeCalendar
-          error={customRangeValid ? undefined : t(trKey('borrowed.time.invalidRange'))}
-          from={customFrom}
-          fromLabel={t(trKey('borrowed.time.from'))}
-          locale={locale}
-          onFromChange={setCustomFrom}
-          onToChange={setCustomTo}
-          to={customTo}
-          toLabel={t(trKey('borrowed.time.to'))}
-        />
-      </BottomSheet>
+        to={customTo}
+        toLabel={t(trKey('borrowed.time.to'))}
+        visible={calendarOpen}
+      />
       {confirmation.dialog}
     </SafeAreaView>
-  );
-}
-
-function FilterMenuButton({ active, label, onPress }: { active: boolean; label: string; onPress?: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      className={`min-h-11 flex-row items-center gap-2 self-start rounded-pill border px-4 ${
-        active ? 'border-brand bg-brand-soft' : 'border-line bg-surface'
-      } active:opacity-70`}
-      onPress={onPress}>
-      <AppText numberOfLines={1} variant="caption" tone={active ? 'brand' : 'muted'}>{label}</AppText>
-      <AppIcon name="chevronDown" size={17} tone={active ? 'brand' : 'muted'} />
-    </Pressable>
   );
 }
 

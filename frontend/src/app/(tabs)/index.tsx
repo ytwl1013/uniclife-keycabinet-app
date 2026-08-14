@@ -1,8 +1,8 @@
-import { Href, router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { Href, router, useLocalSearchParams } from 'expo-router';
+import { Dialog } from 'heroui-native/dialog';
+import { createRef, useEffect, useRef, useState } from 'react';
 import { LayoutChangeEvent, Pressable, ScrollView, View } from 'react-native';
 
-import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { ProductImage } from '@/components/ui/product-image';
@@ -12,9 +12,10 @@ import { useNotifications } from '@/features/notifications/notifications-provide
 import { useTranslation } from '@/i18n';
 import { Cabinet, ProductSku, useMockApp } from '@/mocks';
 
-const GUIDE_STEPS = 2;
+const GUIDE_STEPS = 3;
 
 export default function HomeRoute() {
+  const params = useLocalSearchParams<{ guideStep?: string }>();
   const { t } = useTranslation();
   const { currentUser, selectors, state } = useMockApp();
   const { unreadCount } = useNotifications();
@@ -25,11 +26,9 @@ export default function HomeRoute() {
   const [guideVisible, setGuideVisible] = useState(false);
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect>();
   const scrollRef = useRef<ScrollView>(null);
-  const sectionRefs = [
-    useRef<View>(null),
-    useRef<View>(null),
-  ];
+  const sectionRefs = useRef([createRef<View>(), createRef<View>()]).current;
   const sectionY = useRef<number[]>([]);
+  const resumedGuide = useRef(false);
   const initials = currentUser?.displayName
     .split(/\s+/)
     .slice(0, 2)
@@ -47,7 +46,8 @@ export default function HomeRoute() {
   };
   const showGuideStep = (step: number) => {
     setGuideStep(step);
-    scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, (sectionY.current[step] ?? 0) - 12) });
+    const targetOffset = step === 1 ? 260 : 12;
+    scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, (sectionY.current[step] ?? 0) - targetOffset) });
     setTimeout(() => measureStep(step), 260);
   };
   const startGuide = () => {
@@ -58,6 +58,32 @@ export default function HomeRoute() {
   const closeGuide = () => {
     setGuideVisible(false);
     setSpotlightRect(undefined);
+  };
+  useEffect(() => {
+    if (params.guideStep !== 'manage-cabinet' || resumedGuide.current) return;
+    resumedGuide.current = true;
+    setGuideVisible(true);
+    setGuideStep(1);
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, (sectionY.current[1] ?? 0) - 260) });
+      setTimeout(() => {
+        sectionRefs[1].current?.measureInWindow((x, y, width, height) => {
+          setSpotlightRect({ x, y, width, height });
+        });
+      }, 260);
+    }, 220);
+    router.setParams({ guideStep: undefined });
+  }, [params.guideStep, sectionRefs]);
+  const openCabinetGuide = () => {
+    const cabinet = cabinets.find((candidate) =>
+      state.slots.some((slot) => slot.cabinetId === candidate.id && !slot.keyId),
+    ) ?? cabinets[0];
+    closeGuide();
+    if (!cabinet) return;
+    router.push({
+      pathname: '/cabinets/[cabinetId]',
+      params: { cabinetId: cabinet.id, guide: 'register-key' },
+    } as Href);
   };
   const sectionLayout = (index: number) => (event: LayoutChangeEvent) => {
     sectionY.current[index] = event.nativeEvent.layout.y;
@@ -163,10 +189,20 @@ export default function HomeRoute() {
 
       </ScrollView>
 
-      <BottomSheet
-        closeLabel={t('home.guideLater')}
-        footer={(
-          <View className="flex-row gap-3">
+      <Dialog isOpen={guideConfirmationVisible} onOpenChange={setGuideConfirmationVisible}>
+        <Dialog.Portal unstable_accessibilityContainerViewIsModal>
+          <Dialog.Overlay />
+          <Dialog.Content className="w-full max-w-[430px] gap-4" isSwipeable={false} testID="home-guide-prompt-modal">
+            <View className="items-center gap-4 py-2">
+              <View className="h-16 w-16 items-center justify-center rounded-pill bg-brand-soft">
+                <AppIcon name="guide" size={31} tone="brand" />
+              </View>
+              <View className="items-center gap-2">
+                <Dialog.Title className="text-center">{t('home.guidePromptTitle')}</Dialog.Title>
+                <Dialog.Description className="text-center">{t('home.guidePromptDescription')}</Dialog.Description>
+              </View>
+            </View>
+            <View className="flex-row gap-3">
             <Pressable
               accessibilityRole="button"
               className="min-h-12 flex-1 items-center justify-center rounded-control border border-line bg-surface px-4 active:opacity-70"
@@ -180,23 +216,16 @@ export default function HomeRoute() {
               <AppIcon name="guide" size={19} tone="onBrand" />
               <AppText variant="label" tone="onBrand">{t('home.guideStart')}</AppText>
             </Pressable>
-          </View>
-        )}
-        onClose={() => setGuideConfirmationVisible(false)}
-        title={t('home.guidePromptTitle')}
-        visible={guideConfirmationVisible}>
-        <View className="items-center gap-4 py-2">
-          <View className="h-16 w-16 items-center justify-center rounded-pill bg-brand-soft">
-            <AppIcon name="guide" size={31} tone="brand" />
-          </View>
-          <AppText className="text-center" tone="muted">{t('home.guidePromptDescription')}</AppText>
-        </View>
-      </BottomSheet>
+            </View>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
 
       <HomeSpotlightGuide
         onBack={() => showGuideStep(guideStep - 1)}
         onClose={closeGuide}
-        onNext={() => guideStep === GUIDE_STEPS - 1 ? closeGuide() : showGuideStep(guideStep + 1)}
+        onNext={() => guideStep === 1 ? openCabinetGuide() : showGuideStep(guideStep + 1)}
+        placement={guideStep === 1 ? 'top' : 'auto'}
         rect={spotlightRect}
         step={guideStep}
         total={GUIDE_STEPS}

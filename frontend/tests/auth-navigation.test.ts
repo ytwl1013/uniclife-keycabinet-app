@@ -15,6 +15,15 @@ describe('authentication navigation', () => {
     expect(tabs).toContain('return <Redirect href="/(auth)/sign-in" />');
   });
 
+  it('removes authentication routes from the stack after sign in and disables the tab-root back gesture', () => {
+    const rootLayout = source('src/app/_layout.tsx');
+
+    expect(rootLayout).toContain("const authenticated = state.sessionStatus === 'authenticated'");
+    expect(rootLayout).toContain('<Stack.Protected guard={!authenticated}>');
+    expect(rootLayout).toContain('<Stack.Protected guard={authenticated}>');
+    expect(rootLayout).toContain('name="(tabs)" options={{ gestureEnabled: false');
+  });
+
   it('sends anonymous users directly to sign in without a welcome route', () => {
     const entry = source('src/app/index.tsx');
     const authLayout = source('src/app/(auth)/_layout.tsx');

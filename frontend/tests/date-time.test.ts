@@ -1,7 +1,10 @@
 import {
+  fromDeviceDateTimeLocalValue,
   fromDateTimeLocalValue,
   isExpectedReturnAfter,
+  mergeDeviceDateTimePickerPart,
   mergeDateTimePickerPart,
+  toDeviceDateTimeLocalValue,
   toDateTimeLocalValue,
 } from '../src/components/ui/date-time';
 
@@ -53,6 +56,26 @@ describe('local cabinet date and time fields', () => {
 
   it('rejects wall-clock values that do not exist during a daylight-saving jump', () => {
     expect(fromDateTimeLocalValue('2026-03-08T02:30', 'America/New_York')).toBeUndefined();
+  });
+
+  it('uses the phone-local wall clock for the checkout input', () => {
+    const iso = new Date(2026, 7, 14, 17, 3, 0, 0).toISOString();
+    expect(toDeviceDateTimeLocalValue(iso)).toBe('2026-08-14T17:03');
+    expect(fromDeviceDateTimeLocalValue('2026-08-14T17:03')).toBe(iso);
+  });
+
+  it('ignores the Unix-epoch date emitted by a time-only spinner', () => {
+    const current = new Date(2026, 7, 14, 17, 3, 0, 0);
+    const epochTime = new Date(1970, 0, 1, 9, 45, 0, 0);
+    const mergedIso = mergeDeviceDateTimePickerPart(current.toISOString(), epochTime.toISOString(), 'time');
+    const merged = new Date(mergedIso!);
+
+    expect([merged.getFullYear(), merged.getMonth(), merged.getDate()]).toEqual([
+      current.getFullYear(),
+      current.getMonth(),
+      current.getDate(),
+    ]);
+    expect([merged.getHours(), merged.getMinutes()]).toEqual([9, 45]);
   });
 
   it('rejects malformed values and requires return after check-out', () => {

@@ -1,7 +1,7 @@
 export const en = {
   common: {
     brandName: 'UnicLife', appName: 'Key Cabinet', online: 'Online', offline: 'Offline', maintenance: 'Maintenance',
-    demoDataOnly: 'Local workspace', loading: 'Loading…', retry: 'Try again', cancel: 'Cancel', confirm: 'Confirm', done: 'Done', save: 'Save',
+    demoDataOnly: 'Local workspace', loading: 'Loading…', retry: 'Try again', cancel: 'Cancel', confirm: 'Confirm', done: 'Done', save: 'Save', date: 'Date', time: 'Time',
     locationFloor: '%{location} · %{floor}', cabinetMeta: '%{slots} key slots · %{overdue} overdue · %{status}',
     modelCapacity: 'Model: %{model} · Capacity: %{count} keys', demoBadge: 'Preview',
   },
@@ -21,6 +21,7 @@ export const en = {
     guide: { steps: {
       '0': { title: 'Return a key', description: 'See how many keys are out or overdue, then open the return list.' },
       '1': { title: 'Open a cabinet', description: 'Choose a cabinet to manage its keys, or add another cabinet below the list.' },
+      '2': { title: 'Register a key', description: 'Tap an empty slot to register a key in this cabinet.' },
     } },
   },
   notifications: {
@@ -83,7 +84,7 @@ export const en = {
     checkOutAction: 'Check out key', returnAction: 'Return key', checkOutTitle: 'Check out', checkOutKey: 'Check out %{key}',
     borrowerName: 'Borrower name', borrowerNamePlaceholder: 'Third-party borrower', borrowerRequired: 'Borrower name is required.',
     borrowerContact: 'Contact', borrowerContactOptional: 'Contact (optional)', borrowerContactPlaceholder: 'Email or phone',
-    checkedOutAt: 'Check-out time', expectedReturnAt: 'Expected return time', noExpectedReturn: 'No expected return time', noExpectedReturnOption: 'No expected return time', datePlaceholder: 'Select date and time', invalidDate: 'Enter a valid date and time.', dueAfterCheckout: 'Expected return must be later than check-out.',
+    checkedOutAt: 'Check-out time', expectedReturnAt: 'Expected return time', noExpectedReturn: 'No expected return time', noExpectedReturnOption: 'No expected return time', datePlaceholder: 'Select date and time', quickReturnTime: 'Quick return time', quickReturnDays: '+%{count} days', quickNoExpectedReturn: 'None', invalidDate: 'Enter a valid date and time.', dueAfterCheckout: 'Expected return must be later than check-out.',
     personalDataTitle: 'Handle personal data lawfully', personalDataDescription: 'Confirm that you are authorized to record this borrower’s contact details. Contact is optional and masked by default.',
     auditNoticeTitle: 'Shared audited operation', auditNoticeDescription: 'Submitting creates a loan and an activity event for all bound accounts.',
     confirmCheckout: 'Confirm check-out', submitting: 'Submitting…', checkedOutTitle: 'Key checked out', checkedOutDescription: 'The key status and individual history were updated.', done: 'Done',

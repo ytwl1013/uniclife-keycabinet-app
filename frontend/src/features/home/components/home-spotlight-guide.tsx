@@ -10,6 +10,7 @@ export function HomeSpotlightGuide({
   onBack,
   onClose,
   onNext,
+  placement = 'auto',
   rect,
   step,
   total,
@@ -18,6 +19,7 @@ export function HomeSpotlightGuide({
   onBack: () => void;
   onClose: () => void;
   onNext: () => void;
+  placement?: 'auto' | 'top' | 'bottom';
   rect?: SpotlightRect;
   step: number;
   total: number;
@@ -35,6 +37,9 @@ export function HomeSpotlightGuide({
       }
     : { x: 20, y: 120, width: Math.max(0, width - 40), height: 96 };
   const last = step === total - 1;
+  const modalPosition = placement === 'auto'
+    ? (spotlight.y > height * 0.55 ? 'top-screen' : 'bottom-screen')
+    : placement === 'top' ? 'top-screen' : 'bottom-screen';
 
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
@@ -63,7 +68,7 @@ export function HomeSpotlightGuide({
           testID={`home-spotlight-target-${step}`}
         />
 
-        <View className={`absolute inset-x-screen gap-4 rounded-card bg-surface p-5 shadow-card ${spotlight.y > height * 0.55 ? 'top-screen' : 'bottom-screen'}`}>
+        <View className={`absolute inset-x-screen gap-4 rounded-card bg-surface p-5 shadow-card ${modalPosition}`}>
           <View className="gap-1">
             <AppText variant="caption" tone="brand">
               {t('home.guideProgress', { current: step + 1, total })}

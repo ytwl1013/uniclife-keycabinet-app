@@ -1,4 +1,5 @@
 import { Menu } from 'heroui-native/menu';
+import { Pressable } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
@@ -39,5 +40,27 @@ export function BorrowedKeysFilterMenu({
         </Menu.Content>
       </Menu.Portal>
     </Menu>
+  );
+}
+
+export function BorrowedKeysDateFilterButton({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      className={`min-h-11 flex-row items-center gap-2 self-start rounded-pill border px-4 ${
+        active ? 'border-brand bg-brand-soft' : 'border-line bg-surface'
+      } active:opacity-70`}
+      onPress={onPress}>
+      <AppText numberOfLines={1} variant="caption" tone={active ? 'brand' : 'muted'}>{label}</AppText>
+      <AppIcon name="chevronDown" size={17} tone={active ? 'brand' : 'muted'} />
+    </Pressable>
   );
 }

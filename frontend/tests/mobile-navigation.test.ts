@@ -39,14 +39,23 @@ describe('simplified mobile navigation architecture', () => {
     expect(home).not.toContain('viewAll');
   });
 
-  it('provides a confirmed two-step spotlight guide from the Home header', () => {
+  it('provides a modal-confirmed three-step spotlight guide that enters a cabinet', () => {
     const home = source('src/app/(tabs)/index.tsx');
     const guide = source('src/features/home/components/home-spotlight-guide.tsx');
-    expect(home).toContain('const GUIDE_STEPS = 2');
+    const cabinet = source('src/app/(details)/cabinets/[cabinetId]/index.tsx');
+    const slotGrid = source('src/features/cabinet-prototype/components/key-slot-grid.tsx');
+    expect(home).toContain('const GUIDE_STEPS = 3');
     expect(home).toContain('testID="home-guide-button"');
-    expect(home).toContain("title={t('home.guidePromptTitle')}");
+    expect(home).toContain("import { Dialog } from 'heroui-native/dialog'");
+    expect(home).toContain('testID="home-guide-prompt-modal"');
     expect(home).toContain("t('home.guideLater')");
     expect(home).toContain("t('home.guideStart')");
+    expect(home).not.toContain('<BottomSheet');
+    expect(home).toContain("params: { cabinetId: cabinet.id, guide: 'register-key' }");
+    expect(home).toContain("placement={guideStep === 1 ? 'top' : 'auto'}");
+    expect(cabinet).toContain("params.guide === 'register-key'");
+    expect(cabinet).toContain('step={2}');
+    expect(slotGrid).toContain('testID={spotlighted ? \'cabinet-guide-register-slot\' : undefined}');
     expect(home).not.toContain('QuickAction');
     expect(home).not.toContain("t('home.quickActionsTitle')");
     expect(guide).toContain('accessibilityViewIsModal');
@@ -81,13 +90,28 @@ describe('simplified mobile navigation architecture', () => {
     const borrowed = source('src/features/cabinet-prototype/components/borrowed-keys-screen.tsx');
     const filterMenu = source('src/features/cabinet-prototype/components/borrowed-keys-filter-menu.tsx');
     const dateRangeCalendar = source('src/components/ui/date-range-calendar.tsx');
+    const dateRangeModal = source('src/components/ui/date-range-picker-modal.tsx');
+    const dateTimeField = source('src/components/ui/date-time-field.tsx');
     const keyDetail = source('src/app/(details)/cabinets/[cabinetId]/keys/[keyId].tsx');
+    const checkout = source('src/app/(details)/cabinets/[cabinetId]/loans/[keyId].tsx');
     expect(borrowed).toContain('<SearchInput');
     expect(borrowed).toContain('onPress={() => router.back()}');
     expect(filterMenu).toContain("import { Menu } from 'heroui-native/menu'");
+    expect(filterMenu).toContain('BorrowedKeysDateFilterButton');
     expect(borrowed).toContain('className="grow-0 shrink-0"');
-    expect(borrowed).toContain('<DateRangeCalendar');
+    expect(borrowed).toContain('<DateRangePickerModal');
     expect(borrowed).toContain('locale={locale}');
+    expect(dateRangeModal).toContain("import { Dialog } from 'heroui-native/dialog'");
+    expect(dateRangeModal).toContain('<DateRangeCalendar');
+    expect(dateRangeModal).toContain('testID="borrowed-date-range-modal"');
+    expect(dateTimeField).toContain('display="spinner"');
+    expect(dateTimeField).toContain('mode="date"');
+    expect(dateTimeField).toContain('mode="time"');
+    expect(dateTimeField).not.toContain('mode="datetime"');
+    expect(dateTimeField).not.toContain('timeZoneName');
+    expect(dateTimeField).toContain('testID="date-time-picker-modal"');
+    expect(dateTimeField).toContain('testID="date-time-picker-date"');
+    expect(dateTimeField).toContain('testID="date-time-picker-time"');
     expect(dateRangeCalendar).not.toContain('useTranslation');
     expect(borrowed).toContain('<SectionList');
     expect(borrowed).toContain('stickySectionHeadersEnabled');
@@ -98,6 +122,10 @@ describe('simplified mobile navigation architecture', () => {
     expect(borrowed).not.toContain('borrowed.cabinetAndSlot');
     expect(borrowed).toContain('borrowed.returnConfirmationDescription');
     expect(keyDetail).toContain('borrowed.returnConfirmationDescription');
+    expect(checkout).toContain('const quickReturnOptions = [1, 3, 7] as const');
+    expect(checkout).toContain('useState<string>()');
+    expect(checkout).not.toContain('KeyboardAvoidingView');
+    expect(checkout).not.toContain('timeZone={cabinet.timezone}');
   });
 
   it('keeps activity read-only and removes download implementations', () => {

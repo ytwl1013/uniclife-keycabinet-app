@@ -64,6 +64,52 @@ export function mergeDateTimePickerPart(
   return fromDateTimeLocalValue(next, timeZone);
 }
 
+function twoDigits(value: number) {
+  return String(value).padStart(2, '0');
+}
+
+export function toDeviceDateTimeLocalValue(isoUtc: string) {
+  const date = new Date(isoUtc);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${twoDigits(date.getMonth() + 1)}-${twoDigits(date.getDate())}T${twoDigits(date.getHours())}:${twoDigits(date.getMinutes())}`;
+}
+
+export function fromDeviceDateTimeLocalValue(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  const [, year, month, day, hour, minute] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), 0, 0);
+  if (
+    Number.isNaN(date.getTime())
+    || date.getFullYear() !== Number(year)
+    || date.getMonth() !== Number(month) - 1
+    || date.getDate() !== Number(day)
+    || date.getHours() !== Number(hour)
+    || date.getMinutes() !== Number(minute)
+  ) return undefined;
+  return date.toISOString();
+}
+
+export function mergeDeviceDateTimePickerPart(
+  currentIsoUtc: string,
+  selectedIsoUtc: string,
+  part: 'date' | 'time',
+) {
+  const current = new Date(currentIsoUtc);
+  const selected = new Date(selectedIsoUtc);
+  if (Number.isNaN(current.getTime()) || Number.isNaN(selected.getTime())) return undefined;
+
+  const next = new Date(current);
+  if (part === 'date') {
+    next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+  } else {
+    // Android/iOS time-only pickers may report 1970 for the date portion. Only
+    // copy the wall-clock time so the already selected year/month/day survives.
+    next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+  }
+  return Number.isNaN(next.getTime()) ? undefined : next.toISOString();
+}
+
 export function isExpectedReturnAfter(checkedOutAt: string, expectedReturnAt: string) {
   const checkedOut = Date.parse(checkedOutAt);
   const expectedReturn = Date.parse(expectedReturnAt);
