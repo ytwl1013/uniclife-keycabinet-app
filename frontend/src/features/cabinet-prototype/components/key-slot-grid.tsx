@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ReactElement, useRef } from 'react';
+import { ReactElement, useCallback, useLayoutEffect, useRef } from 'react';
 import { FlatList, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { AppIcon, AppIconTone } from '@/components/ui/app-icon';
@@ -78,27 +78,40 @@ function SlotCell({
 }) {
   const { formatNumber, t } = useTranslation();
   const cellRef = useRef<View>(null);
+  const spotlightFrame = useRef<number | undefined>(undefined);
   const style = config[slot.status];
   const href = slot.keyId
     ? { pathname: '/cabinets/[cabinetId]/keys/[keyId]' as const, params: { cabinetId, keyId: slot.keyId } }
     : { pathname: '/cabinets/[cabinetId]/keys/new' as const, params: { cabinetId, slotId: slot.id, slotNumber: String(slot.number) } };
 
-  const reportSpotlightRect = () => {
+  const reportSpotlightRect = useCallback(() => {
     if (!spotlighted) return;
     cellRef.current?.measureInWindow((x, y, width, height) => {
       onSpotlightRect?.({ x, y, width, height });
     });
-  };
-  const handleLayout = () => {
-    if (spotlighted) setTimeout(reportSpotlightRect, 80);
-  };
+  }, [onSpotlightRect, spotlighted]);
+  const scheduleSpotlightRect = useCallback(() => {
+    if (!spotlighted) return;
+    if (spotlightFrame.current !== undefined) cancelAnimationFrame(spotlightFrame.current);
+    spotlightFrame.current = requestAnimationFrame(() => {
+      spotlightFrame.current = undefined;
+      reportSpotlightRect();
+    });
+  }, [reportSpotlightRect, spotlighted]);
+  useLayoutEffect(() => {
+    if (!spotlighted) return;
+    scheduleSpotlightRect();
+    return () => {
+      if (spotlightFrame.current !== undefined) cancelAnimationFrame(spotlightFrame.current);
+    };
+  }, [scheduleSpotlightRect, spotlighted]);
 
   return (
     <Pressable
       accessibilityLabel={`${t(trKey('key.slotNumber'), { number: formatNumber(slot.number) })}. ${slot.keyName ?? t(trKey('key.emptySlot'))}. ${t(trKey(`key.status.${slot.status}`))}`}
       accessibilityRole="button"
       className={`min-h-[112px] gap-2 overflow-hidden rounded-card border p-3 ${style.border} ${style.background} ${spotlighted ? 'border-brand' : ''} active:opacity-70`}
-      onLayout={handleLayout}
+      onLayout={scheduleSpotlightRect}
       style={{ flex: 1, maxWidth: columns === 2 ? '48.7%' : '31.9%' }}
       onPress={() => router.push(href as never)}
       ref={cellRef}

@@ -1,6 +1,6 @@
 import { Href, router, useLocalSearchParams } from 'expo-router';
 import { Dialog } from 'heroui-native/dialog';
-import { createRef, useEffect, useRef, useState } from 'react';
+import { createRef, useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutChangeEvent, Pressable, ScrollView, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
@@ -26,8 +26,10 @@ export default function HomeRoute() {
   const [guideVisible, setGuideVisible] = useState(false);
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect>();
   const scrollRef = useRef<ScrollView>(null);
-  const sectionRefs = useRef([createRef<View>(), createRef<View>()]).current;
+  const guideTargetRefs = useRef([createRef<View>(), createRef<View>(), createRef<View>()]).current;
   const sectionY = useRef<number[]>([]);
+  const guideRequest = useRef(0);
+  const guideFrame = useRef<number | undefined>(undefined);
   const resumedGuide = useRef(false);
   const initials = currentUser?.displayName
     .split(/\s+/)
@@ -39,47 +41,69 @@ export default function HomeRoute() {
     return Boolean(loan?.expectedReturnAt && Date.parse(loan.expectedReturnAt) < Date.parse(state.now));
   }).length;
 
-  const measureStep = (step: number) => {
-    sectionRefs[step].current?.measureInWindow((x, y, width, height) => {
-      setSpotlightRect({ x, y, width, height });
-    });
-  };
-  const showGuideStep = (step: number) => {
+  const prepareGuideStep = useCallback((step: number) => {
+    const request = ++guideRequest.current;
+    if (guideFrame.current !== undefined) cancelAnimationFrame(guideFrame.current);
+    setGuideVisible(false);
+    setSpotlightRect(undefined);
     setGuideStep(step);
-    const targetOffset = step === 1 ? 260 : 12;
-    scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, (sectionY.current[step] ?? 0) - targetOffset) });
-    setTimeout(() => measureStep(step), 260);
-  };
+    const targetOffset = step === 1 ? 260 : step === 2 ? 320 : 12;
+    const targetY = step === 2
+      ? (sectionY.current[1] ?? 0) + (sectionY.current[2] ?? 0)
+      : sectionY.current[step] ?? 0;
+    scrollRef.current?.scrollTo({ animated: false, y: Math.max(0, targetY - targetOffset) });
+
+    let attempts = 0;
+    const measureWhenReady = () => {
+      guideFrame.current = requestAnimationFrame(() => {
+        if (request !== guideRequest.current) return;
+        const target = guideTargetRefs[step].current;
+        if (!target) {
+          if (attempts++ < 4) measureWhenReady();
+          return;
+        }
+        target.measureInWindow((x, y, width, height) => {
+          if (request !== guideRequest.current) return;
+          if (width <= 0 || height <= 0) {
+            if (attempts++ < 4) measureWhenReady();
+            return;
+          }
+          setSpotlightRect({ x, y, width, height });
+          setGuideVisible(true);
+        });
+      });
+    };
+    guideFrame.current = requestAnimationFrame(measureWhenReady);
+  }, [guideTargetRefs]);
   const startGuide = () => {
     setGuideConfirmationVisible(false);
-    setGuideVisible(true);
-    setTimeout(() => showGuideStep(0), 220);
+    prepareGuideStep(0);
   };
   const closeGuide = () => {
+    guideRequest.current += 1;
+    if (guideFrame.current !== undefined) cancelAnimationFrame(guideFrame.current);
     setGuideVisible(false);
     setSpotlightRect(undefined);
   };
   useEffect(() => {
     if (params.guideStep !== 'manage-cabinet' || resumedGuide.current) return;
     resumedGuide.current = true;
-    setGuideVisible(true);
-    setGuideStep(1);
-    setTimeout(() => {
-      scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, (sectionY.current[1] ?? 0) - 260) });
-      setTimeout(() => {
-        sectionRefs[1].current?.measureInWindow((x, y, width, height) => {
-          setSpotlightRect({ x, y, width, height });
-        });
-      }, 260);
-    }, 220);
+    prepareGuideStep(1);
     router.setParams({ guideStep: undefined });
-  }, [params.guideStep, sectionRefs]);
+  }, [params.guideStep, prepareGuideStep]);
+  useEffect(() => () => {
+    guideRequest.current += 1;
+    if (guideFrame.current !== undefined) cancelAnimationFrame(guideFrame.current);
+  }, []);
   const openCabinetGuide = () => {
     const cabinet = cabinets.find((candidate) =>
       state.slots.some((slot) => slot.cabinetId === candidate.id && !slot.keyId),
-    ) ?? cabinets[0];
+    );
+    if (!cabinet) {
+      prepareGuideStep(2);
+      return;
+    }
     closeGuide();
-    if (!cabinet) return;
     router.push({
       pathname: '/cabinets/[cabinetId]',
       params: { cabinetId: cabinet.id, guide: 'register-key' },
@@ -141,7 +165,7 @@ export default function HomeRoute() {
         contentContainerClassName="mx-auto w-full max-w-content gap-6 px-screen pb-screen pt-screen"
         ref={scrollRef}
         showsVerticalScrollIndicator={false}>
-        <View className="gap-3" collapsable={false} onLayout={sectionLayout(0)} ref={sectionRefs[0]}>
+        <View className="gap-3" collapsable={false} onLayout={sectionLayout(0)} ref={guideTargetRefs[0]}>
           <AppText className="px-1" variant="title" tone="foreground">{t('home.activeLoansTitle')}</AppText>
           <View className="gap-4 rounded-card border border-line bg-surface p-5 shadow-card" testID="home-borrowed-summary">
             <View className="flex-row items-center gap-4">
@@ -167,7 +191,7 @@ export default function HomeRoute() {
           </View>
         </View>
 
-        <View className="gap-3" collapsable={false} onLayout={sectionLayout(1)} ref={sectionRefs[1]}>
+        <View className="gap-3" collapsable={false} onLayout={sectionLayout(1)} ref={guideTargetRefs[1]}>
           <AppText className="px-1" variant="title" tone="foreground">{t('home.cabinetsTitle')}</AppText>
           {cabinets.length ? cabinets.map((cabinet) => (
             <CabinetCard cabinet={cabinet} key={cabinet.id} sku={selectors.skuById(cabinet.skuId)} />
@@ -180,7 +204,10 @@ export default function HomeRoute() {
           <Pressable
             accessibilityRole="button"
             className="min-h-[50px] flex-row items-center justify-center gap-2 rounded-control border border-brand bg-brand-soft px-4 active:opacity-75"
+            collapsable={false}
+            onLayout={sectionLayout(2)}
             onPress={() => router.push('/(details)/scan' as Href)}
+            ref={guideTargetRefs[2]}
             testID="home-add-cabinet">
             <AppIcon name="scan" size={21} tone="brand" />
             <AppText variant="label" tone="brand">{t('home.addCabinet')}</AppText>
@@ -222,12 +249,24 @@ export default function HomeRoute() {
       </Dialog>
 
       <HomeSpotlightGuide
-        onBack={() => showGuideStep(guideStep - 1)}
+        description={guideStep === 2 ? t('home.guideNoCabinetDescription') : undefined}
+        nextLabel={guideStep === 2 ? t('home.guideAddCabinetAction') : undefined}
+        onBack={() => prepareGuideStep(guideStep - 1)}
         onClose={closeGuide}
-        onNext={() => guideStep === 1 ? openCabinetGuide() : showGuideStep(guideStep + 1)}
+        onNext={() => {
+          if (guideStep === 1) {
+            openCabinetGuide();
+          } else if (guideStep === 2) {
+            closeGuide();
+            router.push('/(details)/scan' as Href);
+          } else {
+            prepareGuideStep(guideStep + 1);
+          }
+        }}
         placement={guideStep === 1 ? 'top' : 'auto'}
         rect={spotlightRect}
         step={guideStep}
+        title={guideStep === 2 ? t('home.guideNoCabinetTitle') : undefined}
         total={GUIDE_STEPS}
         visible={guideVisible}
       />

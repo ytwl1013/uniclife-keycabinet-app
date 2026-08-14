@@ -18,6 +18,7 @@ export const en = {
     supportUnavailableTitle: 'Support service is being upgraded', supportUnavailableDescription: 'Please try again later.', supportEmailSubject: 'UnicLife Key Cabinet support', supportOpenFailed: 'The mail app could not be opened.',
     guidePromptTitle: 'Start the user guide?', guidePromptDescription: 'Take a quick tour of the main actions on Home. You can leave the guide at any time.', guideLater: 'Later', guideStart: 'Start guide',
     guideProgress: 'Step %{current} of %{total}', guideSkip: 'Skip', guideBack: 'Back', guideNext: 'Next', guideDone: 'Done',
+    guideNoCabinetTitle: 'Add a cabinet', guideNoCabinetDescription: 'There is no cabinet with an empty slot to demonstrate yet. Add a cabinet first, then you can open it and register a key.', guideAddCabinetAction: 'Add cabinet',
     guide: { steps: {
       '0': { title: 'Return a key', description: 'See how many keys are out or overdue, then open the return list.' },
       '1': { title: 'Open a cabinet', description: 'Choose a cabinet to manage its keys, or add another cabinet below the list.' },
@@ -25,8 +26,8 @@ export const en = {
     } },
   },
   notifications: {
-    title: 'Notifications', subtitle: 'Updates from your cabinets and account', back: 'Back', unreadTab: 'Unread (%{count})', readTab: 'Read', markAllRead: 'Mark all read',
-    emptyUnreadTitle: 'You are all caught up', emptyUnreadDescription: 'New cabinet and account updates will appear here.', emptyReadTitle: 'No read notifications', emptyReadDescription: 'Notifications you have opened will move here.',
+    title: 'Notifications', subtitle: 'Exceptions, support, and security alerts', back: 'Back', unreadTab: 'Unread (%{count})', readTab: 'Read', markAllRead: 'Mark all read',
+    emptyUnreadTitle: 'You are all caught up', emptyUnreadDescription: 'New exceptions, support messages, and security alerts will appear here.', emptyReadTitle: 'No read notifications', emptyReadDescription: 'Notifications you have opened will move here.',
   },
   support: {
     title: 'Contact support', back: 'Back', onlineStatus: 'Support is online', welcomeMessage: 'Hi! Tell us what you need help with and our support team will get back to you.', inputLabel: 'Message to support', inputPlaceholder: 'Type a message…', send: 'Send message',

@@ -11,6 +11,7 @@ import {
 
 import { AppIconName, AppIconTone } from '@/components/ui/app-icon';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
+import { isNotifiableEvent } from '@/features/notifications/notification-policy';
 import { useMockApp } from '@/mocks';
 
 export type AppNotification = {
@@ -87,19 +88,21 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
     saveReadIds(new Set([...readIds, id]));
   }, [readIds, saveReadIds]);
 
-  const markAllRead = useCallback(() => {
-    saveReadIds(new Set(app.events.map((event) => event.id)));
-  }, [app.events, saveReadIds]);
+  const notifications = useMemo<AppNotification[]>(() => app.events
+    .filter(isNotifiableEvent)
+    .map((event) => ({
+      id: event.id,
+      title: event.title,
+      body: event.detail ?? event.actorName,
+      createdAt: event.createdAt,
+      icon: eventIcon[event.kind].icon,
+      tone: eventIcon[event.kind].tone,
+      read: readIds.has(event.id),
+    })), [app.events, readIds]);
 
-  const notifications = useMemo<AppNotification[]>(() => app.events.map((event) => ({
-    id: event.id,
-    title: event.title,
-    body: event.detail ?? event.actorName,
-    createdAt: event.createdAt,
-    icon: eventIcon[event.kind].icon,
-    tone: eventIcon[event.kind].tone,
-    read: readIds.has(event.id),
-  })), [app.events, readIds]);
+  const markAllRead = useCallback(() => {
+    saveReadIds(new Set(notifications.map((notification) => notification.id)));
+  }, [notifications, saveReadIds]);
 
   const value = useMemo<NotificationsContextValue>(() => ({
     notifications,

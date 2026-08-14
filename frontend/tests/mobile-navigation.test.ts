@@ -52,10 +52,14 @@ describe('simplified mobile navigation architecture', () => {
     expect(home).toContain("t('home.guideStart')");
     expect(home).not.toContain('<BottomSheet');
     expect(home).toContain("params: { cabinetId: cabinet.id, guide: 'register-key' }");
+    expect(home).toContain('prepareGuideStep(2)');
+    expect(home).toContain("t('home.guideNoCabinetTitle')");
     expect(home).toContain("placement={guideStep === 1 ? 'top' : 'auto'}");
+    expect(home).not.toContain('setTimeout');
     expect(cabinet).toContain("params.guide === 'register-key'");
     expect(cabinet).toContain('step={2}');
     expect(slotGrid).toContain('testID={spotlighted ? \'cabinet-guide-register-slot\' : undefined}');
+    expect(slotGrid).not.toContain('setTimeout');
     expect(home).not.toContain('QuickAction');
     expect(home).not.toContain("t('home.quickActionsTitle')");
     expect(guide).toContain('accessibilityViewIsModal');
@@ -64,6 +68,9 @@ describe('simplified mobile navigation architecture', () => {
     expect(guide).toContain("home.guideDone");
     expect(guide).toContain('Mask id="home-guide-mask"');
     expect(guide).toContain('rx={18}');
+    expect(guide).toContain('useSafeAreaInsets');
+    expect(guide).toContain('top: insets.top + 16');
+    expect(guide).toContain('if (!visible || !rect) return null');
   });
 
   it('routes Home notifications and Account support into the details stack', () => {
