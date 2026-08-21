@@ -19,6 +19,7 @@ repository_policy:
         find . -path './.git' -prune -o -type f \
           \( -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o -name '*.p12' -o -name '*.pfx' \) \
           ! -name '.env.example' \
+          ! -name '.env.*.example' \
           -print
       )"
       if [ -n "$forbidden_files" ]; then

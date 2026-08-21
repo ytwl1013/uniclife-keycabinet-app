@@ -28,11 +28,26 @@ tests/            跨端契约测试和集成测试预留
 
 ```bash
 pnpm install
-pnpm dev:backend
-pnpm dev:frontend
+cp backend/.env.development.example backend/.env.development
+cp frontend/.env.development.example frontend/.env.local
 ```
 
-后端环境变量从 `backend/.env.example` 复制到本地 `.env` 后填写。不要提交真实 `.env`、数据库密码、设备密钥、Token、Cookie 或证书。
+将 `frontend/.env.local` 中的示例地址改为开发电脑的局域网 IPv4 地址，保证真机与开发电脑连接同一局域网。iOS Simulator 可以使用 `localhost`。
+
+开发数据库单独运行在 Docker 中，后端仍由本机的 watch 模式运行：
+
+```bash
+pnpm dev:db
+pnpm db:migrate:dev
+pnpm dev
+```
+
+- `pnpm dev:db`：启动只监听 `127.0.0.1:5432` 的 PostgreSQL 17 开发容器。
+- `pnpm db:migrate:dev`：将 `backend/src/db/migrations` 中尚未执行的迁移应用到开发库。
+- `pnpm dev`：同时启动 Fastify 热更新服务和 Expo 开发服务。
+- `pnpm dev:db:down`：停止开发数据库但保留 Docker volume 中的数据。
+
+后端按 `NODE_ENV` 加载对应的 `.env.<environment>`，生产环境由 Render 注入变量。Expo 本地开发统一使用被 Git 忽略的 `frontend/.env.local`，生产构建使用 EAS 的 production 环境。不要提交真实 `.env`、数据库密码、设备密钥、Token、Cookie 或证书。
 
 ## 验证
 

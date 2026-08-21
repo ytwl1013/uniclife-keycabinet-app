@@ -16,5 +16,7 @@ describe('health routes', () => {
         status: 'ok',
       },
     });
+
+    await app.close();
   });
 });

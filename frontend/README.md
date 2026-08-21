@@ -69,12 +69,20 @@ override.
 ## Commands
 
 ```bash
+cp .env.development.example .env.local
 pnpm --filter @uniclife/frontend dev
 pnpm --filter @uniclife/frontend lint
 pnpm --filter @uniclife/frontend typecheck
 pnpm --filter @uniclife/frontend test
 pnpm --filter @uniclife/frontend exec expo export --platform web
 ```
+
+For device development, set `EXPO_PUBLIC_API_BASE_URL` in `.env.local` to the
+development Mac's LAN IPv4 address, for example
+`http://192.168.1.100:4000/api/v1`. The device and Mac must use the same local
+network. Production builds obtain the same public variable names from the EAS
+production environment and require an HTTPS API URL. Never store a secret in an
+`EXPO_PUBLIC_*` variable because Expo embeds it in the client bundle.
 
 Activity logs are read-only in the app and cannot be downloaded. All cabinet
 memberships use the single Admin role. Key deletion is permanent; cabinet,

@@ -16,3 +16,7 @@ export const sql = databaseUrl
   : null;
 
 export const db = sql ? drizzle(sql, { schema }) : null;
+
+export async function closeDatabase(): Promise<void> {
+  await sql?.end({ timeout: 5 });
+}

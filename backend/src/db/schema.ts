@@ -1,4 +1,4 @@
-import { boolean, index, pgEnum, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgEnum, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 export const userStatus = pgEnum('user_status', ['active', 'disabled']);
 export const cabinetStatus = pgEnum('cabinet_status', ['online', 'offline', 'maintenance']);
@@ -47,7 +47,9 @@ export const keys = pgTable(
 export const records = pgTable('records', {
   id: serial('id').primaryKey(),
   type: recordType('type').notNull(),
-  actorId: serial('actor_id').notNull(),
+  actorId: integer('actor_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
   keyCode: varchar('key_code', { length: 64 }),
   cabinetCode: varchar('cabinet_code', { length: 64 }),
   success: boolean('success').notNull(),
@@ -57,7 +59,9 @@ export const records = pgTable('records', {
 
 export const auditLogs = pgTable('audit_logs', {
   id: serial('id').primaryKey(),
-  actorId: serial('actor_id').notNull(),
+  actorId: integer('actor_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
   action: varchar('action', { length: 128 }).notNull(),
   targetType: varchar('target_type', { length: 64 }).notNull(),
   targetId: varchar('target_id', { length: 128 }).notNull(),

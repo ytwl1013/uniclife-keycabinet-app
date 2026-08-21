@@ -1,5 +1,7 @@
 import { translate } from '@/i18n';
 
+import { apiConfig } from './config';
+
 export type ApiClientResult<T> =
   | { state: 'success'; data: T; message: string }
   | { state: 'unauthorized'; message: string }
@@ -12,11 +14,9 @@ type ApiEnvelope<T> = {
   data: T | null;
 };
 
-const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api/v1';
-
 export async function requestApi<T>(path: string, init?: RequestInit): Promise<ApiClientResult<T>> {
   try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
+    const response = await fetch(`${apiConfig.baseUrl}${path}`, {
       ...init,
       headers: {
         Accept: 'application/json',
