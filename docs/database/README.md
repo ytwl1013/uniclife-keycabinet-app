@@ -1,34 +1,37 @@
 # 数据库说明
 
-后端使用 Drizzle ORM 管理 PostgreSQL schema。schema 定义位于 `backend/src/db/schema.ts`，迁移文件输出目录为 `backend/src/db/migrations`。
+后端使用 Drizzle ORM 管理 PostgreSQL。Schema 位于 `backend/src/db/schema.ts`，初始迁移是 `backend/src/db/migrations/0000_backend_foundation.sql`。
 
-## 当前规划表
+## 表与职责
 
-- `users`：用户与人员编号
-- `cabinets`：钥匙柜主数据和设备状态
-- `keys`：钥匙、柜体、槽位和状态
-- `records`：领取、归还、盘点、异常开柜等业务记录
-- `audit_logs`：关键动作审计日志
+| 表 | 用途 | 关键约束/索引 |
+| --- | --- | --- |
+| `users` | 账户、密码哈希、语言和停用状态 | 小写邮箱唯一；账户删除采用匿名化和软停用 |
+| `sessions` | 不透明会话 Token 摘要 | Token 摘要唯一；按用户和过期时间索引 |
+| `password_reset_challenges` | 验证码尝试、短时重置 Token 和消费状态 | 重置 Token 摘要唯一；尝试次数非负 |
+| `consents` | 条款和隐私版本同意 | 用户 + 类型 + 政策版本唯一 |
+| `product_skus` | 产品型号和槽位容量 | SKU 唯一；容量大于 0 |
+| `cabinet_qrs` | SKU 与实体设备 UUID 的二维码身份 | code 和 device UUID 唯一 |
+| `cabinets` | 柜体资料、在线状态和并发版本 | device UUID 唯一；version 非负 |
+| `cabinet_memberships` | 用户与柜体的管理员关系 | 柜体 + 用户唯一；保留移除时间 |
+| `key_slots` | 柜体固定位置 | 柜体 + position 唯一；position 大于 0 |
+| `keys` | 当前钥匙资料和槽位 | slot 唯一，保证一个槽位最多一把钥匙 |
+| `loans` | 领取与归还记录 | 每把钥匙最多一条 active 记录；预计归还晚于领取 |
+| `cabinet_events` | 页面活动时间线的不可变业务事件 | 按柜体/钥匙和发生时间索引 |
+| `idempotency_records` | 写请求幂等响应 | 操作者 + 操作 + requestId 复合主键 |
+| `audit_logs` | 成功和失败操作审计 | 按操作者、目标和时间索引 |
 
-## 迁移要求
+`loans.key_id` 与 `cabinet_events.key_id` 有意不设当前钥匙外键：钥匙资料永久删除后仍必须保留历史 ID 和追责记录。批量删除会先把相关有效借用标记为 `cancelled`。用户、柜体、成员和审计的主体外键使用 restrict，避免历史链路被级联删除。
 
-新增或修改表结构时必须说明用途、索引、约束、回滚策略和兼容影响。生成迁移前确认 `DATABASE_URL` 指向本地或测试库，不得使用生产库。
+## 迁移、兼容与回滚
 
-## 本地 PostgreSQL
+本仓库仍处于初始化阶段，本次基础后端用新的 `0000_backend_foundation.sql` 替换了此前未承载生产数据的占位初始迁移，旧表结构不做原位升级。
 
-`deploy/docker/compose.dev.yml` 只启动 PostgreSQL，不容器化后端。数据库端口仅绑定开发电脑的 `127.0.0.1`，并使用仅限本地开发容器的 trust 认证；该模式禁止用于共享、测试或生产服务器。
+- 已执行旧占位迁移的本地开发库不兼容。确认本地数据无需保留后，执行 `pnpm dev:db:down`，手动删除对应 Compose volume，再重新启动、迁移和 seed。删除 volume 会永久删除本地数据，因此仓库不提供自动 reset 命令。
+- 新环境直接执行 `pnpm db:migrate:dev`。
+- 生产环境上线前必须备份；生产回滚优先恢复备份或编写前向修复迁移，不得直接删除借用、事件或审计表。
+- 后续任何 schema 变化必须新增迁移，不能继续重写 `0000`。
 
-```bash
-pnpm dev:db
-pnpm db:migrate:dev
-```
+## 开发种子
 
-本地连接信息位于被 Git 忽略的 `backend/.env.development`。首次使用时从 `backend/.env.development.example` 复制。
-
-## 初始迁移
-
-`0000_initial_schema.sql` 创建四个状态枚举以及 `users`、`cabinets`、`keys`、`records`、`audit_logs` 五张表。`records.actor_id` 和 `audit_logs.actor_id` 使用普通整数外键引用 `users.id`，删除用户受到限制，以免关键业务记录和审计记录失去操作者关联。
-
-- 兼容影响：这是初始迁移，不迁移已有生产数据。
-- 本地回滚：确认无需保留开发数据后，删除 Compose volume，再重新启动数据库并执行迁移。删除 volume 会永久清除本地开发数据，因此不提供自动 reset 命令。
-- 生产回滚：优先恢复部署前备份或编写前向修复迁移；不得直接删除审计和业务记录表。
+`pnpm db:seed:dev` 幂等写入两个虚构 SKU 和两个未绑定二维码，供扫描绑定流程验证。它不创建用户、不写真实设备凭据，并在 `NODE_ENV=production` 下拒绝运行。

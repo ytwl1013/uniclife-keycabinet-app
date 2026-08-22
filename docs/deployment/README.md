@@ -16,6 +16,10 @@
 - `HOST`：后端监听地址
 - `LOG_LEVEL`：日志级别
 - `FRONTEND_ORIGIN`：允许跨域访问的前端地址
+- `AUTH_TOKEN_PEPPER`：至少 32 字符的独立随机密钥，用于会话、验证码和重置 Token 摘要；生产环境必填且不得轮换，除非计划让全部会话与重置挑战失效
+- `AUTH_SESSION_TTL_DAYS`：会话有效天数，范围 1–90
+- `AUTH_RESET_TTL_MINUTES`：验证码和重置 Token 有效分钟数，范围 5–60
+- `AUTH_ALLOW_RESET_CODE_PREVIEW`：仅本地开发可设为 `true`；生产环境设为 `true` 会导致启动失败
 
 开发和生产启动方式：
 
@@ -23,6 +27,7 @@
 - 生产：`NODE_ENV=production`，由 `pnpm --filter @uniclife/backend start` 自动设置；`DATABASE_URL`、`PORT` 等真实值由 Render 注入。
 
 除测试环境外，缺少 `DATABASE_URL` 时后端会拒绝启动，避免线上服务在未连接数据库的情况下误运行。
+生产环境缺少 `AUTH_TOKEN_PEPPER` 时同样拒绝启动。默认密码重置通知适配器不会发送邮件；发布前必须注入真实 `PasswordResetNotifier`，并确认邮件服务、退信处理、速率限制和数据驻留要求。
 
 ## 前端环境变量
 

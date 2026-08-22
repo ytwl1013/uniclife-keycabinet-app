@@ -17,6 +17,17 @@ export const sql = databaseUrl
 
 export const db = sql ? drizzle(sql, { schema }) : null;
 
+export type AppDatabase = NonNullable<typeof db>;
+export type AppTransaction = Parameters<Parameters<AppDatabase['transaction']>[0]>[0];
+export type DbExecutor = AppDatabase | AppTransaction;
+
+export function requireDatabase(): AppDatabase {
+  if (!db) {
+    throw new Error('DATABASE_NOT_CONFIGURED');
+  }
+  return db;
+}
+
 export async function closeDatabase(): Promise<void> {
   await sql?.end({ timeout: 5 });
 }

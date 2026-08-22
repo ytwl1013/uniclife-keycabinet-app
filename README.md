@@ -39,11 +39,13 @@ cp frontend/.env.development.example frontend/.env.local
 ```bash
 pnpm dev:db
 pnpm db:migrate:dev
+pnpm db:seed:dev
 pnpm dev
 ```
 
 - `pnpm dev:db`：启动只监听 `127.0.0.1:5432` 的 PostgreSQL 17 开发容器。
 - `pnpm db:migrate:dev`：将 `backend/src/db/migrations` 中尚未执行的迁移应用到开发库。
+- `pnpm db:seed:dev`：幂等写入两个虚构产品 SKU 和两个未绑定测试二维码，不创建账户。
 - `pnpm dev`：同时启动 Fastify 热更新服务和 Expo 开发服务。
 - `pnpm dev:db:down`：停止开发数据库但保留 Docker volume 中的数据。
 

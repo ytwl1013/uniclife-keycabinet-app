@@ -22,6 +22,9 @@ importers:
       '@fastify/sensible':
         specifier: ^6.0.3
         version: 6.0.4
+      '@uniclife/shared':
+        specifier: workspace:*
+        version: link:../shared
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7

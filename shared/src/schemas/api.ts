@@ -2,6 +2,13 @@ import { z } from 'zod';
 
 export const apiCodeSchema = z.string().min(1);
 
+export const requestIdSchema = z.string().trim().min(8).max(128);
+
+export const writeOptionsSchema = z.object({
+  expectedVersion: z.number().int().nonnegative().optional(),
+  requestId: requestIdSchema.optional(),
+});
+
 export const apiEnvelopeSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
   z.object({
     code: apiCodeSchema,
@@ -14,6 +21,8 @@ export type ApiEnvelope<T> = {
   message: string;
   data: T | null;
 };
+
+export type WriteOptions = z.infer<typeof writeOptionsSchema>;
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
 
