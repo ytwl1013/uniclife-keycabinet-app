@@ -54,6 +54,7 @@ const emptyState = (): AppState => ({
 });
 
 const AppContext = createContext<AppContextValue | null>(null);
+const SESSION_RESTORE_RETRY_MS = 5_000;
 
 function isSessionError(error: unknown): boolean {
   return isApiError(error) &&
@@ -66,6 +67,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const tokenRef = useRef<string | null>(null);
   const lastSuccessfulRefreshAtRef = useRef(0);
   const latestRefreshPromiseRef = useRef<Promise<void> | null>(null);
+  const hydratePromiseRef = useRef<Promise<void> | null>(null);
   const offlineOverrideRef = useRef(false);
   const pendingRefreshCountRef = useRef(0);
   const refreshQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -200,33 +202,57 @@ export function AppProvider({ children }: PropsWithChildren) {
     return refresh();
   }, [refresh]);
 
-  const hydrate = useCallback(async () => {
-    try {
-      const token = await loadSessionToken();
-      if (!token) {
-        updateState((current) => ({ ...current, hydrated: true, sessionStatus: 'anonymous' }));
-        return;
+  const hydrate = useCallback(() => {
+    if (hydratePromiseRef.current) return hydratePromiseRef.current;
+
+    const operation = (async () => {
+      try {
+        const token = await loadSessionToken();
+        if (!token) {
+          updateState((current) => ({ ...current, hydrated: true, sessionStatus: 'anonymous' }));
+          return;
+        }
+        tokenRef.current = token;
+        const { user } = await backendApi.session(token);
+        await loadWorkspace(token, user);
+      } catch (error) {
+        if (isSessionError(error)) {
+          await clearAuthentication(false);
+          return;
+        }
+
+        const hasStoredSession = tokenRef.current !== null;
+        updateState((current) => ({
+          ...current,
+          // A temporary backend outage must not expose the sign-in routes while
+          // a persisted native session is still waiting to be restored.
+          hydrated: !hasStoredSession,
+          online: false,
+          sessionStatus: 'anonymous',
+        }));
       }
-      tokenRef.current = token;
-      const { user } = await backendApi.session(token);
-      await loadWorkspace(token, user);
-    } catch (error) {
-      if (isSessionError(error)) {
-        await clearAuthentication(false);
-        return;
-      }
-      updateState((current) => ({
-        ...current,
-        hydrated: true,
-        online: false,
-        sessionStatus: 'anonymous',
-      }));
-    }
+    })();
+
+    hydratePromiseRef.current = operation;
+    const release = () => {
+      if (hydratePromiseRef.current === operation) hydratePromiseRef.current = null;
+    };
+    void operation.then(release, release);
+    return operation;
   }, [clearAuthentication, loadWorkspace, updateState]);
 
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    if (state.hydrated || state.online || !tokenRef.current) return;
+
+    const retryInterval = setInterval(() => {
+      void hydrate();
+    }, SESSION_RESTORE_RETRY_MS);
+    return () => clearInterval(retryInterval);
+  }, [hydrate, state.hydrated, state.online]);
 
   const actions = useMemo<AppActions>(() => ({
     hydrate,
@@ -334,6 +360,14 @@ export function AppProvider({ children }: PropsWithChildren) {
         await clearAuthentication(false);
       } catch (error) {
         await handleAuthorizedError(error);
+      }
+    },
+    async submitFeedback(input) {
+      const token = requireToken();
+      try {
+        return await backendApi.submitFeedback(token, input);
+      } catch (error) {
+        return handleAuthorizedError(error);
       }
     },
     async resolveQr(input) {

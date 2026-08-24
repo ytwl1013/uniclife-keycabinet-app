@@ -15,10 +15,16 @@ import { registerKeyRoutes } from '../modules/keys/routes.js';
 import { registerRecordRoutes } from '../modules/records/routes.js';
 import { RealtimeHub } from '../modules/realtime/hub.js';
 import { registerRealtimeRoutes } from '../modules/realtime/routes.js';
+import { registerSupportRoutes } from '../modules/support/routes.js';
 import { registerUserRoutes } from '../modules/users/routes.js';
+import {
+  createSmtpFeedbackNotifier,
+  type FeedbackNotifier,
+} from '../integrations/notifications/feedback-notifier.js';
 import type { PasswordResetNotifier } from '../integrations/notifications/password-reset-notifier.js';
 
 export type BuildServerOptions = {
+  feedbackNotifier?: FeedbackNotifier;
   passwordResetNotifier?: PasswordResetNotifier;
   realtime?: RealtimeHub;
 };
@@ -70,6 +76,10 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   await app.register(registerCabinetRoutes, { prefix: '/api/v1/cabinets', realtime });
   await app.register(registerKeyRoutes, { prefix: '/api/v1', realtime });
   await app.register(registerRecordRoutes, { prefix: '/api/v1/records' });
+  await app.register(registerSupportRoutes, {
+    prefix: '/api/v1/support',
+    notifier: options.feedbackNotifier ?? createSmtpFeedbackNotifier(),
+  });
   await app.register(registerRealtimeRoutes, { prefix: '/api/v1/realtime', realtime });
 
   return app;

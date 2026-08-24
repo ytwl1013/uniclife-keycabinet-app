@@ -2,14 +2,16 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import { env } from '../config/env.js';
 
-const ephemeralDevelopmentPepper = randomBytes(32).toString('base64url');
+const ephemeralTestPepper = randomBytes(32).toString('base64url');
 
 export function createOpaqueToken(bytes = 32): string {
   return randomBytes(bytes).toString('base64url');
 }
 
 export function digestToken(token: string): string {
-  const pepper = env.AUTH_TOKEN_PEPPER ?? ephemeralDevelopmentPepper;
+  // Non-test runtimes reject a missing pepper while loading env. Tests keep an
+  // isolated process-local value so fixtures never need a committed secret.
+  const pepper = env.AUTH_TOKEN_PEPPER ?? ephemeralTestPepper;
   return createHmac('sha256', pepper).update(token).digest('hex');
 }
 

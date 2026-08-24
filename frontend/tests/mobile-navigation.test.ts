@@ -148,7 +148,7 @@ describe('simplified mobile navigation architecture', () => {
     const account = source('src/features/account/components/account-screen.tsx');
     const uiProvider = source('src/components/ui/app-ui-provider.native.tsx');
     const notifications = source('src/features/notifications/components/notifications-screen.tsx');
-    const support = source('src/features/support/components/support-chat-screen.tsx');
+    const support = source('src/features/support/components/feedback-form-screen.tsx');
     expect(home).toContain('testID="home-notifications-button"');
     expect(home).toContain("router.push('/(details)/notifications' as Href)");
     expect(layout).toContain('<Stack.Screen name="notifications"');
@@ -172,8 +172,14 @@ describe('simplified mobile navigation architecture', () => {
     expect(uiProvider).toContain('toast: true');
     expect(account.indexOf("title={t('account.serviceSupportTitle')}")).toBeLessThan(account.indexOf("{t('account.signOut')}"));
     expect(account).not.toContain('<AccountMetric');
-    expect(support).toContain('<TextInput');
-    expect(support).toContain('sender === \'user\'');
+    expect(support).toContain("typeApplication");
+    expect(support).toContain('feedbackMaxImages');
+    expect(support).toContain('manipulateAsync');
+    expect(support).toContain('actions.submitFeedback');
+    expect(support).toContain("import { useToast } from 'heroui-native/toast'");
+    expect(support).toContain("placement: 'top'");
+    expect(support).toContain("variant: 'success'");
+    expect(support).toContain("variant: 'danger'");
   });
 
   it('provides menu and calendar filters with cabinet-grouped return cards', () => {

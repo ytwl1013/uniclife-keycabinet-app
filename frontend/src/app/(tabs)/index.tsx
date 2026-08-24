@@ -319,10 +319,9 @@ function CabinetCard({ cabinet, sku }: { cabinet: Cabinet; sku?: ProductSku }) {
         <ProductImage accessibilityLabel={sku?.name ?? cabinet.name} assetKey={sku?.imageAsset} variant="thumbnail" />
       </View>
       <View className="min-w-0 flex-1 gap-1.5">
-        <AppText variant="caption" tone={cabinet.status === 'online' ? 'success' : 'muted'}>{t(`cabinet.status.${cabinet.status}`)}</AppText>
         <AppText variant="title" tone="foreground">{cabinet.name}</AppText>
         <AppText numberOfLines={1} variant="caption" tone="muted">{cabinet.location}</AppText>
-        <AppText variant="caption" tone="content">{t('common.cabinetMeta', { slots: metrics.capacity, overdue: metrics.overdue, status: t(`cabinet.status.${cabinet.status}`) })}</AppText>
+        <AppText variant="caption" tone="content">{t('common.cabinetMeta', { slots: metrics.capacity, overdue: metrics.overdue })}</AppText>
       </View>
       <AppIcon name="chevronRight" size={23} tone="muted" />
     </Pressable>

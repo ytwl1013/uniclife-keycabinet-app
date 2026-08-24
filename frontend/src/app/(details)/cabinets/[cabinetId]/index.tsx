@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppRefreshControl } from '@/components/ui/app-refresh-control';
-import { Pill } from '@/components/ui/pill';
 import { SwipeSegmentPager } from '@/components/ui/swipe-segment-pager';
 import { CabinetActivity, CabinetKeys, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
@@ -117,7 +116,6 @@ export default function CabinetDetailRoute() {
         <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="gap-3">
           <ScreenHeader
-            action={<Pill tone={cabinet.status === 'online' ? 'green' : cabinet.status === 'maintenance' ? 'orange' : 'gray'}>{t(trKey(`cabinet.status.${cabinet.status}`))}</Pill>}
             onBack={() => router.back()}
             subtitle={cabinet.location}
             title={cabinet.name}

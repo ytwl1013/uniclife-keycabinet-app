@@ -2,7 +2,7 @@ export const en = {
   common: {
     brandName: 'UnicLife', appName: 'Key Cabinet', online: 'Online', offline: 'Offline', maintenance: 'Maintenance',
     demoDataOnly: 'Local workspace', loading: 'Loading…', retry: 'Try again', cancel: 'Cancel', confirm: 'Confirm', done: 'Done', save: 'Save', date: 'Date', time: 'Time',
-    locationFloor: '%{location} · %{floor}', cabinetMeta: '%{slots} key slots · %{overdue} overdue · %{status}',
+    locationFloor: '%{location} · %{floor}', cabinetMeta: '%{slots} key slots · %{overdue} overdue',
     modelCapacity: 'Model: %{model} · Capacity: %{count} keys', demoBadge: 'Preview',
   },
   navigation: { home: 'Home', cabinets: 'Cabinets', scan: 'Scan', activity: 'Activity', account: 'Account', team: 'Account', actionModal: 'Action confirmation' },
@@ -30,7 +30,7 @@ export const en = {
     emptyUnreadTitle: 'You are all caught up', emptyUnreadDescription: 'New exceptions, support messages, and security alerts will appear here.', emptyReadTitle: 'No read notifications', emptyReadDescription: 'Notifications you have opened will move here.',
   },
   support: {
-    title: 'Contact support', back: 'Back', onlineStatus: 'Support is online', welcomeMessage: 'Hi! Tell us what you need help with and our support team will get back to you.', inputLabel: 'Message to support', inputPlaceholder: 'Type a message…', send: 'Send message',
+    title: 'Report a problem', description: 'Send product or app feedback to our team.', back: 'Back', salutation: 'Name (optional)', salutationPlaceholder: 'How should we address you?', feedbackType: 'Feedback type', typeApplication: 'App problem', typeProduct: 'Product problem', feedbackTitle: 'Title (optional)', titlePlaceholder: 'Briefly summarize the problem', content: 'Details (required)', contentPlaceholder: 'Describe what happened, what you expected, and how we can reproduce it.', contentRequired: 'Please describe the problem.', contentCount: '%{count}/5000', images: 'Images (optional)', imageHint: 'Add up to %{count} photos. Images are resized and compressed before upload.', imageLimit: 'You can attach up to 5 images.', photoPermissionDenied: 'Photo library access is required to attach images.', imageTooLarge: 'One image is still too large after compression. Choose a smaller image.', imageProcessFailed: 'The selected images could not be prepared.', imagePreview: 'Feedback image %{index}', removeImage: 'Remove feedback image %{index}', remove: 'Remove', addImages: 'Add images', compressingImages: 'Compressing…', submit: 'Submit feedback', sending: 'Sending…', sentSuccess: 'Feedback sent. Reference: %{submissionId}', unavailable: 'Feedback email is not configured. Please try again later.', sendFailed: 'The feedback could not be sent. Please try again later.', identityNotice: 'Your user ID, account name, and %{email} will be included so we can find and reply to this request.',
   },
   borrowed: {
     back: 'Back', searchPlaceholder: 'Search keys or borrowers', cabinetButton: 'Cabinet: %{cabinet}', allCabinets: 'All',
@@ -139,7 +139,7 @@ export const en = {
   },
   account: {
     title: 'Account', subtitle: 'Profile, preferences, and security', profileTitle: 'Profile', signedInAs: 'Signed in as %{email}', roleHint: 'All bound accounts are Admins.', cabinetAccess: '%{count} connected cabinets', preferencesTitle: 'Preferences', adminRole: 'Role',
-    personalAccountTitle: 'Personal account', accountSecurity: 'Account & security', accountSecurityDescription: 'Login email, password, and account deletion', personalProfile: 'Personal profile', personalProfileDescription: 'Name and profile photo', serviceSupportTitle: 'Service & support', contactSupport: 'Contact support', contactSupportDescription: 'Talk with the support team',
+    personalAccountTitle: 'Personal account', accountSecurity: 'Account & security', accountSecurityDescription: 'Login email, password, and account deletion', personalProfile: 'Personal profile', personalProfileDescription: 'Name and profile photo', serviceSupportTitle: 'Service & support', contactSupport: 'Report a problem', contactSupportDescription: 'Send product or app feedback',
     emailContact: 'Contact by email', copyEmail: 'Copy', supportEmailCopied: 'Support email copied.', supportEmailCopyFailed: 'The support email could not be copied.',
     languageTitle: 'Language & region', languageDescription: 'Use the system language or choose one of nine supported locales.', systemLanguage: 'System default',
     privacyTitle: 'Privacy & legal', privacyPolicy: 'Privacy Policy', terms: 'Terms of Use', dataUse: 'How your data is used',
@@ -154,7 +154,7 @@ export const en = {
   legal: {
     privacyTitle: 'Privacy Policy', termsTitle: 'Terms of Use', dataTitle: 'How your data is used',
     effectiveDate: 'Effective date: August 11, 2026',
-    contactRoute: 'Privacy and legal requests may be submitted through Contact support in the app or to the legal contact identified in your service agreement.',
+    contactRoute: 'Privacy and legal requests may be submitted through Report a problem in the app or to the legal contact identified in your service agreement.',
     privacySummary: 'How UnicLife collects, uses, discloses, retains, and protects personal data.',
     privacy: {
       controllerTitle: 'Scope and responsible organization',
@@ -205,7 +205,7 @@ export const en = {
       lawTitle: 'Governing terms and disputes',
       lawBody: 'The governing law, forum and dispute process in the applicable order form or service agreement apply. Mandatory rights of consumers or data subjects in their place of residence remain unaffected where they cannot be waived. Before filing a claim, the parties should attempt in good faith to resolve the issue through the contractual legal contacts, except where urgent relief or applicable law permits otherwise.',
       changesTitle: 'Changes and contact',
-      changesBody: 'We may update these Terms for legal, security or material service changes. When required, we will provide advance notice and request renewed acceptance. Continued use after the effective date constitutes acceptance only where permitted by law. Questions may be submitted through Contact support or the legal contact in the applicable service agreement.',
+      changesBody: 'We may update these Terms for legal, security or material service changes. When required, we will provide advance notice and request renewed acceptance. Continued use after the effective date constitutes acceptance only where permitted by law. Questions may be submitted through Report a problem or the legal contact in the applicable service agreement.',
     },
     dataSummary: 'A plain-language summary of what the app processes and why.',
     data: {

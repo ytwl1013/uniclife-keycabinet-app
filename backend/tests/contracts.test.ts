@@ -1,6 +1,7 @@
 import {
   checkoutKeyRequestSchema,
   currentUserAccountSchema,
+  feedbackRequestSchema,
   markHomeGuidePromptedRequestSchema,
   realtimeEventSchema,
   registerRequestSchema,
@@ -79,5 +80,31 @@ describe('backend request contracts', () => {
 
     expect(event).toMatchObject({ cabinetVersion: 7, resources: ['keys', 'loans', 'events'] });
     expect(() => realtimeEventSchema.parse({ ...event, resources: [] })).toThrow();
+  });
+
+  it('validates feedback content and compressed image boundaries', () => {
+    const valid = feedbackRequestSchema.parse({
+      content: 'The return action failed after confirmation.',
+      images: [
+        {
+          data: 'aGVsbG8=',
+          fileName: 'feedback-1.jpg',
+          mimeType: 'image/jpeg',
+        },
+      ],
+    });
+
+    expect(valid).toMatchObject({ type: 'application', salutation: '', title: '' });
+    expect(() => feedbackRequestSchema.parse({ content: '   ' })).toThrow();
+    expect(() =>
+      feedbackRequestSchema.parse({
+        content: 'Too many images',
+        images: Array.from({ length: 6 }, (_, index) => ({
+          data: 'aGVsbG8=',
+          fileName: `feedback-${index}.jpg`,
+          mimeType: 'image/jpeg',
+        })),
+      }),
+    ).toThrow();
   });
 });

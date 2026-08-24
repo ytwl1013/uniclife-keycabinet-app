@@ -52,8 +52,15 @@ export const markHomeGuidePromptedRequestSchema = writeOptionsSchema.extend({
 });
 
 export const feedbackTypeSchema = z.enum(['product', 'application']);
+export const feedbackMaxImages = 5;
+export const feedbackImageMaxBase64Length = 2_000_000;
 export const feedbackImageSchema = z.object({
-  data: z.string().regex(/^[A-Za-z0-9+/]+={0,2}$/).max(2_000_000),
+  data: z
+    .string()
+    .min(4)
+    .max(feedbackImageMaxBase64Length)
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/)
+    .refine((value) => value.length % 4 === 0, 'Invalid Base64 length'),
   fileName: z.string().trim().min(1).max(128),
   mimeType: z.literal('image/jpeg'),
 });
@@ -62,7 +69,7 @@ export const feedbackRequestSchema = z.object({
   type: feedbackTypeSchema.default('application'),
   title: z.string().trim().max(200).default(''),
   content: z.string().trim().min(1).max(5000),
-  images: z.array(feedbackImageSchema).max(5).default([]),
+  images: z.array(feedbackImageSchema).max(feedbackMaxImages).default([]),
 });
 
 export const cabinetQrPayloadSchema = z.string().trim().max(256).regex(

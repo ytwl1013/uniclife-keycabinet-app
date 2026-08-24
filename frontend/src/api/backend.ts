@@ -8,6 +8,7 @@ import type {
   CabinetSummary,
   CheckoutKeyRequest,
   CurrentUserAccount,
+  FeedbackRequest,
   Key,
   Loan,
   ProductSku,
@@ -73,6 +74,11 @@ export const backendApi = {
   ) => callApi<{ changed: boolean }>('/users/me/password', { ...json('PATCH', input), token }),
   deleteAccount: (token: string, input: WriteOptions = {}) =>
     callApi<{ deleted: boolean }>('/users/me', { ...json('DELETE', input), token }),
+  submitFeedback: (token: string, input: FeedbackRequest) =>
+    callApi<{ submissionId: string; submittedAt: string }>(
+      '/support/feedback',
+      { ...json('POST', input), token },
+    ),
   listCabinets: (token: string) => callApi<CabinetSummary[]>('/cabinets', { token }),
   getCabinet: (token: string, cabinetId: string) =>
     callApi<CabinetDetail>(`/cabinets/${encodeURIComponent(cabinetId)}`, { token }),

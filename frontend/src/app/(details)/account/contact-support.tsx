@@ -1,5 +1,5 @@
-import { SupportChatScreen } from '@/features/support/components/support-chat-screen';
+import { FeedbackFormScreen } from '@/features/support/components/feedback-form-screen';
 
 export default function ContactSupportRoute() {
-  return <SupportChatScreen />;
+  return <FeedbackFormScreen />;
 }
