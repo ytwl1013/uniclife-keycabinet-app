@@ -52,6 +52,7 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | PATCH | `/users/me/password` | 校验当前密码后修改密码 | 本人 |
 | DELETE | `/users/me` | 匿名化并停用账户，保留不可抵赖业务记录 | 本人 |
 | POST | `/support/feedback` | 提交产品/应用反馈并通过后端 SMTP 发送邮件 | 登录 |
+| GET | `/support/feedback` | 查询当前用户最近的反馈发送记录；支持 `limit=1..100` | 本人 |
 
 注册请求示例：
 
@@ -77,7 +78,9 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 
 密码重置通过 `PasswordResetNotifier` 适配器发送验证码。当前默认适配器不会外发邮件；开发环境可显式设置 `AUTH_ALLOW_RESET_CODE_PREVIEW=true`，此时请求响应带 `previewCode`。生产环境强制禁止预览，接入真实邮件提供商前该流程不会向用户送达验证码。
 
-反馈请求由后端从会话读取用户 ID、用户名和登录邮箱，客户端不能覆盖这些身份字段。邮件主题包含唯一反馈编号，正文包含身份信息与提交时间，`Reply-To` 使用登录邮箱。反馈类型为 `product` 或 `application`（默认）；称呼与标题可选，内容必填且最多 5000 字符。最多附带 5 张 JPEG 图片，每张 Base64 数据最多 2,000,000 字符；前端会先缩放和压缩。接口单独限制为每个客户端每小时 5 次，成功或失败均以不含正文/附件的最小元数据写入通用审计日志；邮件未配置返回 `FEEDBACK_UNAVAILABLE`，SMTP 发送失败返回 `FEEDBACK_SEND_FAILED`。
+反馈请求由后端从会话读取用户 ID、用户名和登录邮箱，客户端不能覆盖这些身份字段。邮件主题包含唯一反馈编号，正文包含身份信息与提交时间，`Reply-To` 使用登录邮箱。反馈类型为 `product` 或 `application`（默认）；称呼与标题可选，内容必填且最多 5000 字符。最多附带 5 张 JPEG 图片，每张 Base64 数据最多 2,000,000 字符；前端会先缩放和压缩。接口单独限制为每个客户端每小时 5 次，成功或失败均写入通用审计日志；邮件未配置返回 `FEEDBACK_UNAVAILABLE`，SMTP 发送失败返回 `FEEDBACK_SEND_FAILED`。
+
+每次提交会持久化一条发送记录：反馈编号、用户 ID/用户名/邮箱快照、称呼、类型、标题、内容、图片数量、`sending|sent|failed` 状态、失败码及时间。图片 Base64 和附件文件不写入数据库。历史查询按当前会话的用户 ID 在 SQL 层过滤，不能查看其他账户的反馈，默认返回最近 50 条、最多 100 条。
 
 ```json
 {
@@ -90,6 +93,30 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
       "fileName": "feedback-1.jpg",
       "mimeType": "image/jpeg",
       "data": "<base64>"
+    }
+  ]
+}
+```
+
+历史响应示例：
+
+```json
+{
+  "items": [
+    {
+      "id": "feedback-018f4a73",
+      "userId": "user-018f4a73",
+      "userDisplayName": "Alex",
+      "userEmail": "alex@example.com",
+      "salutation": "Alex",
+      "type": "application",
+      "title": "无法提交归还",
+      "content": "点击确认归还后显示网络错误。",
+      "imageCount": 1,
+      "status": "sent",
+      "failureCode": null,
+      "submittedAt": "2026-08-24T08:00:00.000Z",
+      "deliveredAt": "2026-08-24T08:00:01.000Z"
     }
   ]
 }

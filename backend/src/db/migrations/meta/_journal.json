@@ -15,6 +15,13 @@
       "when": 1787540874255,
       "tag": "0001_peaceful_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787564369390,
+      "tag": "0002_funny_stellaris",
+      "breakpoints": true
     }
   ]
 }

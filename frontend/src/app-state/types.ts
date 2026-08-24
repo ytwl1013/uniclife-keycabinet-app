@@ -5,6 +5,7 @@ import type {
   CabinetQr,
   CurrentUserAccount,
   FeedbackRequest,
+  FeedbackRecord,
   Key,
   KeySlot,
   Loan,
@@ -90,6 +91,7 @@ export type AppActions = {
   ): Promise<void>;
   deleteAccount(input?: WriteOptions): Promise<void>;
   submitFeedback(input: FeedbackRequest): Promise<{ submissionId: string; submittedAt: string }>;
+  listFeedbackHistory(): Promise<FeedbackRecord[]>;
   resolveQr(input: { code: string } | string): Promise<QrResolution>;
   bindCabinet(
     input: { qrCode: string; name?: string; timeZone?: string } & WriteOptions,

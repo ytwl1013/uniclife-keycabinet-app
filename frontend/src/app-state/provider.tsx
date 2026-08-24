@@ -370,6 +370,15 @@ export function AppProvider({ children }: PropsWithChildren) {
         return handleAuthorizedError(error);
       }
     },
+    async listFeedbackHistory() {
+      const token = requireToken();
+      try {
+        const result = await backendApi.listFeedbackHistory(token);
+        return result.items;
+      } catch (error) {
+        return handleAuthorizedError(error);
+      }
+    },
     async resolveQr(input) {
       const token = requireToken();
       try {

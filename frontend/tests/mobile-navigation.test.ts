@@ -149,10 +149,12 @@ describe('simplified mobile navigation architecture', () => {
     const uiProvider = source('src/components/ui/app-ui-provider.native.tsx');
     const notifications = source('src/features/notifications/components/notifications-screen.tsx');
     const support = source('src/features/support/components/feedback-form-screen.tsx');
+    const feedbackHistory = source('src/features/support/components/feedback-history-screen.tsx');
     expect(home).toContain('testID="home-notifications-button"');
     expect(home).toContain("router.push('/(details)/notifications' as Href)");
     expect(layout).toContain('<Stack.Screen name="notifications"');
     expect(layout).toContain('<Stack.Screen name="account/contact-support"');
+    expect(layout).toContain('<Stack.Screen name="account/feedback-history"');
     expect(layout).toContain('<Stack.Screen name="account/profile"');
     expect(layout).toContain('<Stack.Screen name="account/security"');
     expect(layout).toContain('<Stack.Screen name="account/change-email"');
@@ -180,6 +182,10 @@ describe('simplified mobile navigation architecture', () => {
     expect(support).toContain("placement: 'top'");
     expect(support).toContain("variant: 'success'");
     expect(support).toContain("variant: 'danger'");
+    expect(support).toContain('testID="feedback-history-button"');
+    expect(support).toContain("router.push('/(details)/account/feedback-history' as Href)");
+    expect(feedbackHistory).toContain('actions.listFeedbackHistory()');
+    expect(feedbackHistory).toContain('historyStatusSent');
   });
 
   it('provides menu and calendar filters with cabinet-grouped return cards', () => {

@@ -11,7 +11,7 @@ import {
   type FeedbackImage,
   type FeedbackType,
 } from '@uniclife/shared';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { useToast } from 'heroui-native/toast';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Pressable, View } from 'react-native';
@@ -227,7 +227,23 @@ export function FeedbackFormScreen() {
         backLabel={t('support.back')}
         description={t('support.description')}
         onBack={() => router.back()}
-        title={t('support.title')}>
+        title={t('support.title')}
+        trailing={
+          <Pressable
+            accessibilityLabel={t('support.historyAction')}
+            accessibilityRole="button"
+            className="min-h-11 flex-row items-center justify-center gap-1.5 rounded-pill border border-line bg-surface px-3 active:opacity-70"
+            hitSlop={8}
+            onPress={() =>
+              router.push('/(details)/account/feedback-history' as Href)
+            }
+            testID="feedback-history-button">
+            <AppIcon name="history" size={18} tone="brand" />
+            <AppText variant="caption" tone="brand">
+              {t('support.historyAction')}
+            </AppText>
+          </Pressable>
+        }>
         {error ? <AuthErrorNotice text={error} /> : null}
         {!state.online ? <AuthErrorNotice text={t('auth.errors.offline')} /> : null}
 

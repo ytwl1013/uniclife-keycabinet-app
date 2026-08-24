@@ -71,6 +71,25 @@ export const feedbackRequestSchema = z.object({
   content: z.string().trim().min(1).max(5000),
   images: z.array(feedbackImageSchema).max(feedbackMaxImages).default([]),
 });
+export const feedbackDeliveryStatusSchema = z.enum(['sending', 'sent', 'failed']);
+export const feedbackRecordSchema = z.object({
+  id: entityIdSchema,
+  userId: entityIdSchema,
+  userDisplayName: displayNameSchema,
+  userEmail: emailSchema,
+  salutation: z.string().max(128),
+  type: feedbackTypeSchema,
+  title: z.string().max(200),
+  content: z.string().min(1).max(5000),
+  imageCount: z.number().int().min(0).max(feedbackMaxImages),
+  status: feedbackDeliveryStatusSchema,
+  failureCode: z.string().min(1).max(128).nullable(),
+  submittedAt: isoDateSchema,
+  deliveredAt: isoDateSchema.nullable(),
+});
+export const feedbackHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
 
 export const cabinetQrPayloadSchema = z.string().trim().max(256).regex(
   /^uniclife:\/\/cabinet\/[A-Za-z0-9-]{1,64}\/[0-9a-fA-F-]{36}$/,
@@ -132,3 +151,5 @@ export type ReturnKeyRequest = z.infer<typeof returnKeyRequestSchema>;
 export type FeedbackType = z.infer<typeof feedbackTypeSchema>;
 export type FeedbackImage = z.infer<typeof feedbackImageSchema>;
 export type FeedbackRequest = z.infer<typeof feedbackRequestSchema>;
+export type FeedbackDeliveryStatus = z.infer<typeof feedbackDeliveryStatusSchema>;
+export type FeedbackRecord = z.infer<typeof feedbackRecordSchema>;

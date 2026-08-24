@@ -9,6 +9,7 @@ import type {
   CheckoutKeyRequest,
   CurrentUserAccount,
   FeedbackRequest,
+  FeedbackRecord,
   Key,
   Loan,
   ProductSku,
@@ -79,6 +80,8 @@ export const backendApi = {
       '/support/feedback',
       { ...json('POST', input), token },
     ),
+  listFeedbackHistory: (token: string) =>
+    callApi<{ items: FeedbackRecord[] }>('/support/feedback?limit=100', { token }),
   listCabinets: (token: string) => callApi<CabinetSummary[]>('/cabinets', { token }),
   getCabinet: (token: string, cabinetId: string) =>
     callApi<CabinetDetail>(`/cabinets/${encodeURIComponent(cabinetId)}`, { token }),

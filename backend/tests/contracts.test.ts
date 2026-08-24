@@ -1,6 +1,8 @@
 import {
   checkoutKeyRequestSchema,
   currentUserAccountSchema,
+  feedbackHistoryQuerySchema,
+  feedbackRecordSchema,
   feedbackRequestSchema,
   markHomeGuidePromptedRequestSchema,
   realtimeEventSchema,
@@ -106,5 +108,27 @@ describe('backend request contracts', () => {
         })),
       }),
     ).toThrow();
+  });
+
+  it('keeps feedback history status and identity snapshots stable', () => {
+    const record = feedbackRecordSchema.parse({
+      id: 'feedback-test',
+      userId: 'user-test',
+      userDisplayName: 'Test Person',
+      userEmail: 'PERSON@example.com',
+      salutation: 'Test',
+      type: 'product',
+      title: 'Door sensor',
+      content: 'The door state did not refresh.',
+      imageCount: 2,
+      status: 'sent',
+      failureCode: null,
+      submittedAt: '2026-08-24T08:00:00.000Z',
+      deliveredAt: '2026-08-24T08:00:01.000Z',
+    });
+
+    expect(record.userEmail).toBe('person@example.com');
+    expect(feedbackHistoryQuerySchema.parse({}).limit).toBe(50);
+    expect(() => feedbackHistoryQuerySchema.parse({ limit: 101 })).toThrow();
   });
 });

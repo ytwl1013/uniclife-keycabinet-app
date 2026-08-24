@@ -22,6 +22,11 @@ export const loanStatus = pgEnum('loan_status', ['active', 'returned', 'cancelle
 export const consentKind = pgEnum('consent_kind', ['terms', 'privacy']);
 export const membershipRole = pgEnum('membership_role', ['admin']);
 export const auditResult = pgEnum('audit_result', ['success', 'failure']);
+export const feedbackDeliveryStatus = pgEnum('feedback_delivery_status', [
+  'sending',
+  'sent',
+  'failed',
+]);
 export const cabinetEventType = pgEnum('cabinet_event_type', [
   'cabinet_bound',
   'cabinet_renamed',
@@ -299,6 +304,44 @@ export const consents = pgTable(
   },
   (table) => [
     uniqueIndex('consents_user_kind_policy_unique').on(table.userId, table.kind, table.policyVersion),
+  ],
+);
+
+export const feedbackRecords = pgTable(
+  'feedback_records',
+  {
+    id: id('id').primaryKey(),
+    userId: id('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+    userDisplayName: varchar('user_display_name', { length: 128 }).notNull(),
+    userEmail: varchar('user_email', { length: 320 }).notNull(),
+    salutation: varchar('salutation', { length: 128 }).notNull().default(''),
+    type: varchar('type', { length: 32 }).notNull(),
+    title: varchar('title', { length: 200 }).notNull().default(''),
+    content: text('content').notNull(),
+    imageCount: integer('image_count').notNull().default(0),
+    status: feedbackDeliveryStatus('status').notNull().default('sending'),
+    failureCode: varchar('failure_code', { length: 128 }),
+    submittedAt: timestamp('submitted_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+    deliveredAt: timestamp('delivered_at', { withTimezone: true, mode: 'string' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('feedback_records_user_submitted_idx').on(table.userId, table.submittedAt),
+    index('feedback_records_status_submitted_idx').on(table.status, table.submittedAt),
+    check(
+      'feedback_records_image_count_range',
+      sql`${table.imageCount} >= 0 AND ${table.imageCount} <= 5`,
+    ),
+    check(
+      'feedback_records_type_valid',
+      sql`${table.type} IN ('product', 'application')`,
+    ),
   ],
 );
 
