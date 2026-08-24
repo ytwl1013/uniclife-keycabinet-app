@@ -51,6 +51,20 @@ export const markHomeGuidePromptedRequestSchema = writeOptionsSchema.extend({
   prompted: z.literal(true),
 });
 
+export const feedbackTypeSchema = z.enum(['product', 'application']);
+export const feedbackImageSchema = z.object({
+  data: z.string().regex(/^[A-Za-z0-9+/]+={0,2}$/).max(2_000_000),
+  fileName: z.string().trim().min(1).max(128),
+  mimeType: z.literal('image/jpeg'),
+});
+export const feedbackRequestSchema = z.object({
+  salutation: z.string().trim().max(128).default(''),
+  type: feedbackTypeSchema.default('application'),
+  title: z.string().trim().max(200).default(''),
+  content: z.string().trim().min(1).max(5000),
+  images: z.array(feedbackImageSchema).max(5).default([]),
+});
+
 export const cabinetQrPayloadSchema = z.string().trim().max(256).regex(
   /^uniclife:\/\/cabinet\/[A-Za-z0-9-]{1,64}\/[0-9a-fA-F-]{36}$/,
 );
@@ -108,3 +122,6 @@ export type AddKeyRequest = z.infer<typeof addKeyRequestSchema>;
 export type UpdateKeyRequest = z.infer<typeof updateKeyRequestSchema>;
 export type CheckoutKeyRequest = z.infer<typeof checkoutKeyRequestSchema>;
 export type ReturnKeyRequest = z.infer<typeof returnKeyRequestSchema>;
+export type FeedbackType = z.infer<typeof feedbackTypeSchema>;
+export type FeedbackImage = z.infer<typeof feedbackImageSchema>;
+export type FeedbackRequest = z.infer<typeof feedbackRequestSchema>;
