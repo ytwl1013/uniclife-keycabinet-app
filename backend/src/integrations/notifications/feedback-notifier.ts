@@ -23,7 +23,8 @@ export interface FeedbackNotifier {
 }
 
 type SmtpFeedbackNotifierOptions = {
-  from: string | { address: string; name: string };
+  envelopeFrom: string;
+  from: { address: string; name: string };
   to: string;
   transport: Transporter;
 };
@@ -37,15 +38,9 @@ function singleLine(value: string, fallback: string): string {
   return value.replace(/[\r\n]+/g, ' ').trim() || fallback;
 }
 
-function mailboxAddress(value: string | undefined, fallback: string): string {
-  if (!value) return fallback;
-  const bracketedAddress = value.match(/<([^<>]+)>/)?.[1]?.trim();
-  return bracketedAddress || value.trim();
-}
-
 export function buildFeedbackMail(
   notification: FeedbackNotification,
-  options: Pick<SmtpFeedbackNotifierOptions, 'from' | 'to'>,
+  options: Pick<SmtpFeedbackNotifierOptions, 'envelopeFrom' | 'from' | 'to'>,
 ): SendMailOptions {
   const typeLabel = feedbackTypeLabels[notification.type];
   const title = singleLine(notification.title, '未填写标题');
@@ -76,6 +71,10 @@ export function buildFeedbackMail(
       contentType: image.mimeType,
       filename: singleLine(image.fileName, `feedback-${index + 1}.jpg`),
     })),
+    envelope: {
+      from: options.envelopeFrom,
+      to: options.to,
+    },
     from: options.from,
     replyTo: notification.user.email,
     subject: `[反馈问题][${typeLabel}][${notification.submissionId}] ${title}`,
@@ -111,13 +110,15 @@ export function createSmtpFeedbackNotifier(): FeedbackNotifier | undefined {
     secure: env.MAIL_USE_SSL,
     socketTimeout: timeout,
   });
+  const recipient = env.MAIL_FEEDBACK_TO ?? env.MAIL_USERNAME;
 
   return new SmtpFeedbackNotifier({
+    envelopeFrom: env.MAIL_USERNAME,
     from: {
-      address: mailboxAddress(env.MAIL_SENDER, env.MAIL_USERNAME),
+      address: env.MAIL_USERNAME,
       name: env.MAIL_SENDER_NAME,
     },
-    to: env.MAIL_FEEDBACK_TO ?? env.MAIL_USERNAME,
+    to: recipient,
     transport,
   });
 }

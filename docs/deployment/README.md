@@ -23,7 +23,8 @@
 - `MAIL_SERVER`、`MAIL_PORT`：反馈邮件 SMTP 主机与端口
 - `MAIL_USE_SSL`、`MAIL_USE_TLS`：SMTP 连接安全开关；465 端口通常使用 SSL，提交前以邮件服务商要求为准
 - `MAIL_USERNAME`、`MAIL_PASSWORD`：SMTP 登录账号与密码/应用专用密码；密码只能由本地忽略文件或 Render Secret 注入
-- `MAIL_SENDER`、`MAIL_SENDER_NAME`：发件邮箱头与显示名称
+- `MAIL_SENDER_NAME`：邮件中显示的发件人名称；发件邮箱头和 SMTP `MAIL FROM` 会强制使用 `MAIL_USERNAME`，兼容要求发件地址与认证账号一致的企业邮箱
+- `MAIL_SENDER`：兼容旧配置保留，反馈邮件不会用它覆盖认证账号地址
 - `MAIL_FEEDBACK_TO`：反馈收件邮箱；未设置时默认投递到 `MAIL_USERNAME`，支持同一账号自己发给自己
 - `MAIL_TIMEOUT`：SMTP 连接、问候及 Socket 超时秒数，范围 1–120
 

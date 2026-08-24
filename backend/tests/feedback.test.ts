@@ -74,11 +74,17 @@ describe('feedback delivery', () => {
       },
     };
     const mail = buildFeedbackMail(notification, {
-      from: 'keycabinet_app <feedback@example.com>',
+      envelopeFrom: 'feedback@example.com',
+      from: { address: 'feedback@example.com', name: 'keycabinet_app' },
       to: 'feedback@example.com',
     });
 
     expect(mail.to).toBe('feedback@example.com');
+    expect(mail.from).toEqual({ address: 'feedback@example.com', name: 'keycabinet_app' });
+    expect(mail.envelope).toEqual({
+      from: 'feedback@example.com',
+      to: 'feedback@example.com',
+    });
     expect(mail.replyTo).toBe(user.email);
     expect(mail.subject).toContain('[feedback-test]');
     expect(mail.text).toContain(`用户 ID：${user.id}`);
