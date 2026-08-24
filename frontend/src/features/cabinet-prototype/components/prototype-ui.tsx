@@ -88,7 +88,7 @@ export function InlineButton({ label, onPress, tone = 'brand', disabled = false 
   );
 }
 
-export function FormField({ label, value, onChangeText, placeholder, multiline = false, keyboardType = 'default', error }: { label: string; value: string; onChangeText: (value: string) => void; placeholder: string; multiline?: boolean; keyboardType?: 'default' | 'email-address' | 'phone-pad'; error?: string }) {
+export function FormField({ label, value, onChangeText, placeholder, multiline = false, keyboardType = 'default', error, inputAccessoryViewID }: { label: string; value: string; onChangeText: (value: string) => void; placeholder: string; multiline?: boolean; keyboardType?: 'default' | 'email-address' | 'phone-pad'; error?: string; inputAccessoryViewID?: string }) {
   const { palette } = useAppTheme();
   return (
     <View className="gap-2">
@@ -96,6 +96,7 @@ export function FormField({ label, value, onChangeText, placeholder, multiline =
       <TextInput
         accessibilityLabel={label}
         className={`rounded-control border bg-background px-4 py-3 text-body text-content ${multiline ? 'min-h-24' : 'min-h-[50px]'} ${error ? 'border-danger' : 'border-line'}`}
+        inputAccessoryViewID={inputAccessoryViewID}
         keyboardType={keyboardType}
         multiline={multiline}
         onChangeText={onChangeText}

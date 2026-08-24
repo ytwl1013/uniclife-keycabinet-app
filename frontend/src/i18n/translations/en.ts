@@ -84,7 +84,7 @@ export const en = {
   loan: {
     checkOutAction: 'Check out key', returnAction: 'Return key', checkOutTitle: 'Check out', checkOutKey: 'Check out %{key}',
     borrowerName: 'Borrower name', borrowerNamePlaceholder: 'Third-party borrower', borrowerRequired: 'Borrower name is required.',
-    borrowerContact: 'Contact', borrowerContactOptional: 'Contact (optional)', borrowerContactPlaceholder: 'Email or phone',
+    borrowerContact: 'Contact', borrowerContactOptional: 'Contact (optional)', borrowerContactPlaceholder: 'Email or phone', keyNoteReminder: 'Key note: %{note}', keyNoteEmptyReminder: 'Key note: No additional instructions.',
     checkedOutAt: 'Check-out time', expectedReturnAt: 'Expected return time', noExpectedReturn: 'No expected return time', noExpectedReturnOption: 'No expected return time', datePlaceholder: 'Select date and time', quickReturnTime: 'Quick return time', quickReturnDays: '+%{count} days', quickNoExpectedReturn: 'None', invalidDate: 'Enter a valid date and time.', dueAfterCheckout: 'Expected return must be later than check-out.',
     personalDataTitle: 'Handle personal data lawfully', personalDataDescription: 'Confirm that you are authorized to record this borrower’s contact details. Contact is optional and masked by default.',
     auditNoticeTitle: 'Shared audited operation', auditNoticeDescription: 'Submitting creates a loan and an activity event for all bound accounts.',
