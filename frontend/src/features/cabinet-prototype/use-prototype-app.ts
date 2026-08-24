@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
+import { useApp } from '@/app-state';
 import { TranslationKey, useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
 
 import {
   CabinetEventKind,
@@ -21,7 +21,7 @@ import {
 type UnknownRecord = Record<string, unknown>;
 type UnknownFunction = (...args: never[]) => unknown;
 
-type MockSource = {
+type AppSource = {
   state: UnknownRecord;
   currentUser: UnknownRecord | null;
   actions: Record<string, UnknownFunction>;
@@ -46,15 +46,15 @@ function number(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-function callSelector(source: MockSource, name: string, ...args: unknown[]): unknown {
+function callSelector(source: AppSource, name: string, ...args: unknown[]): unknown {
   const fn = source.selectors[name];
   return typeof fn === 'function' ? fn(...args as never[]) : undefined;
 }
 
-async function callAction(source: MockSource, names: string[], input: UnknownRecord): Promise<unknown> {
+async function callAction(source: AppSource, names: string[], input: UnknownRecord): Promise<unknown> {
   const name = names.find((candidate) => typeof source.actions[candidate] === 'function');
   if (!name) {
-    throw new Error(`Missing mock action: ${names[0]}`);
+    throw new Error(`Missing app action: ${names[0]}`);
   }
   return Promise.resolve(source.actions[name](input as never));
 }
@@ -87,7 +87,7 @@ function idempotencyKey(prefix: string) {
 }
 
 export function usePrototypeApp(): PrototypeApp {
-  const source = useMockApp() as unknown as MockSource;
+  const source = useApp() as unknown as AppSource;
   const { t } = useTranslation();
 
   return useMemo(() => {
@@ -115,6 +115,9 @@ export function usePrototypeApp(): PrototypeApp {
       return rawMemberships.some((membership) => text(membership.cabinetId) === cabinetId && text(membership.userId) === currentUserId);
     });
     const visibleCabinetIds = new Set(rawCabinets.map((cabinet) => text(cabinet.id)));
+    const cabinetVersionById = new Map(
+      rawCabinets.map((cabinet) => [text(cabinet.id), number(cabinet.version)]),
+    );
 
     const loanViews: LoanView[] = rawLoans.filter((loan) => visibleCabinetIds.has(text(loan.cabinetId))).map((loan) => ({
       id: text(loan.id),
@@ -244,11 +247,13 @@ export function usePrototypeApp(): PrototypeApp {
       })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-    const currentVersion = number(state.version);
-    const writeOptions = (prefix: string, cabinetId: string) => ({
-      requestId: idempotencyKey(`${prefix}:${cabinetId}`),
-      expectedVersion: currentVersion,
-    });
+    const writeOptions = (prefix: string, cabinetId: string) => {
+      const expectedVersion = cabinetVersionById.get(cabinetId);
+      return {
+        requestId: idempotencyKey(`${prefix}:${cabinetId}`),
+        ...(expectedVersion === undefined ? {} : { expectedVersion }),
+      };
+    };
 
     const actions: PrototypeActions = {
       addKey: async (input) => {

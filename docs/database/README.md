@@ -27,7 +27,15 @@
 
 本仓库仍处于初始化阶段，本次基础后端用新的 `0000_backend_foundation.sql` 替换了此前未承载生产数据的占位初始迁移，旧表结构不做原位升级。
 
-- 已执行旧占位迁移的本地开发库不兼容。确认本地数据无需保留后，执行 `pnpm dev:db:down`，手动删除对应 Compose volume，再重新启动、迁移和 seed。删除 volume 会永久删除本地数据，因此仓库不提供自动 reset 命令。
+- 已执行旧占位迁移的本地开发库不兼容。确认本地数据无需保留后，可执行下列命令重新初始化。删除 volume 会永久删除本地数据，因此仓库不提供自动 reset 命令，也不要在未备份的环境执行。
+
+```bash
+pnpm dev:db:down
+docker volume rm uniclife-keycabinet-dev_keycabinet_pg_data
+pnpm dev:db
+pnpm db:migrate:dev
+pnpm db:seed:dev
+```
 - 新环境直接执行 `pnpm db:migrate:dev`。
 - 生产环境上线前必须备份；生产回滚优先恢复备份或编写前向修复迁移，不得直接删除借用、事件或审计表。
 - 后续任何 schema 变化必须新增迁移，不能继续重写 `0000`。
@@ -35,3 +43,28 @@
 ## 开发种子
 
 `pnpm db:seed:dev` 幂等写入两个虚构 SKU 和两个未绑定二维码，供扫描绑定流程验证。它不创建用户、不写真实设备凭据，并在 `NODE_ENV=production` 下拒绝运行。
+
+## 从本机数据库工具连接 Docker PostgreSQL
+
+开发 Compose 将 PostgreSQL 映射到本机回环地址。DataGrip、DBeaver 等本机工具使用以下参数：
+
+| 字段 | 值 |
+| --- | --- |
+| Host | `localhost` 或 `127.0.0.1` |
+| Port | `5432` |
+| Database | `keycabinet_dev` |
+| Username | `keycabinet_dev` |
+| Password | 留空；本地 Compose 使用 `POSTGRES_HOST_AUTH_METHOD=trust` |
+| JDBC URL | `jdbc:postgresql://localhost:5432/keycabinet_dev` |
+
+截图中若填写 `postgres` 用户会连接失败，因为开发容器创建的管理员用户是 `keycabinet_dev`。从另一个 Compose 容器连接时 Host 才使用服务名 `postgres`，端口仍为 `5432`。
+
+连接前可确认容器状态，并直接进入数据库验证：
+
+```bash
+docker compose -f deploy/docker/compose.dev.yml ps
+docker compose -f deploy/docker/compose.dev.yml exec postgres \
+  psql -U keycabinet_dev -d keycabinet_dev
+```
+
+停止容器不会删除数据；数据保存在 `keycabinet_pg_data` volume。不要把本地 `trust` 认证复制到生产环境。

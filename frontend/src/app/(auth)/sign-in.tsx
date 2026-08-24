@@ -8,7 +8,6 @@ import {
   AuthField,
   AuthPrimaryButton,
   AuthScreen,
-  AuthSecondaryButton,
   AuthTextButton,
 } from '@/features/auth/components/auth-ui';
 import {
@@ -17,8 +16,8 @@ import {
   normalizeEmail,
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
+import { localPasswordResetEnabled } from '@/config/developer';
 import { useTranslation } from '@/i18n';
-import { localPasswordResetEnabled, useMockApp } from '@/mocks';
 
 const signUpRoute = '/(auth)/sign-up' as Href;
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
@@ -27,16 +26,12 @@ const onboardingRoute = '/onboarding' as Href;
 export default function SignInRoute() {
   const { t } = useTranslation();
   const { actions } = useAuthActions();
-  const { actions: workspaceActions, state } = useMockApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [requestError, setRequestError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const demoOwner = state.users.find((user) =>
-    state.memberships.some((membership) => membership.userId === user.id && membership.role === 'admin'),
-  );
 
   async function submit() {
     const nextEmail = normalizeEmail(email);
@@ -122,25 +117,6 @@ export default function SignInRoute() {
         label={t('auth.signIn.submit')}
         onPress={() => void submit()}
       />
-
-      {demoOwner ? (
-        <AuthSecondaryButton
-          icon="cabinet"
-          label={t('auth.signIn.useDemo')}
-          onPress={() => {
-            setIsSubmitting(true);
-            void workspaceActions.switchAccount({ userId: demoOwner.id })
-              .then(() =>
-                router.push({
-                  pathname: '/onboarding',
-                  params: { preview: '1' },
-                }),
-              )
-              .catch((error) => setRequestError(t(authErrorKey(error))))
-              .finally(() => setIsSubmitting(false));
-          }}
-        />
-      ) : null}
     </AuthScreen>
   );
 }

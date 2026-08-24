@@ -19,6 +19,7 @@ import type {
   productSkus,
   users,
 } from '../../db/schema.js';
+import { toIsoDate } from './dates.js';
 
 export function toUser(row: typeof users.$inferSelect): UserAccount {
   return {
@@ -28,7 +29,7 @@ export function toUser(row: typeof users.$inferSelect): UserAccount {
     ...(row.avatarUri ? { avatarUri: row.avatarUri } : {}),
     locale: row.locale as UserAccount['locale'],
     status: row.status,
-    createdAt: row.createdAt,
+    createdAt: toIsoDate(row.createdAt),
   };
 }
 
@@ -53,7 +54,7 @@ export function toQr(row: typeof cabinetQrs.$inferSelect): CabinetQr {
     skuId: row.skuId,
     deviceUuid: row.deviceUuid,
     status: row.status,
-    createdAt: row.createdAt,
+    createdAt: toIsoDate(row.createdAt),
   };
 }
 
@@ -66,8 +67,8 @@ export function toCabinet(row: typeof cabinets.$inferSelect): Cabinet {
     location: row.location,
     timeZone: row.timeZone,
     status: row.status,
-    lastSyncedAt: row.lastSyncedAt,
-    createdAt: row.createdAt,
+    lastSyncedAt: toIsoDate(row.lastSyncedAt),
+    createdAt: toIsoDate(row.createdAt),
     version: row.version,
   };
 }
@@ -79,8 +80,8 @@ export function toMembership(row: typeof cabinetMemberships.$inferSelect): Cabin
     userId: row.userId,
     role: row.role,
     active: row.active,
-    joinedAt: row.joinedAt,
-    ...(row.removedAt ? { removedAt: row.removedAt } : {}),
+    joinedAt: toIsoDate(row.joinedAt),
+    ...(row.removedAt ? { removedAt: toIsoDate(row.removedAt) } : {}),
   };
 }
 
@@ -92,8 +93,8 @@ export function toKey(row: typeof keys.$inferSelect): Key {
     name: row.name,
     note: row.note,
     status: row.status,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
+    createdAt: toIsoDate(row.createdAt),
+    updatedAt: toIsoDate(row.updatedAt),
   };
 }
 
@@ -104,9 +105,9 @@ export function toLoan(row: typeof loans.$inferSelect): Loan {
     keyId: row.keyId,
     borrowerName: row.borrowerName,
     ...(row.borrowerContact ? { borrowerContact: row.borrowerContact } : {}),
-    checkedOutAt: row.checkedOutAt,
-    ...(row.expectedReturnAt ? { expectedReturnAt: row.expectedReturnAt } : {}),
-    ...(row.returnedAt ? { returnedAt: row.returnedAt } : {}),
+    checkedOutAt: toIsoDate(row.checkedOutAt),
+    ...(row.expectedReturnAt ? { expectedReturnAt: toIsoDate(row.expectedReturnAt) } : {}),
+    ...(row.returnedAt ? { returnedAt: toIsoDate(row.returnedAt) } : {}),
     status: row.status,
     operatorId: row.operatorId,
     ...(row.returnOperatorId ? { returnOperatorId: row.returnOperatorId } : {}),
@@ -122,7 +123,7 @@ export function toEvent(row: typeof cabinetEvents.$inferSelect): CabinetEvent {
     ...(row.keyId ? { keyId: row.keyId } : {}),
     actorId: row.actorId,
     type: row.type,
-    occurredAt: row.occurredAt,
+    occurredAt: toIsoDate(row.occurredAt),
     reversible: row.reversible,
     ...(row.relatedLoanId ? { relatedLoanId: row.relatedLoanId } : {}),
     summaryData: row.summaryData,

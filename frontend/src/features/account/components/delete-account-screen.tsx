@@ -2,19 +2,19 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { useApp } from '@/app-state';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { AuthErrorNotice, AuthSecondaryButton } from '@/features/auth/components/auth-ui';
 import { authErrorKey } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
 
 import { AccountLoading, AccountPage, ConfirmationPanel, FeedbackBanner } from './account-ui';
 
 export function DeleteAccountScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { actions, currentUser, state } = useMockApp();
+  const { actions, currentUser, state } = useApp();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

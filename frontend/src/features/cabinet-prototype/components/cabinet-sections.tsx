@@ -4,6 +4,7 @@ import { Alert, FlatList, Linking, Pressable, ScrollView, View } from 'react-nat
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { Pill, PillTone } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
@@ -18,6 +19,10 @@ import { usePrototypeDialog } from './prototype-dialog';
 import { ActionButton, FilterChip, FormField, InlineButton, SearchInput, SectionCard, SectionTitle, Stat, StatePanel } from './prototype-ui';
 
 const trKey = (key: string) => key as TranslationKey;
+type RefreshProps = {
+  onRefresh: () => void;
+  refreshing: boolean;
+};
 
 export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: CabinetView }) {
   const { locale, t } = useTranslation();
@@ -124,9 +129,11 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
 export function CabinetKeys({
   app,
   cabinet,
+  onRefresh,
   onSpotlightRect,
+  refreshing,
   spotlightSlotId,
-}: {
+}: RefreshProps & {
   app: PrototypeApp;
   cabinet: CabinetView;
   onSpotlightRect?: (rect: SpotlightRect) => void;
@@ -167,14 +174,21 @@ export function CabinetKeys({
           <SectionTitle description={t(trKey('key.slotCount'), { count: slots.length })} title={t(trKey('key.gridTitle'))} />
         </View>
       )}
+      onRefresh={onRefresh}
       onSpotlightRect={onSpotlightRect}
+      refreshing={refreshing}
       slots={slots}
       spotlightSlotId={spotlightSlotId}
     />
   );
 }
 
-export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: CabinetView }) {
+export function CabinetActivity({
+  app,
+  cabinet,
+  onRefresh,
+  refreshing,
+}: RefreshProps & { app: PrototypeApp; cabinet: CabinetView }) {
   const { t } = useTranslation();
   const [kind, setKind] = useState<'all' | CabinetEventKind | 'admin'>('all');
   const [time, setTime] = useState<'all' | 'week' | 'month'>('all');
@@ -210,6 +224,7 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
   return (
     <View className="min-w-0 flex-1">
       <FlatList
+        alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
         data={events}
@@ -239,6 +254,7 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
           </View>
         )}
         ListHeaderComponentStyle={{ marginBottom: 12 }}
+        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         renderItem={({ index, item }) => (
           <SectionCard>
             <PrototypeEventRow
@@ -270,7 +286,12 @@ export function CabinetActivity({ app, cabinet }: { app: PrototypeApp; cabinet: 
   );
 }
 
-export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: CabinetView }) {
+export function CabinetSettings({
+  app,
+  cabinet,
+  onRefresh,
+  refreshing,
+}: RefreshProps & { app: PrototypeApp; cabinet: CabinetView }) {
   const { t } = useTranslation();
   const [busyId, setBusyId] = useState<string>();
   const [openMemberMenu, setOpenMemberMenu] = useState<string>();
@@ -330,6 +351,7 @@ export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: 
   return (
     <View className="min-w-0 flex-1">
       <FlatList
+        alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerStyle={{ padding: 20, rowGap: 10 }}
         data={visibleMembers}
@@ -366,6 +388,7 @@ export function CabinetSettings({ app, cabinet }: { app: PrototypeApp; cabinet: 
             )}
           </SectionCard>
         )}
+        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         renderItem={({ item: member }) => {
           const canRemove = member.userId !== app.currentUserId;
           return (

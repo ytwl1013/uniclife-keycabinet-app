@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
+import { QrResolution, useApp } from '@/app-state';
+import { isApiError } from '@/api/client';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
@@ -17,11 +19,6 @@ import {
   StatePanel,
 } from '@/features/cabinet-prototype/components/prototype-ui';
 import { useTranslation } from '@/i18n';
-import {
-  isMockAppError,
-  QrResolution,
-  useMockApp,
-} from '@/mocks';
 
 export type ScanMode = 'initialize' | 'join';
 
@@ -206,7 +203,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const router = useRouter();
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
-  const { actions, currentUser, selectors, state } = useMockApp();
+  const { actions, currentUser, selectors, state } = useApp();
   const { t } = useTranslation();
   const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
   const [cameraMountError, setCameraMountError] = useState<string | null>(null);
@@ -305,7 +302,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   }, [errorKind, resetScanner]);
 
   const classifyError = useCallback((error: unknown): ScanErrorKind => {
-    if (!isMockAppError(error)) {
+    if (!isApiError(error)) {
       return 'generic';
     }
     if (error.code === 'OFFLINE') {

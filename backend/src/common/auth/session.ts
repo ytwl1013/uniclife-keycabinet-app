@@ -8,6 +8,7 @@ import { createEntityId } from '../security/ids.js';
 import { createOpaqueToken, digestToken } from '../security/tokens.js';
 import { requireDatabase, type DbExecutor } from '../../db/client.js';
 import { sessions, users } from '../../db/schema.js';
+import { toIsoDate } from '../domain/dates.js';
 
 export type AuthenticatedUser = {
   id: string;
@@ -70,7 +71,7 @@ export async function requireAuth(request: FastifyRequest): Promise<Authenticate
     avatarUri: row.user.avatarUri,
     locale: row.user.locale,
     status: 'active',
-    createdAt: row.user.createdAt,
+    createdAt: toIsoDate(row.user.createdAt),
     sessionId: row.session.id,
   };
 }

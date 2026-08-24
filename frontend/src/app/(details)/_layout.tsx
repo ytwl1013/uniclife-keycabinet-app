@@ -1,9 +1,9 @@
 import { Redirect, Stack } from 'expo-router';
 
-import { useMockApp } from '@/mocks';
+import { useApp } from '@/app-state';
 
 export default function DetailRoutesLayout() {
-  const { state } = useMockApp();
+  const { state } = useApp();
 
   if (!state.hydrated) {
     return null;

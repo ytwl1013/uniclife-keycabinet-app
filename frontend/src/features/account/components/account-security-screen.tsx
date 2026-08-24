@@ -1,8 +1,8 @@
 import { Href, useRouter } from 'expo-router';
 
+import { useApp } from '@/app-state';
 import { AuthErrorNotice, AuthSecondaryButton } from '@/features/auth/components/auth-ui';
 import { useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
 
 import { AccountLoading, AccountPage, AccountSection, SettingsAction } from './account-ui';
 
@@ -15,7 +15,7 @@ const securityRoutes = {
 export function AccountSecurityScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { currentUser, state } = useMockApp();
+  const { currentUser, state } = useApp();
 
   if (!state.hydrated) {
     return <AccountLoading label={t('common.loading')} />;

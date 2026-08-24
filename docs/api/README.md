@@ -7,7 +7,7 @@ Authorization: Bearer <opaque-session-token>
 Content-Type: application/json
 ```
 
-会话 Token 只在注册或登录成功时返回一次，数据库仅保存带服务端 pepper 的摘要。前端后续接入时应将 Token 放入系统安全存储，不得写入普通日志或 AsyncStorage。
+会话 Token 只在注册或登录成功时返回一次，数据库仅保存带服务端 pepper 的摘要。Expo 前端将 Token 放入 iOS Keychain / Android Keystore（Expo SecureStore）；Web 开发仅保存在当前标签页的 sessionStorage，不写入普通日志或 AsyncStorage。
 
 ## 稳定返回格式
 

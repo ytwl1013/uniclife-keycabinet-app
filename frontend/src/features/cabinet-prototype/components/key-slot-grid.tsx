@@ -3,6 +3,7 @@ import { ReactElement, useCallback, useLayoutEffect, useRef } from 'react';
 import { FlatList, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { AppIcon, AppIconTone } from '@/components/ui/app-icon';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
 import { SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { TranslationKey, useTranslation } from '@/i18n';
@@ -22,14 +23,18 @@ export function PrototypeKeySlotGrid({
   cabinetId,
   empty,
   header,
+  onRefresh,
   onSpotlightRect,
+  refreshing,
   slots,
   spotlightSlotId,
 }: {
   cabinetId: string;
   empty: ReactElement;
   header: ReactElement;
+  onRefresh: () => void;
   onSpotlightRect?: (rect: SpotlightRect) => void;
+  refreshing: boolean;
   slots: SlotView[];
   spotlightSlotId?: string;
 }) {
@@ -38,6 +43,7 @@ export function PrototypeKeySlotGrid({
 
   return (
     <FlatList
+      alwaysBounceVertical
       className="min-w-0 flex-1"
       columnWrapperStyle={{ columnGap: 10 }}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 20, paddingHorizontal: 20, paddingTop: 20, rowGap: 10 }}
@@ -49,6 +55,7 @@ export function PrototypeKeySlotGrid({
       ListHeaderComponent={header}
       ListHeaderComponentStyle={{ marginBottom: 18 }}
       numColumns={columns}
+      refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
       renderItem={({ item }) => (
         <SlotCell
           cabinetId={cabinetId}

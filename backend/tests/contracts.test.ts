@@ -5,6 +5,8 @@ import {
 } from '@uniclife/shared';
 import { describe, expect, it } from 'vitest';
 
+import { toIsoDate } from '../src/common/domain/dates.js';
+
 describe('backend request contracts', () => {
   it('normalizes registration email and enforces legal consent', () => {
     const valid = registerRequestSchema.parse({
@@ -29,5 +31,14 @@ describe('backend request contracts', () => {
         expectedReturnAt: 'not-a-date',
       }),
     ).toThrow();
+  });
+
+  it('normalizes PostgreSQL timestamp strings for strict native clients', () => {
+    expect(toIsoDate('2026-08-22 04:13:19.022814+00')).toBe(
+      '2026-08-22T04:13:19.022Z',
+    );
+    expect(() => toIsoDate('not-a-database-timestamp')).toThrow(
+      'Database timestamp is invalid',
+    );
   });
 });

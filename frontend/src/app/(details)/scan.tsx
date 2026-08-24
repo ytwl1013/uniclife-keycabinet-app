@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
+import { allowSampleQrPreview } from '@/config/developer';
 import { ScanFlow, ScanMode } from '@/features/scan/components/scan-flow';
-import { allowSampleQrPreview } from '@/mocks';
 
 export default function ScanRoute() {
   const params = useLocalSearchParams<{ mode?: string | string[]; sample?: string | string[] }>();

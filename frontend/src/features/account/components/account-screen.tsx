@@ -1,12 +1,16 @@
 import * as Clipboard from 'expo-clipboard';
 import { Href, useRouter } from 'expo-router';
 import { Dialog } from 'heroui-native/dialog';
+import { useToast } from 'heroui-native/toast';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { useApp } from '@/app-state';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
+import { developerToolsEnabled } from '@/config/developer';
+import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { AuthErrorNotice, AuthSecondaryButton } from '@/features/auth/components/auth-ui';
 import { authErrorKey } from '@/features/auth/use-auth-actions';
 import { supportEmail } from '@/features/support/config';
@@ -16,7 +20,6 @@ import {
   supportedLocales,
   useTranslation,
 } from '@/i18n';
-import { developerToolsEnabled, useMockApp } from '@/mocks';
 
 import {
   AccountLoading,
@@ -43,8 +46,10 @@ const accountRoutes = {
 
 export function AccountScreen() {
   const router = useRouter();
+  const { toast } = useToast();
   const { locale, preference, setLocalePreference, t } = useTranslation();
-  const { actions, currentUser, state } = useMockApp();
+  const { actions, currentUser, state } = useApp();
+  const { onRefresh, refreshing } = useAppRefresh();
   const [pending, setPending] = useState<PendingAction>(null);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [emailContactOpen, setEmailContactOpen] = useState(false);
@@ -70,13 +75,26 @@ export function AccountScreen() {
   const fail = (caught: unknown) => setFeedback({ message: t(authErrorKey(caught)), tone: 'danger' });
 
   const copySupportEmail = async () => {
+    setFeedback(null);
     try {
       await Clipboard.setStringAsync(supportEmail);
       setEmailContactOpen(false);
-      setFeedback({ message: t('account.supportEmailCopied'), tone: 'success' });
+      toast.show({
+        duration: 3000,
+        id: 'support-email-copy',
+        label: t('account.supportEmailCopied'),
+        placement: 'bottom',
+        variant: 'success',
+      });
     } catch {
       setEmailContactOpen(false);
-      setFeedback({ message: t('account.supportEmailCopyFailed'), tone: 'danger' });
+      toast.show({
+        duration: 3000,
+        id: 'support-email-copy-error',
+        label: t('account.supportEmailCopyFailed'),
+        placement: 'bottom',
+        variant: 'danger',
+      });
     }
   };
 
@@ -108,7 +126,12 @@ export function AccountScreen() {
   };
 
   return (
-    <AccountPage description={t('account.subtitle')} headerShown={false} title={t('account.title')}>
+    <AccountPage
+      description={t('account.subtitle')}
+      headerShown={false}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+      title={t('account.title')}>
       {feedback ? <FeedbackBanner message={feedback.message} tone={feedback.tone} /> : null}
 
       <View className="items-center gap-5 pb-2 pt-3">

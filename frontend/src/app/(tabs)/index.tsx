@@ -3,23 +3,26 @@ import { Dialog } from 'heroui-native/dialog';
 import { createRef, useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutChangeEvent, Pressable, ScrollView, View } from 'react-native';
 
+import { Cabinet, ProductSku, useApp } from '@/app-state';
 import { AppIcon } from '@/components/ui/app-icon';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { ProductImage } from '@/components/ui/product-image';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { UserAvatar } from '@/features/account/components/account-ui';
+import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { useNotifications } from '@/features/notifications/notifications-provider';
 import { useTranslation } from '@/i18n';
-import { Cabinet, ProductSku, useMockApp } from '@/mocks';
 
 const GUIDE_STEPS = 3;
 
 export default function HomeRoute() {
   const params = useLocalSearchParams<{ guideStep?: string }>();
   const { t } = useTranslation();
-  const { currentUser, selectors, state } = useMockApp();
+  const { currentUser, selectors, state } = useApp();
   const { unreadCount } = useNotifications();
+  const { onRefresh, refreshing } = useAppRefresh();
   const cabinets = selectors.cabinetsForCurrentUser();
   const borrowedKeys = selectors.borrowedKeys();
   const [guideConfirmationVisible, setGuideConfirmationVisible] = useState(false);
@@ -169,9 +172,11 @@ export default function HomeRoute() {
       </View>
 
       <ScrollView
+        alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerClassName="mx-auto w-full max-w-content gap-6 px-screen pb-screen pt-screen"
         ref={scrollRef}
+        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         showsVerticalScrollIndicator={false}>
         <View className="gap-3" collapsable={false} onLayout={sectionLayout(0)} ref={guideTargetRefs[0]}>
           <AppText className="px-1" variant="title" tone="foreground">{t('home.activeLoansTitle')}</AppText>
@@ -284,7 +289,7 @@ export default function HomeRoute() {
 
 function CabinetCard({ cabinet, sku }: { cabinet: Cabinet; sku?: ProductSku }) {
   const { t } = useTranslation();
-  const { selectors } = useMockApp();
+  const { selectors } = useApp();
   const metrics = selectors.cabinetMetrics(cabinet.id);
   return (
     <Pressable className="flex-row items-center gap-4 rounded-card border border-line bg-surface p-3" onPress={() => router.push({ pathname: '/cabinets/[cabinetId]', params: { cabinetId: cabinet.id } } as Href)}>

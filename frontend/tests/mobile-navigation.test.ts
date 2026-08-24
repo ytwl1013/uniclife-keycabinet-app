@@ -42,6 +42,30 @@ describe('simplified mobile navigation architecture', () => {
     expect(home).not.toContain('viewAll');
   });
 
+  it('refreshes Account, Home, Activity, and every cabinet detail segment by pulling from the top', () => {
+    const account = source('src/features/account/components/account-screen.tsx');
+    const accountUi = source('src/features/account/components/account-ui.tsx');
+    const home = source('src/app/(tabs)/index.tsx');
+    const activity = source('src/app/(tabs)/activity.tsx');
+    const cabinet = source('src/app/(details)/cabinets/[cabinetId]/index.tsx');
+    const cabinetSections = source('src/features/cabinet-prototype/components/cabinet-sections.tsx');
+    const keyGrid = source('src/features/cabinet-prototype/components/key-slot-grid.tsx');
+    const refreshControl = source('src/components/ui/app-refresh-control.tsx');
+    const refreshHook = source('src/features/app-refresh/use-app-refresh.ts');
+
+    expect(refreshControl).toContain('<RefreshControl');
+    expect(refreshHook).toContain('actions.refresh()');
+    expect(account).toContain('onRefresh={onRefresh}');
+    expect(accountUi).toContain('<AppRefreshControl');
+    expect(home).toContain('<AppRefreshControl');
+    expect(activity).toContain('<AppRefreshControl');
+    expect(cabinet).toContain('<CabinetKeys');
+    expect(cabinet).toContain('<CabinetActivity');
+    expect(cabinet).toContain('<CabinetSettings');
+    expect(cabinetSections.match(/<AppRefreshControl/g)).toHaveLength(2);
+    expect(keyGrid).toContain('<AppRefreshControl');
+  });
+
   it('provides a modal-confirmed three-step spotlight guide that enters a cabinet', () => {
     const home = source('src/app/(tabs)/index.tsx');
     const guide = source('src/features/home/components/home-spotlight-guide.tsx');
@@ -82,6 +106,7 @@ describe('simplified mobile navigation architecture', () => {
     const home = source('src/app/(tabs)/index.tsx');
     const layout = source('src/app/(details)/_layout.tsx');
     const account = source('src/features/account/components/account-screen.tsx');
+    const uiProvider = source('src/components/ui/app-ui-provider.native.tsx');
     const notifications = source('src/features/notifications/components/notifications-screen.tsx');
     const support = source('src/features/support/components/support-chat-screen.tsx');
     expect(home).toContain('testID="home-notifications-button"');
@@ -100,6 +125,11 @@ describe('simplified mobile navigation architecture', () => {
     expect(account).toContain('accountRoutes.contactSupport');
     expect(account).toContain('testID="support-email-modal"');
     expect(account).toContain('Clipboard.setStringAsync(supportEmail)');
+    expect(account).toContain("import { useToast } from 'heroui-native/toast'");
+    expect(account).toContain("label: t('account.supportEmailCopied')");
+    expect(account).toContain("variant: 'success'");
+    expect(account).not.toContain("setFeedback({ message: t('account.supportEmailCopied')");
+    expect(uiProvider).toContain('toast: true');
     expect(account.indexOf("title={t('account.serviceSupportTitle')}")).toBeLessThan(account.indexOf("{t('account.signOut')}"));
     expect(account).not.toContain('<AccountMetric');
     expect(support).toContain('<TextInput');
