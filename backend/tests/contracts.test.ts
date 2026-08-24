@@ -1,7 +1,10 @@
 import {
   checkoutKeyRequestSchema,
+  currentUserAccountSchema,
+  markHomeGuidePromptedRequestSchema,
   registerRequestSchema,
   updateKeyRequestSchema,
+  userAccountSchema,
 } from '@uniclife/shared';
 import { describe, expect, it } from 'vitest';
 
@@ -40,5 +43,26 @@ describe('backend request contracts', () => {
     expect(() => toIsoDate('not-a-database-timestamp')).toThrow(
       'Database timestamp is invalid',
     );
+  });
+
+  it('keeps login metadata private to the current-user contract', () => {
+    const currentUser = currentUserAccountSchema.parse({
+      id: 'user-test',
+      email: 'person@example.com',
+      displayName: 'Test Person',
+      locale: 'en-US',
+      status: 'active',
+      createdAt: '2026-08-24T08:00:00.000Z',
+      loginCount: 1,
+      lastLoginAt: '2026-08-24T08:00:00.000Z',
+      homeGuidePromptedAt: null,
+    });
+    const publicUser = userAccountSchema.parse(currentUser);
+
+    expect(currentUser.loginCount).toBe(1);
+    expect(publicUser).not.toHaveProperty('loginCount');
+    expect(publicUser).not.toHaveProperty('homeGuidePromptedAt');
+    expect(markHomeGuidePromptedRequestSchema.parse({ prompted: true }).prompted).toBe(true);
+    expect(() => markHomeGuidePromptedRequestSchema.parse({ prompted: false })).toThrow();
   });
 });

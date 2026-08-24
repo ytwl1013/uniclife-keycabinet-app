@@ -3,6 +3,7 @@ import type {
   CabinetEvent,
   CabinetMembership,
   CabinetQr,
+  CurrentUserAccount,
   Key,
   Loan,
   ProductSku,
@@ -30,6 +31,17 @@ export function toUser(row: typeof users.$inferSelect): UserAccount {
     locale: row.locale as UserAccount['locale'],
     status: row.status,
     createdAt: toIsoDate(row.createdAt),
+  };
+}
+
+export function toCurrentUser(row: typeof users.$inferSelect): CurrentUserAccount {
+  return {
+    ...toUser(row),
+    loginCount: row.loginCount,
+    lastLoginAt: row.lastLoginAt ? toIsoDate(row.lastLoginAt) : null,
+    homeGuidePromptedAt: row.homeGuidePromptedAt
+      ? toIsoDate(row.homeGuidePromptedAt)
+      : null,
   };
 }
 

@@ -8,9 +8,9 @@ import {
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { issueSession, requireAuth } from '../../common/auth/session.js';
+import { issueSession, requireAuth, toUserAccount } from '../../common/auth/session.js';
 import { env } from '../../common/config/env.js';
-import { toUser } from '../../common/domain/mappers.js';
+import { toCurrentUser } from '../../common/domain/mappers.js';
 import { AppError } from '../../common/http/errors.js';
 import { ok } from '../../common/http/response.js';
 import { createEntityId } from '../../common/security/ids.js';
@@ -63,6 +63,7 @@ export async function registerAuthRoutes(
 
     const userId = createEntityId('user');
     const passwordHash = await hashPassword(input.password);
+    const now = new Date().toISOString();
     const result = await database.transaction(async (transaction) => {
       const [created] = await transaction
         .insert(users)
@@ -72,6 +73,8 @@ export async function registerAuthRoutes(
           passwordHash,
           displayName: input.displayName,
           locale: input.locale,
+          loginCount: 1,
+          lastLoginAt: now,
         })
         .returning();
       if (!created) {
@@ -103,7 +106,7 @@ export async function registerAuthRoutes(
         targetId: userId,
         result: 'success',
       });
-      return { user: toUser(created), session };
+      return { user: toCurrentUser(created), session };
     });
     return reply.status(201).send(ok(result, '注册成功'));
   });
@@ -135,7 +138,26 @@ export async function registerAuthRoutes(
       });
       throw new AppError(401, 'INVALID_CREDENTIALS', '邮箱或密码不正确');
     }
-    const session = await database.transaction(async (transaction) => {
+    const result = await database.transaction(async (transaction) => {
+      const now = new Date().toISOString();
+      const [signedInUser] = await transaction
+        .update(users)
+        .set({
+          loginCount: sql`${users.loginCount} + 1`,
+          lastLoginAt: now,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(users.id, user.id),
+            eq(users.status, 'active'),
+            isNull(users.deletedAt),
+          ),
+        )
+        .returning();
+      if (!signedInUser) {
+        throw new AppError(404, 'USER_NOT_FOUND', '账户不存在');
+      }
       const issued = await issueSession(transaction, user.id);
       await appendAudit(transaction, {
         actorId: user.id,
@@ -144,9 +166,9 @@ export async function registerAuthRoutes(
         targetId: user.id,
         result: 'success',
       });
-      return issued;
+      return { user: toCurrentUser(signedInUser), session: issued };
     });
-    return ok({ user: toUser(user), session }, '登录成功');
+    return ok(result, '登录成功');
   });
 
   app.post('/sign-out', async (request) => {
@@ -170,17 +192,7 @@ export async function registerAuthRoutes(
 
   app.get('/session', async (request) => {
     const currentUser = await requireAuth(request);
-    return ok({
-      user: {
-        id: currentUser.id,
-        email: currentUser.email,
-        displayName: currentUser.displayName,
-        ...(currentUser.avatarUri ? { avatarUri: currentUser.avatarUri } : {}),
-        locale: currentUser.locale,
-        status: currentUser.status,
-        createdAt: currentUser.createdAt,
-      },
-    });
+    return ok({ user: toUserAccount(currentUser) });
   });
 
   app.post('/password-resets', passwordResetRateLimit, async (request, reply) => {

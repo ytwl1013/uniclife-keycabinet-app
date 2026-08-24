@@ -47,6 +47,9 @@ export const changePasswordRequestSchema = writeOptionsSchema.extend({
   currentPassword: passwordSchema,
   newPassword: passwordSchema,
 });
+export const markHomeGuidePromptedRequestSchema = writeOptionsSchema.extend({
+  prompted: z.literal(true),
+});
 
 export const cabinetQrPayloadSchema = z.string().trim().max(256).regex(
   /^uniclife:\/\/cabinet\/[A-Za-z0-9-]{1,64}\/[0-9a-fA-F-]{36}$/,

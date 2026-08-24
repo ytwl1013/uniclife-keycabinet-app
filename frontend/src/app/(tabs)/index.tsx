@@ -11,6 +11,7 @@ import { ProductImage } from '@/components/ui/product-image';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { UserAvatar } from '@/features/account/components/account-ui';
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
+import { shouldAutomaticallyPromptHomeGuide } from '@/features/home/home-guide';
 import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { useNotifications } from '@/features/notifications/notifications-provider';
 import { useTranslation } from '@/i18n';
@@ -20,7 +21,7 @@ const GUIDE_STEPS = 3;
 export default function HomeRoute() {
   const params = useLocalSearchParams<{ guideStep?: string }>();
   const { t } = useTranslation();
-  const { currentUser, selectors, state } = useApp();
+  const { actions, currentUser, selectors, state } = useApp();
   const { unreadCount } = useNotifications();
   const { onRefresh, refreshing } = useAppRefresh();
   const cabinets = selectors.cabinetsForCurrentUser();
@@ -35,6 +36,7 @@ export default function HomeRoute() {
   const guideRequest = useRef(0);
   const guideFrame = useRef<number | undefined>(undefined);
   const resumedGuide = useRef(false);
+  const automaticGuideUserId = useRef<string | undefined>(undefined);
   const overdueCount = borrowedKeys.filter((key) => {
     const loan = state.loans.find((candidate) => candidate.keyId === key.id && candidate.status === 'active');
     return Boolean(loan?.expectedReturnAt && Date.parse(loan.expectedReturnAt) < Date.parse(state.now));
@@ -74,8 +76,17 @@ export default function HomeRoute() {
     };
     guideFrame.current = requestAnimationFrame(measureWhenReady);
   }, [guideTargetRefs]);
+  const acknowledgeAutomaticGuidePrompt = useCallback(() => {
+    if (!currentUser || currentUser.homeGuidePromptedAt !== null) return;
+    void actions.markHomeGuidePrompted().catch(() => undefined);
+  }, [actions, currentUser]);
+  const setGuideConfirmationOpen = (visible: boolean) => {
+    setGuideConfirmationVisible(visible);
+    if (!visible) acknowledgeAutomaticGuidePrompt();
+  };
   const startGuide = () => {
     setGuideConfirmationVisible(false);
+    acknowledgeAutomaticGuidePrompt();
     prepareGuideStep(0);
   };
   const closeGuide = () => {
@@ -90,6 +101,15 @@ export default function HomeRoute() {
     prepareGuideStep(1);
     router.setParams({ guideStep: undefined });
   }, [params.guideStep, prepareGuideStep]);
+  useEffect(() => {
+    if (
+      !state.hydrated ||
+      !shouldAutomaticallyPromptHomeGuide(currentUser, automaticGuideUserId.current)
+    ) return;
+    if (!currentUser) return;
+    automaticGuideUserId.current = currentUser.id;
+    setGuideConfirmationVisible(true);
+  }, [currentUser, state.hydrated]);
   useEffect(() => () => {
     guideRequest.current += 1;
     if (guideFrame.current !== undefined) cancelAnimationFrame(guideFrame.current);
@@ -229,7 +249,7 @@ export default function HomeRoute() {
 
       </ScrollView>
 
-      <Dialog isOpen={guideConfirmationVisible} onOpenChange={setGuideConfirmationVisible}>
+      <Dialog isOpen={guideConfirmationVisible} onOpenChange={setGuideConfirmationOpen}>
         <Dialog.Portal unstable_accessibilityContainerViewIsModal>
           <Dialog.Overlay />
           <Dialog.Content className="w-full max-w-[430px] gap-4" isSwipeable={false} testID="home-guide-prompt-modal">
@@ -246,7 +266,7 @@ export default function HomeRoute() {
             <Pressable
               accessibilityRole="button"
               className="min-h-12 flex-1 items-center justify-center rounded-control border border-line bg-surface px-4 active:opacity-70"
-              onPress={() => setGuideConfirmationVisible(false)}>
+              onPress={() => setGuideConfirmationOpen(false)}>
               <AppText variant="label" tone="foreground">{t('home.guideLater')}</AppText>
             </Pressable>
             <Pressable

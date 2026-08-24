@@ -22,8 +22,33 @@ databaseTest('backend API workflow', () => {
     });
     expect(registerResponse.statusCode).toBe(201);
     const registerBody = registerResponse.json();
+    expect(registerBody.data.user).toMatchObject({
+      loginCount: 1,
+      homeGuidePromptedAt: null,
+    });
+    expect(Date.parse(registerBody.data.user.lastLoginAt)).not.toBeNaN();
     const token = registerBody.data.session.token as string;
     const authorization = { authorization: `Bearer ${token}` };
+
+    const guideResponse = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/users/me/home-guide',
+      headers: authorization,
+      payload: {
+        prompted: true,
+        requestId: 'home-guide-request-0001',
+      },
+    });
+    expect(guideResponse.statusCode).toBe(200);
+    expect(Date.parse(guideResponse.json().data.homeGuidePromptedAt)).not.toBeNaN();
+
+    const signInResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/sign-in',
+      payload: { email, password: 'password-123' },
+    });
+    expect(signInResponse.statusCode).toBe(200);
+    expect(signInResponse.json().data.user).toMatchObject({ loginCount: 2 });
 
     const bindResponse = await app.inject({
       method: 'POST',

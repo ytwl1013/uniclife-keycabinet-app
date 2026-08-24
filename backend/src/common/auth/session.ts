@@ -1,4 +1,4 @@
-import type { UserAccount } from '@uniclife/shared';
+import type { CurrentUserAccount } from '@uniclife/shared';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
 
@@ -18,18 +18,26 @@ export type AuthenticatedUser = {
   avatarUri: string | null;
   locale: string;
   status: 'active';
+  loginCount: number;
+  lastLoginAt: string | null;
+  homeGuidePromptedAt: string | null;
   createdAt: string;
   sessionId: string;
 };
 
-export function toUserAccount(user: Omit<AuthenticatedUser, 'sessionId'>): UserAccount {
+export function toUserAccount(
+  user: Omit<AuthenticatedUser, 'sessionId'>,
+): CurrentUserAccount {
   return {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
     ...(user.avatarUri ? { avatarUri: user.avatarUri } : {}),
-    locale: user.locale as UserAccount['locale'],
+    locale: user.locale as CurrentUserAccount['locale'],
     status: user.status,
+    loginCount: user.loginCount,
+    lastLoginAt: user.lastLoginAt,
+    homeGuidePromptedAt: user.homeGuidePromptedAt,
     createdAt: user.createdAt,
   };
 }
@@ -71,6 +79,11 @@ export async function requireAuth(request: FastifyRequest): Promise<Authenticate
     avatarUri: row.user.avatarUri,
     locale: row.user.locale,
     status: 'active',
+    loginCount: row.user.loginCount,
+    lastLoginAt: row.user.lastLoginAt ? toIsoDate(row.user.lastLoginAt) : null,
+    homeGuidePromptedAt: row.user.homeGuidePromptedAt
+      ? toIsoDate(row.user.homeGuidePromptedAt)
+      : null,
     createdAt: toIsoDate(row.user.createdAt),
     sessionId: row.session.id,
   };

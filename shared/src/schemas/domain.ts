@@ -32,6 +32,12 @@ export const userAccountSchema = z.object({
   createdAt: isoDateSchema,
 });
 
+export const currentUserAccountSchema = userAccountSchema.extend({
+  loginCount: z.number().int().nonnegative(),
+  lastLoginAt: isoDateSchema.nullable(),
+  homeGuidePromptedAt: isoDateSchema.nullable(),
+});
+
 export const productSkuSchema = z.object({
   id: entityIdSchema,
   sku: z.string().min(1).max(64),
@@ -179,6 +185,7 @@ export type RecordType = z.infer<typeof recordTypeSchema>;
 export type KeyActionRequest = z.infer<typeof keyActionRequestSchema>;
 export type SupportedLocale = z.infer<typeof supportedLocaleSchema>;
 export type UserAccount = z.infer<typeof userAccountSchema>;
+export type CurrentUserAccount = z.infer<typeof currentUserAccountSchema>;
 export type ProductSku = z.infer<typeof productSkuSchema>;
 export type CabinetQr = z.infer<typeof cabinetQrSchema>;
 export type Cabinet = z.infer<typeof cabinetSchema>;

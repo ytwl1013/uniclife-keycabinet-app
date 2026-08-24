@@ -46,6 +46,7 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | POST | `/auth/password-resets/verify` | 校验验证码并签发短时重置 Token | 公开 |
 | POST | `/auth/password-resets/complete` | 修改密码并撤销全部旧会话 | 公开 |
 | GET | `/users/me` | 当前账户资料 | 登录 |
+| PATCH | `/users/me/home-guide` | 记录当前账户已处理首页导航提示 | 本人 |
 | PATCH | `/users/me/profile` | 更新名称和头像 URI | 本人 |
 | PATCH | `/users/me/email` | 更新邮箱 | 本人 |
 | PATCH | `/users/me/password` | 校验当前密码后修改密码 | 本人 |
@@ -61,6 +62,15 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
   "locale": "zh-CN",
   "acceptedTerms": true,
   "acceptedPrivacy": true
+}
+```
+
+注册、登录、`GET /auth/session` 和当前账户写接口返回的本人资料还包含 `loginCount`、`lastLoginAt` 与 `homeGuidePromptedAt`。注册并创建会话计为第一次登录；每次密码登录在数据库事务内原子增加次数并更新时间。首页导航提示接口只接受 `prompted: true`，可携带 `requestId`，并记录成功审计。登录统计和导航状态不会出现在柜体成员或活动参与者资料中。
+
+```json
+{
+  "prompted": true,
+  "requestId": "home-guide-user-018f4a73"
 }
 ```
 

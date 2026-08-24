@@ -21,7 +21,7 @@ import { useTranslation } from '@/i18n';
 
 const signUpRoute = '/(auth)/sign-up' as Href;
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
-const onboardingRoute = '/onboarding' as Href;
+const homeRoute = '/(tabs)' as Href;
 
 export default function SignInRoute() {
   const { t } = useTranslation();
@@ -49,7 +49,7 @@ export default function SignInRoute() {
     setIsSubmitting(true);
     try {
       await actions.signIn({ email: nextEmail, password });
-      router.replace(onboardingRoute);
+      router.replace(homeRoute);
     } catch (error) {
       setRequestError(t(authErrorKey(error)));
     } finally {

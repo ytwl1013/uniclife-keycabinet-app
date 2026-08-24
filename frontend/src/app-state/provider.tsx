@@ -23,13 +23,13 @@ import type {
   AppActions,
   AppState,
   BindCabinetResult,
+  CurrentUserAccount,
   QrResolution,
-  UserAccount,
 } from './types';
 
 export type AppContextValue = {
   state: AppState;
-  currentUser: UserAccount | null;
+  currentUser: CurrentUserAccount | null;
   actions: AppActions;
   selectors: AppSelectors;
 };
@@ -37,6 +37,7 @@ export type AppContextValue = {
 const emptyState = (): AppState => ({
   hydrated: false,
   currentUserId: null,
+  currentUser: null,
   sessionStatus: 'anonymous',
   online: true,
   now: new Date().toISOString(),
@@ -85,7 +86,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     }));
   }, [updateState]);
 
-  const loadWorkspace = useCallback(async (token: string, currentUser: UserAccount) => {
+  const loadWorkspace = useCallback(async (token: string, currentUser: CurrentUserAccount) => {
     const summaries = await backendApi.listCabinets(token);
     const [details, loansResult, eventsResult] = await Promise.all([
       Promise.all(summaries.map(({ cabinet }) => backendApi.getCabinet(token, cabinet.id))),
@@ -102,6 +103,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     updateState((current) => ({
       hydrated: true,
       currentUserId: currentUser.id,
+      currentUser,
       sessionStatus: 'authenticated',
       online: true,
       now: new Date().toISOString(),
@@ -200,6 +202,23 @@ export function AppProvider({ children }: PropsWithChildren) {
         await clearAuthentication(false);
       }
     },
+    async markHomeGuidePrompted() {
+      const token = requireToken();
+      try {
+        const user = await backendApi.markHomeGuidePrompted(token, {
+          requestId: 'home-guide-prompted',
+        });
+        updateState((current) => ({
+          ...current,
+          currentUser: user,
+          users: uniqueById([user, ...current.users]),
+          version: current.version + 1,
+        }));
+        return user;
+      } catch (error) {
+        return handleAuthorizedError(error);
+      }
+    },
     async requestPasswordReset({ email }) {
       const result = await backendApi.requestPasswordReset(email);
       if (result.previewCode) resetPreviewCodes.current.set(result.challengeId, result.previewCode);
@@ -224,6 +243,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         const user = await backendApi.updateProfile(token, input);
         updateState((current) => ({
           ...current,
+          currentUser: user,
           users: uniqueById([user, ...current.users]),
           version: current.version + 1,
         }));
@@ -238,6 +258,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         const user = await backendApi.updateEmail(token, input);
         updateState((current) => ({
           ...current,
+          currentUser: user,
           users: uniqueById([user, ...current.users]),
           version: current.version + 1,
         }));
@@ -394,7 +415,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const selectors = useMemo(() => createAppSelectors(state), [state]);
   const value = useMemo<AppContextValue>(() => ({
     state,
-    currentUser: selectors.currentUser,
+    currentUser: state.currentUser,
     actions,
     selectors,
   }), [actions, selectors, state]);

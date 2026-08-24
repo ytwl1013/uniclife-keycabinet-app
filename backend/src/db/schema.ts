@@ -48,11 +48,20 @@ export const users = pgTable(
     avatarUri: text('avatar_uri'),
     locale: varchar('locale', { length: 16 }).notNull().default('en-US'),
     status: userStatus('status').notNull().default('active'),
+    loginCount: integer('login_count').notNull().default(0),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true, mode: 'string' }),
+    homeGuidePromptedAt: timestamp('home_guide_prompted_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
     createdAt: createdAt(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
-  (table) => [uniqueIndex('users_email_unique').on(sql`lower(${table.email})`)],
+  (table) => [
+    uniqueIndex('users_email_unique').on(sql`lower(${table.email})`),
+    check('users_login_count_nonnegative', sql`${table.loginCount} >= 0`),
+  ],
 );
 
 export const sessions = pgTable(

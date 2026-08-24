@@ -3,6 +3,7 @@ import type {
   CabinetEvent,
   CabinetMembership,
   CabinetQr,
+  CurrentUserAccount,
   Key,
   KeySlot,
   Loan,
@@ -17,6 +18,7 @@ export type {
   CabinetEvent,
   CabinetMembership,
   CabinetQr,
+  CurrentUserAccount,
   Key,
   KeySlot,
   Loan,
@@ -30,6 +32,7 @@ export type SessionStatus = 'anonymous' | 'authenticated' | 'expired';
 export type AppState = {
   hydrated: boolean;
   currentUserId: string | null;
+  currentUser: CurrentUserAccount | null;
   sessionStatus: SessionStatus;
   online: boolean;
   now: string;
@@ -68,17 +71,18 @@ export type BindCabinetResult = {
 export type AppActions = {
   hydrate(): Promise<void>;
   refresh(): Promise<void>;
-  signIn(input: { email: string; password: string }): Promise<UserAccount>;
-  register(input: RegisterRequest): Promise<UserAccount>;
+  signIn(input: { email: string; password: string }): Promise<CurrentUserAccount>;
+  register(input: RegisterRequest): Promise<CurrentUserAccount>;
   signOut(): Promise<void>;
+  markHomeGuidePrompted(): Promise<CurrentUserAccount>;
   requestPasswordReset(input: { email: string }): Promise<{ challengeId: string }>;
   getPasswordResetPreview(input: { challengeId: string }): Promise<{ code: string }>;
   verifyReset(input: { challengeId: string; code: string }): Promise<{ resetToken: string }>;
   resetPassword(input: { resetToken: string; newPassword: string }): Promise<void>;
   updateProfile(
     input: { displayName: string; avatarUri?: string | null } & WriteOptions,
-  ): Promise<UserAccount>;
-  updateEmail(input: { email: string } & WriteOptions): Promise<UserAccount>;
+  ): Promise<CurrentUserAccount>;
+  updateEmail(input: { email: string } & WriteOptions): Promise<CurrentUserAccount>;
   changePassword(
     input: { currentPassword: string; newPassword: string } & WriteOptions,
   ): Promise<void>;

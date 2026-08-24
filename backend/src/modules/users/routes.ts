@@ -1,5 +1,6 @@
 import {
   changePasswordRequestSchema,
+  markHomeGuidePromptedRequestSchema,
   updateEmailRequestSchema,
   updateProfileRequestSchema,
   writeOptionsSchema,
@@ -7,8 +8,8 @@ import {
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { requireAuth } from '../../common/auth/session.js';
-import { toUser } from '../../common/domain/mappers.js';
+import { requireAuth, toUserAccount } from '../../common/auth/session.js';
+import { toCurrentUser } from '../../common/domain/mappers.js';
 import { AppError } from '../../common/http/errors.js';
 import { executeIdempotent } from '../../common/http/idempotency.js';
 import { ok } from '../../common/http/response.js';
@@ -28,15 +29,43 @@ import { createEntityId } from '../../common/security/ids.js';
 export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
   app.get('/me', async (request) => {
     const currentUser = await requireAuth(request);
-    return ok({
-      id: currentUser.id,
-      email: currentUser.email,
-      displayName: currentUser.displayName,
-      ...(currentUser.avatarUri ? { avatarUri: currentUser.avatarUri } : {}),
-      locale: currentUser.locale,
-      status: currentUser.status,
-      createdAt: currentUser.createdAt,
-    });
+    return ok(toUserAccount(currentUser));
+  });
+
+  app.patch('/me/home-guide', async (request) => {
+    const input = markHomeGuidePromptedRequestSchema.parse(request.body);
+    const currentUser = await requireAuth(request);
+    const database = requireDatabase();
+    return executeIdempotent(
+      database,
+      {
+        actorId: currentUser.id,
+        operation: 'users.mark_home_guide_prompted',
+        requestId: input.requestId,
+      },
+      async (transaction) => {
+        const now = new Date().toISOString();
+        const [updated] = await transaction
+          .update(users)
+          .set({
+            homeGuidePromptedAt: sql`coalesce(${users.homeGuidePromptedAt}, ${now})`,
+            updatedAt: now,
+          })
+          .where(eq(users.id, currentUser.id))
+          .returning();
+        if (!updated) {
+          throw new AppError(404, 'USER_NOT_FOUND', '账户不存在');
+        }
+        await appendAudit(transaction, {
+          actorId: currentUser.id,
+          action: 'users.home_guide_prompted',
+          targetType: 'user',
+          targetId: currentUser.id,
+          result: 'success',
+        });
+        return ok(toCurrentUser(updated), '使用导航提示已记录');
+      },
+    );
   });
 
   app.patch('/me/profile', async (request) => {
@@ -74,7 +103,7 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
             avatarChanged: input.avatarUri !== undefined,
           },
         });
-        return ok(toUser(updated), '资料已更新');
+        return ok(toCurrentUser(updated), '资料已更新');
       },
     );
   });
@@ -119,7 +148,7 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
           targetId: currentUser.id,
           result: 'success',
         });
-        return ok(toUser(updated), '邮箱已更新');
+        return ok(toCurrentUser(updated), '邮箱已更新');
       },
     );
   });

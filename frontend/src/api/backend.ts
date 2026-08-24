@@ -7,6 +7,7 @@ import type {
   CabinetQr,
   CabinetSummary,
   CheckoutKeyRequest,
+  CurrentUserAccount,
   Key,
   Loan,
   ProductSku,
@@ -21,7 +22,7 @@ import type {
 import { callApi } from './client';
 
 type Session = { token: string; expiresAt: string };
-type AuthResult = { user: UserAccount; session: Session };
+type AuthResult = { user: CurrentUserAccount; session: Session };
 
 function json(method: string, body?: unknown): RequestInit {
   return {
@@ -38,7 +39,7 @@ export const backendApi = {
   signOut: (token: string) =>
     callApi<{ signedOut: boolean }>('/auth/sign-out', { ...json('POST'), token }),
   session: (token: string) =>
-    callApi<{ user: UserAccount }>('/auth/session', { token }),
+    callApi<{ user: CurrentUserAccount }>('/auth/session', { token }),
   requestPasswordReset: (email: string) =>
     callApi<{
       challengeId: string;
@@ -58,9 +59,14 @@ export const backendApi = {
   updateProfile: (
     token: string,
     input: { displayName: string; avatarUri?: string | null } & WriteOptions,
-  ) => callApi<UserAccount>('/users/me/profile', { ...json('PATCH', input), token }),
+  ) => callApi<CurrentUserAccount>('/users/me/profile', { ...json('PATCH', input), token }),
   updateEmail: (token: string, input: { email: string } & WriteOptions) =>
-    callApi<UserAccount>('/users/me/email', { ...json('PATCH', input), token }),
+    callApi<CurrentUserAccount>('/users/me/email', { ...json('PATCH', input), token }),
+  markHomeGuidePrompted: (token: string, input: WriteOptions = {}) =>
+    callApi<CurrentUserAccount>(
+      '/users/me/home-guide',
+      { ...json('PATCH', { ...input, prompted: true }), token },
+    ),
   changePassword: (
     token: string,
     input: { currentPassword: string; newPassword: string } & WriteOptions,

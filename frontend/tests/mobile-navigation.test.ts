@@ -159,6 +159,7 @@ describe('simplified mobile navigation architecture', () => {
     const dateRangeCalendar = source('src/components/ui/date-range-calendar.tsx');
     const dateRangeModal = source('src/components/ui/date-range-picker-modal.tsx');
     const dateTimeField = source('src/components/ui/date-time-field.tsx');
+    const prototypeUi = source('src/features/cabinet-prototype/components/prototype-ui.tsx');
     const keyDetail = source('src/app/(details)/cabinets/[cabinetId]/keys/[keyId].tsx');
     const checkout = source('src/app/(details)/cabinets/[cabinetId]/loans/[keyId].tsx');
     expect(borrowed).toContain('<SearchInput');
@@ -189,8 +190,19 @@ describe('simplified mobile navigation architecture', () => {
     expect(borrowed).not.toContain('borrowed.cabinetAndSlot');
     expect(borrowed).toContain('borrowed.returnConfirmationDescription');
     expect(keyDetail).toContain('borrowed.returnConfirmationDescription');
+    expect(keyDetail).toContain("value={key.note.trim() || t(trKey('loan.notProvided'))}");
+    expect(keyDetail).toContain('{key.activeLoan ? (');
+    expect(keyDetail.indexOf('{key.activeLoan ? (')).toBeLessThan(keyDetail.indexOf("t(trKey('key.saveChanges'))"));
     expect(checkout).toContain('const quickReturnOptions = [1, 3, 7] as const');
     expect(checkout).toContain('useState<string>()');
+    expect(checkout).toContain("loan.keyNoteReminder");
+    expect(checkout).toContain("loan.keyNoteEmptyReminder");
+    expect(checkout).toContain('<InputAccessoryView');
+    expect(checkout.match(/inputAccessoryViewID=\{checkoutKeyboardAccessoryId\}/g)).toHaveLength(2);
+    expect(checkout).toContain("Keyboard.addListener('keyboardDidShow'");
+    expect(checkout).toContain('Keyboard.dismiss()');
+    expect(checkout).toContain('compact={keyboardVisible}');
+    expect(prototypeUi).toContain('inputAccessoryViewID={inputAccessoryViewID}');
     expect(checkout).not.toContain('KeyboardAvoidingView');
     expect(checkout).not.toContain('timeZone={cabinet.timezone}');
   });
