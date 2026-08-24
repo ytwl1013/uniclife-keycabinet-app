@@ -141,7 +141,12 @@ databaseTest('realtime cross-session data flow', () => {
       socket = new WebSocket(
         `${baseUrl.replace('http:', 'ws:')}/api/v1/realtime`,
         realtimeProtocol,
-        { headers: { authorization: `Bearer ${tokenB}` } },
+        {
+          headers: {
+            authorization: `Bearer ${tokenB}`,
+            origin: 'http://192.168.50.53:8081',
+          },
+        },
       );
       await waitForOpen(socket);
 
@@ -229,6 +234,38 @@ databaseTest('realtime cross-session data flow', () => {
       );
       expect(checkedOutDetailB.body.data.keys).toEqual(
         expect.arrayContaining([expect.objectContaining({ id: keyId, status: 'borrowed' })]),
+      );
+
+      const returnEvent = waitForCabinetChange(socket, {
+        cabinetId,
+        minimumVersion: cabinetVersion + 1,
+        resource: 'loans',
+      });
+      const returned = await apiRequest(baseUrl, `/keys/${keyId}/return`, {
+        method: 'POST',
+        token: tokenA,
+        payload: {
+          expectedVersion: cabinetVersion,
+          requestId: `return-${runId}`,
+        },
+      });
+      expect(returned.status).toBe(200);
+      cabinetVersion = returned.body.data.cabinetVersion as number;
+      expect((await returnEvent).cabinetVersion).toBe(cabinetVersion);
+
+      const [returnedLoansB, returnedEventsB, returnedDetailB] = await Promise.all([
+        apiRequest(baseUrl, '/records/loans?status=returned', { token: tokenB }),
+        apiRequest(baseUrl, `/records/events?cabinetId=${cabinetId}`, { token: tokenB }),
+        apiRequest(baseUrl, `/cabinets/${cabinetId}`, { token: tokenB }),
+      ]);
+      expect(returnedLoansB.body.data.items).toEqual(
+        expect.arrayContaining([expect.objectContaining({ keyId, status: 'returned' })]),
+      );
+      expect(returnedEventsB.body.data.items).toEqual(
+        expect.arrayContaining([expect.objectContaining({ keyId, type: 'return' })]),
+      );
+      expect(returnedDetailB.body.data.keys).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: keyId, status: 'available' })]),
       );
     } finally {
       socket?.terminate();
