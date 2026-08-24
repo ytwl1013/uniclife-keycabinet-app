@@ -267,8 +267,10 @@ function BorrowedKeyCard({
         </View>
         <View className="min-w-0 flex-1 gap-1">
           <AppText numberOfLines={1} variant="label" tone="foreground">{item.name}</AppText>
-          <AppText numberOfLines={2} variant="caption" tone="muted">
-            {loan.borrowerName}: {formatDateTime(locale, loan.checkedOutAt)} ~{' '}
+          <AppText numberOfLines={2} selectable variant="caption" tone="muted">
+            {/* {t(trKey('borrowed.borrowerLabel'))}{''} */}
+            <AppText variant="caption" tone="muted">{loan.borrowerName}</AppText>
+            {' : '}{formatDateTime(locale, loan.checkedOutAt)} ~{' '}
             <AppText variant="caption" tone={overdue ? 'danger' : 'muted'}>
               {loan.expectedReturnAt ? formatDateTime(locale, loan.expectedReturnAt) : t(trKey('loan.noExpectedReturn'))}
             </AppText>

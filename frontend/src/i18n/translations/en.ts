@@ -38,7 +38,7 @@ export const en = {
     time: { all: 'All check-out times', week: 'Past 7 days', month: 'Past 30 days', custom: 'Custom range', customValue: '%{from}–%{to}', from: 'From', to: 'To', invalidRange: 'The end must be later than the start.', apply: 'Apply range', clear: 'All dates' },
     filterTitle: { cabinet: 'Choose a cabinet', status: 'Loan status', time: 'Check-out time range' },
     loadingTitle: 'Loading checked-out keys', loadingDescription: 'Preparing active loan records…', emptyFilteredTitle: 'No matching keys', emptyFilteredDescription: 'Change the search term or filters.',
-    returnAction: 'Return', returning: 'Returning…', cabinetAndSlot: '%{cabinet} · slot %{slot}',
+    returnAction: 'Return', returning: 'Returning…', borrowerLabel: 'Borrower:', cabinetAndSlot: '%{cabinet} · slot %{slot}',
     returnConfirmationDescription: 'Key: %{key}\nCabinet: %{cabinet}\nBorrower: %{borrower}\nChecked out: %{checkedOutAt}\nReturn time: %{returnedAt}',
   },
   cabinets: {
@@ -85,7 +85,7 @@ export const en = {
     checkOutAction: 'Check out key', returnAction: 'Return key', checkOutTitle: 'Check out', checkOutKey: 'Check out %{key}',
     borrowerName: 'Borrower name', borrowerNamePlaceholder: 'Third-party borrower', borrowerRequired: 'Borrower name is required.',
     borrowerContact: 'Contact', borrowerContactOptional: 'Contact (optional)', borrowerContactPlaceholder: 'Email or phone', keyNoteReminder: 'Key note: %{note}', keyNoteEmptyReminder: 'Key note: No additional instructions.',
-    checkedOutAt: 'Check-out time', expectedReturnAt: 'Expected return time', noExpectedReturn: 'No expected return time', noExpectedReturnOption: 'No expected return time', datePlaceholder: 'Select date and time', quickReturnTime: 'Quick return time', quickReturnDays: '+%{count} days', quickNoExpectedReturn: 'None', invalidDate: 'Enter a valid date and time.', dueAfterCheckout: 'Expected return must be later than check-out.',
+    checkedOutAt: 'Check-out time', expectedReturnAt: 'Expected return time', noExpectedReturn: 'No expected return time', noExpectedReturnOption: 'No expected', datePlaceholder: 'Select date and time', quickReturnTime: 'Quick return time', quickReturnDays: '+%{count} days', quickNoExpectedReturn: 'None', invalidDate: 'Enter a valid date and time.', dueAfterCheckout: 'Expected return must be later than check-out.',
     personalDataTitle: 'Handle personal data lawfully', personalDataDescription: 'Confirm that you are authorized to record this borrower’s contact details. Contact is optional and masked by default.',
     auditNoticeTitle: 'Shared audited operation', auditNoticeDescription: 'Submitting creates a loan and an activity event for all bound accounts.',
     confirmCheckout: 'Confirm check-out', submitting: 'Submitting…', checkedOutTitle: 'Key checked out', checkedOutDescription: 'The key status and individual history were updated.', done: 'Done',

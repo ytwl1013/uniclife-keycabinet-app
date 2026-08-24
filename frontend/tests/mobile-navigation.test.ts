@@ -189,6 +189,9 @@ describe('simplified mobile navigation architecture', () => {
     expect(borrowed).toContain('<CabinetSectionHeader');
     expect(borrowed).toContain("time === 'custom'");
     expect(borrowed).toContain('borrowed.returnAction');
+    expect(borrowed).toContain("t(trKey('borrowed.borrowerLabel'))");
+    expect(borrowed).toContain('<AppText variant="label" tone="foreground">{loan.borrowerName}</AppText>');
+    expect(borrowed).toContain("{' / '}");
     expect(borrowed).not.toContain('borrowed.quickReturn');
     expect(borrowed).not.toContain('borrowed.cabinetAndSlot');
     expect(borrowed).toContain('borrowed.returnConfirmationDescription');
