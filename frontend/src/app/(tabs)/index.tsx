@@ -200,7 +200,11 @@ export default function HomeRoute() {
         showsVerticalScrollIndicator={false}>
         <View className="gap-3" collapsable={false} onLayout={sectionLayout(0)} ref={guideTargetRefs[0]}>
           <AppText className="px-1" variant="title" tone="foreground">{t('home.activeLoansTitle')}</AppText>
-          <View className="gap-4 rounded-card border border-line bg-surface p-5 shadow-card" testID="home-borrowed-summary">
+          <Pressable
+            accessibilityRole="button"
+            className="gap-4 rounded-card border border-line bg-surface p-5 shadow-card active:opacity-75"
+            onPress={() => router.push('/(details)/loans' as Href)}
+            testID="home-borrowed-summary">
             <View className="flex-row items-center gap-4">
               <View className="h-14 w-14 items-center justify-center rounded-pill bg-warning-soft">
                 <AppIcon name="key" size={27} tone="warning" />
@@ -212,16 +216,14 @@ export default function HomeRoute() {
                 </View>
                 <AppText variant="caption" tone={overdueCount ? 'danger' : 'muted'}>{t('home.overdueCountLabel', { count: overdueCount })}</AppText>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                className="min-h-11 flex-row items-center justify-center gap-2 rounded-control bg-brand px-4 active:opacity-75"
-                onPress={() => router.push('/(details)/loans' as Href)}
+              <View
+                className="min-h-11 flex-row items-center justify-center gap-2 rounded-control bg-brand px-4"
                 testID="home-return-borrowed-key">
                 <AppIcon name="return" size={19} tone="onBrand" />
                 <AppText variant="label" tone="onBrand">{t('home.returnBorrowedKey')}</AppText>
-              </Pressable>
+              </View>
             </View>
-          </View>
+          </Pressable>
         </View>
 
         <View className="gap-3" collapsable={false} onLayout={sectionLayout(1)} ref={guideTargetRefs[1]}>

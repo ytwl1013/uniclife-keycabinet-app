@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { InputAccessoryView, Keyboard, ScrollView, View } from 'react-native';
+import { Keyboard, ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { DateTimeField } from '@/components/ui/date-time-field';
 import { isExpectedReturnAfter } from '@/components/ui/date-time';
+import { CheckoutKeyboardAccessories } from '@/features/cabinet-prototype/components/checkout-keyboard-accessory';
 import { PrototypeEventList } from '@/features/cabinet-prototype/components/event-list';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
 import { ActionButton, FilterChip, FormField, Notice, ScreenHeader, SectionCard, SectionTitle, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
@@ -15,7 +16,8 @@ import { TranslationKey, useTranslation } from '@/i18n';
 
 const trKey = (key: string) => key as TranslationKey;
 const quickReturnOptions = [1, 3, 7] as const;
-const checkoutKeyboardAccessoryId = 'checkout-keyboard-actions';
+const borrowerNameKeyboardAccessoryId = 'checkout-borrower-name-actions';
+const borrowerContactKeyboardAccessoryId = 'checkout-borrower-contact-actions';
 type QuickReturnDays = (typeof quickReturnOptions)[number];
 
 export default function CheckOutKeyRoute() {
@@ -166,14 +168,14 @@ export default function CheckOutKeyRoute() {
           <SectionCard>
             <FormField
               error={errors.borrowerName}
-              inputAccessoryViewID={checkoutKeyboardAccessoryId}
+              inputAccessoryViewID={borrowerNameKeyboardAccessoryId}
               label={t(trKey('loan.borrowerName'))}
               onChangeText={(value) => { setBorrowerName(value); setErrors((current) => ({ ...current, borrowerName: '' })); }}
               placeholder={t(trKey('loan.borrowerNamePlaceholder'))}
               value={borrowerName}
             />
             <FormField
-              inputAccessoryViewID={checkoutKeyboardAccessoryId}
+              inputAccessoryViewID={borrowerContactKeyboardAccessoryId}
               label={t(trKey('loan.borrowerContactOptional'))}
               onChangeText={setBorrowerContact}
               placeholder={t(trKey('loan.borrowerContactPlaceholder'))}
@@ -229,19 +231,12 @@ export default function CheckOutKeyRoute() {
         {confirmation.dialog}
       </View>
 
-      {process.env.EXPO_OS === 'ios' ? (
-        <InputAccessoryView nativeID={checkoutKeyboardAccessoryId}>
-          <View className="items-end border-t border-line bg-background px-screen py-2">
-            <ActionButton
-              compact
-              disabled={busy || app.isOffline}
-              icon="checkOut"
-              label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))}
-              onPress={() => void submit()}
-            />
-          </View>
-        </InputAccessoryView>
-      ) : null}
+      <CheckoutKeyboardAccessories
+        disabled={busy || app.isOffline}
+        label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))}
+        nativeIDs={[borrowerNameKeyboardAccessoryId, borrowerContactKeyboardAccessoryId]}
+        onPress={() => void submit()}
+      />
 
       <SafeAreaView className="border-t border-line bg-background" edges={['bottom']}>
         <View className={`mx-auto w-full max-w-content px-screen ${keyboardVisible ? 'items-end py-2' : 'pt-3'}`}>

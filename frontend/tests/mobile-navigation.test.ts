@@ -50,6 +50,8 @@ describe('simplified mobile navigation architecture', () => {
     expect(home).toContain('size="compact"');
     expect(home).not.toContain('testID="home-primary-scan"');
     expect(home).toContain('testID="home-borrowed-summary"');
+    expect(home).toContain('className="gap-4 rounded-card border border-line bg-surface p-5 shadow-card active:opacity-75"');
+    expect(home).toContain("onPress={() => router.push('/(details)/loans' as Href)}");
     expect(home).toContain('testID="home-return-borrowed-key"');
     expect(home).toContain('testID="home-add-cabinet"');
     expect(home).toContain("router.push('/(details)/scan' as Href)");
@@ -156,6 +158,7 @@ describe('simplified mobile navigation architecture', () => {
   it('provides menu and calendar filters with cabinet-grouped return cards', () => {
     const borrowed = source('src/features/cabinet-prototype/components/borrowed-keys-screen.tsx');
     const filterMenu = source('src/features/cabinet-prototype/components/borrowed-keys-filter-menu.tsx');
+    const checkoutKeyboardAccessory = source('src/features/cabinet-prototype/components/checkout-keyboard-accessory.tsx');
     const dateRangeCalendar = source('src/components/ui/date-range-calendar.tsx');
     const dateRangeModal = source('src/components/ui/date-range-picker-modal.tsx');
     const dateTimeField = source('src/components/ui/date-time-field.tsx');
@@ -197,8 +200,14 @@ describe('simplified mobile navigation architecture', () => {
     expect(checkout).toContain('useState<string>()');
     expect(checkout).toContain("loan.keyNoteReminder");
     expect(checkout).toContain("loan.keyNoteEmptyReminder");
-    expect(checkout).toContain('<InputAccessoryView');
-    expect(checkout.match(/inputAccessoryViewID=\{checkoutKeyboardAccessoryId\}/g)).toHaveLength(2);
+    expect(checkout).toContain('inputAccessoryViewID={borrowerNameKeyboardAccessoryId}');
+    expect(checkout).toContain('inputAccessoryViewID={borrowerContactKeyboardAccessoryId}');
+    expect(checkout).toContain('nativeIDs={[borrowerNameKeyboardAccessoryId, borrowerContactKeyboardAccessoryId]}');
+    expect(checkoutKeyboardAccessory).toContain('nativeIDs.map');
+    expect(checkoutKeyboardAccessory).toContain('<InputAccessoryView backgroundColor="transparent"');
+    expect(checkoutKeyboardAccessory).toContain('h-8 justify-center rounded-pill bg-brand px-3 shadow-card');
+    expect(checkoutKeyboardAccessory).toContain('hitSlop={6}');
+    expect(checkoutKeyboardAccessory).not.toContain('<ActionButton');
     expect(checkout).toContain("Keyboard.addListener('keyboardDidShow'");
     expect(checkout).toContain('Keyboard.dismiss()');
     expect(checkout).toContain('compact={keyboardVisible}');
