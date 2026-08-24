@@ -52,6 +52,10 @@ export async function requireAuth(request: FastifyRequest): Promise<Authenticate
     throw new AppError(401, 'SESSION_REQUIRED', '请先登录');
   }
 
+  return authenticateSessionToken(token);
+}
+
+export async function authenticateSessionToken(token: string): Promise<AuthenticatedUser> {
   const database = requireDatabase();
   const now = new Date().toISOString();
   const [row] = await database

@@ -20,6 +20,11 @@ import { requireDatabase, type AppDatabase } from '../../db/client.js';
 import { cabinetEvents, keys, keySlots, loans } from '../../db/schema.js';
 import { appendAudit } from '../audit/service.js';
 import { requireCabinetMember, touchCabinet } from '../cabinets/service.js';
+import {
+  publishRealtimeChange,
+  type CabinetRealtimeChange,
+  type RealtimePublisher,
+} from '../realtime/hub.js';
 
 const cabinetParamsSchema = z.object({ cabinetId: entityIdSchema });
 const keyParamsSchema = z.object({ keyId: entityIdSchema });
@@ -45,14 +50,18 @@ async function recordFailure(
   }
 }
 
-export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
+export async function registerKeyRoutes(
+  app: FastifyInstance,
+  options: { realtime: RealtimePublisher },
+): Promise<void> {
   app.post('/cabinets/:cabinetId/keys', async (request) => {
     const { cabinetId } = cabinetParamsSchema.parse(request.params);
     const input = addKeyRequestSchema.parse(request.body);
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
     try {
-      return await executeIdempotent(
+      const response = await executeIdempotent(
         database,
         {
           actorId: currentUser.id,
@@ -112,12 +121,19 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
             result: 'success',
             metadata: { cabinetId, eventId, slotId: slot.id },
           });
+          realtimeChange = {
+            cabinetId,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'keys', 'events'],
+          };
           return ok(
             { key: toKey(created), cabinetVersion: touched.version },
             '钥匙已添加',
           );
         },
       );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
     } catch (error) {
       await recordFailure(database, currentUser.id, 'keys.added', input.slotId, error);
       throw error;
@@ -129,8 +145,9 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
     const input = updateKeyRequestSchema.parse(request.body);
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
     try {
-      return await executeIdempotent(
+      const response = await executeIdempotent(
         database,
         {
           actorId: currentUser.id,
@@ -183,12 +200,19 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
             result: 'success',
             metadata: { cabinetId: current.cabinetId, eventId },
           });
+          realtimeChange = {
+            cabinetId: current.cabinetId,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'keys', 'events'],
+          };
           return ok(
             { key: toKey(updated), cabinetVersion: touched.version },
             '钥匙信息已更新',
           );
         },
       );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
     } catch (error) {
       await recordFailure(database, currentUser.id, 'keys.updated', keyId, error);
       throw error;
@@ -200,8 +224,9 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
     const input = writeOptionsSchema.parse(request.body ?? {});
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
     try {
-      return await executeIdempotent(
+      const response = await executeIdempotent(
         database,
         {
           actorId: currentUser.id,
@@ -248,9 +273,16 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
             result: 'success',
             metadata: { cabinetId: current.cabinetId, eventId },
           });
+          realtimeChange = {
+            cabinetId: current.cabinetId,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'keys', 'events'],
+          };
           return ok({ deleted: true, cabinetVersion: touched.version }, '钥匙已删除');
         },
       );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
     } catch (error) {
       await recordFailure(database, currentUser.id, 'keys.deleted', keyId, error);
       throw error;
@@ -262,8 +294,9 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
     const input = checkoutKeyRequestSchema.parse(request.body);
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
     try {
-      return await executeIdempotent(
+      const response = await executeIdempotent(
         database,
         {
           actorId: currentUser.id,
@@ -339,6 +372,11 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
           if (!event) {
             throw new AppError(500, 'EVENT_CREATE_FAILED', '领取记录创建失败');
           }
+          realtimeChange = {
+            cabinetId: current.cabinetId,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'keys', 'loans', 'events'],
+          };
           return ok(
             {
               key: toKey(updatedKey),
@@ -349,6 +387,8 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
           );
         },
       );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
     } catch (error) {
       await recordFailure(database, currentUser.id, 'keys.checked_out', keyId, error);
       throw error;
@@ -360,8 +400,9 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
     const input = returnKeyRequestSchema.parse(request.body);
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
     try {
-      return await executeIdempotent(
+      const response = await executeIdempotent(
         database,
         {
           actorId: currentUser.id,
@@ -441,6 +482,11 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
               eventId,
             },
           });
+          realtimeChange = {
+            cabinetId: current.cabinetId,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'keys', 'loans', 'events'],
+          };
           return ok(
             {
               key: toKey(updatedKey),
@@ -451,6 +497,8 @@ export async function registerKeyRoutes(app: FastifyInstance): Promise<void> {
           );
         },
       );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
     } catch (error) {
       await recordFailure(database, currentUser.id, 'keys.returned', keyId, error);
       throw error;

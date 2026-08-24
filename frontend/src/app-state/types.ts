@@ -71,6 +71,7 @@ export type BindCabinetResult = {
 export type AppActions = {
   hydrate(): Promise<void>;
   refresh(): Promise<void>;
+  refreshIfStale(input?: { staleAfterMs?: number }): Promise<void>;
   signIn(input: { email: string; password: string }): Promise<CurrentUserAccount>;
   register(input: RegisterRequest): Promise<CurrentUserAccount>;
   signOut(): Promise<void>;

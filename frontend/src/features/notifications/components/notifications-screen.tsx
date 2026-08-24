@@ -3,8 +3,10 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { SegmentControl } from '@/features/cabinet-prototype/components/prototype-ui';
 import { AppNotification, useNotifications } from '@/features/notifications/notifications-provider';
 import { useTranslation } from '@/i18n';
@@ -15,6 +17,7 @@ export function NotificationsScreen() {
   const router = useRouter();
   const { formatDateTime, t } = useTranslation();
   const { markAllRead, markRead, notifications, unreadCount } = useNotifications();
+  const { onRefresh, refreshing } = useAppRefresh();
   const [tab, setTab] = useState<NotificationTab>('unread');
   const items = useMemo(
     () => notifications.filter((notification) => tab === 'read' ? notification.read : !notification.read),
@@ -53,6 +56,7 @@ export function NotificationsScreen() {
 
       <View className="mx-auto min-w-0 w-full max-w-content flex-1">
         <FlatList
+          alwaysBounceVertical
           className="min-w-0 flex-1"
           contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
           contentInsetAdjustmentBehavior="automatic"
@@ -71,6 +75,7 @@ export function NotificationsScreen() {
               </AppText>
             </View>
           )}
+          refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
           renderItem={({ item }) => (
             <NotificationRow
               item={item}

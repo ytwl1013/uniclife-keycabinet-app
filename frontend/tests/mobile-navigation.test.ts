@@ -61,11 +61,12 @@ describe('simplified mobile navigation architecture', () => {
     expect(home).not.toContain('viewAll');
   });
 
-  it('refreshes Account, Home, Activity, and every cabinet detail segment by pulling from the top', () => {
+  it('refreshes Account, Home, Activity, Notifications, and every cabinet detail segment by pulling from the top', () => {
     const account = source('src/features/account/components/account-screen.tsx');
     const accountUi = source('src/features/account/components/account-ui.tsx');
     const home = source('src/app/(tabs)/index.tsx');
     const activity = source('src/app/(tabs)/activity.tsx');
+    const notifications = source('src/features/notifications/components/notifications-screen.tsx');
     const cabinet = source('src/app/(details)/cabinets/[cabinetId]/index.tsx');
     const cabinetSections = source('src/features/cabinet-prototype/components/cabinet-sections.tsx');
     const keyGrid = source('src/features/cabinet-prototype/components/key-slot-grid.tsx');
@@ -78,11 +79,31 @@ describe('simplified mobile navigation architecture', () => {
     expect(accountUi).toContain('<AppRefreshControl');
     expect(home).toContain('<AppRefreshControl');
     expect(activity).toContain('<AppRefreshControl');
+    expect(notifications).toContain('<AppRefreshControl');
     expect(cabinet).toContain('<CabinetKeys');
     expect(cabinet).toContain('<CabinetActivity');
     expect(cabinet).toContain('<CabinetSettings');
     expect(cabinetSections.match(/<AppRefreshControl/g)).toHaveLength(2);
     expect(keyGrid).toContain('<AppRefreshControl');
+  });
+
+  it('keeps authenticated workspace data fresh through realtime events and lifecycle recovery', () => {
+    const rootLayout = source('src/app/_layout.tsx');
+    const autoRefresh = source('src/features/app-refresh/app-auto-refresh.tsx');
+    const refreshHook = source('src/features/app-refresh/use-app-refresh.ts');
+    const provider = source('src/app-state/provider.tsx');
+
+    expect(rootLayout).toContain('<AppAutoRefresh />');
+    expect(autoRefresh).toContain("AppState.addEventListener('change'");
+    expect(autoRefresh).toContain('createRealtimeWebSocket');
+    expect(autoRefresh).toContain("event.type !== 'workspace.changed'");
+    expect(autoRefresh).toContain('REALTIME_FALLBACK_REFRESH_INTERVAL_MS');
+    expect(autoRefresh).not.toContain('ACTIVE_REFRESH_INTERVAL_MS');
+    expect(autoRefresh).toContain('actions.refreshIfStale');
+    expect(refreshHook).toContain('useFocusEffect');
+    expect(refreshHook).toContain('actions.refreshIfStale');
+    expect(provider).toContain('pendingRefreshCountRef');
+    expect(provider).toContain('offlineOverrideRef');
   });
 
   it('provides a modal-confirmed three-step spotlight guide that enters a cabinet', () => {

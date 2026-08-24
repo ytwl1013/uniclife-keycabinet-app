@@ -118,6 +118,25 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 
 查询始终通过当前用户的有效柜体成员关系过滤。活动接口只读，不提供下载、撤销或修改能力。
 
+## 实时变更通知
+
+`GET /realtime` 是已登录客户端的 WebSocket 升级端点，子协议为 `uniclife.realtime.v1`。原生 Expo 客户端通过 `Authorization: Bearer <token>` 握手头鉴权；Web 开发因浏览器 WebSocket API 不允许自定义 Authorization 头，将同一会话凭据编码到 `Sec-WebSocket-Protocol` 头的鉴权子协议中，不放入 URL。该头已在服务端日志中整体脱敏，生产环境必须使用 `wss://`。
+
+连接成功后服务端发送 `realtime.ready`。柜体、成员、钥匙、借还或活动在业务事务提交后发送以下失效通知：
+
+```json
+{
+  "type": "workspace.changed",
+  "eventId": "realtime-uuid",
+  "occurredAt": "2026-08-24T08:00:00.000Z",
+  "cabinetId": "cabinet-uuid",
+  "cabinetVersion": 7,
+  "resources": ["keys", "loans", "events"]
+}
+```
+
+通知不是数据源；客户端根据版本判断后通过 REST 重新验证数据。服务端每 45 秒发送协议级 Ping，连续一个检查周期未收到 Pong 时终止连接。退出、改密、重置密码或删号会立即关闭已撤销会话的连接。
+
 ## 主要业务错误码
 
 - `SESSION_REQUIRED`、`SESSION_EXPIRED`

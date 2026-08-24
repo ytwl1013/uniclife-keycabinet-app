@@ -64,6 +64,11 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AppState>(emptyState);
   const stateRef = useRef(state);
   const tokenRef = useRef<string | null>(null);
+  const lastSuccessfulRefreshAtRef = useRef(0);
+  const latestRefreshPromiseRef = useRef<Promise<void> | null>(null);
+  const offlineOverrideRef = useRef(false);
+  const pendingRefreshCountRef = useRef(0);
+  const refreshQueueRef = useRef<Promise<void>>(Promise.resolve());
   const resetPreviewCodes = useRef(new Map<string, string>());
 
   const updateState = useCallback((update: (current: AppState) => AppState) => {
@@ -76,6 +81,8 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const clearAuthentication = useCallback(async (expired = false) => {
     tokenRef.current = null;
+    lastSuccessfulRefreshAtRef.current = 0;
+    offlineOverrideRef.current = false;
     await clearSessionToken();
     updateState((current) => ({
       ...emptyState(),
@@ -100,13 +107,15 @@ export function AppProvider({ children }: PropsWithChildren) {
     const memberUsers = details.flatMap((detail) => detail.members.map(({ user }) => user));
     const retainedQrs = stateRef.current.qrs;
 
+    const refreshedAt = Date.now();
+    lastSuccessfulRefreshAtRef.current = refreshedAt;
     updateState((current) => ({
       hydrated: true,
       currentUserId: currentUser.id,
       currentUser,
       sessionStatus: 'authenticated',
       online: true,
-      now: new Date().toISOString(),
+      now: new Date(refreshedAt).toISOString(),
       version: current.version + 1,
       users: uniqueById([currentUser, ...memberUsers, ...eventsResult.actors]),
       skus: uniqueById(summaries.map(({ sku }) => sku)),
@@ -130,7 +139,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [clearAuthentication, updateState]);
 
   const requireToken = useCallback(() => {
-    if (!stateRef.current.online) {
+    if (offlineOverrideRef.current) {
       throw new ApiError(0, 'OFFLINE', '网络不可用');
     }
     if (!tokenRef.current) {
@@ -139,7 +148,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     return tokenRef.current;
   }, []);
 
-  const refresh = useCallback(async () => {
+  const performRefresh = useCallback(async () => {
     const token = requireToken();
     try {
       const { user } = await backendApi.session(token);
@@ -148,6 +157,48 @@ export function AppProvider({ children }: PropsWithChildren) {
       await handleAuthorizedError(error);
     }
   }, [handleAuthorizedError, loadWorkspace, requireToken]);
+
+  const refresh = useCallback(() => {
+    pendingRefreshCountRef.current += 1;
+    const operation = refreshQueueRef.current
+      .catch(() => undefined)
+      .then(performRefresh);
+
+    latestRefreshPromiseRef.current = operation;
+    refreshQueueRef.current = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    void operation.then(
+      () => {
+        pendingRefreshCountRef.current -= 1;
+        if (latestRefreshPromiseRef.current === operation) {
+          latestRefreshPromiseRef.current = null;
+        }
+      },
+      () => {
+        pendingRefreshCountRef.current -= 1;
+        if (latestRefreshPromiseRef.current === operation) {
+          latestRefreshPromiseRef.current = null;
+        }
+      },
+    );
+
+    return operation;
+  }, [performRefresh]);
+
+  const refreshIfStale = useCallback((input: { staleAfterMs?: number } = {}) => {
+    if (pendingRefreshCountRef.current > 0 && latestRefreshPromiseRef.current) {
+      return latestRefreshPromiseRef.current;
+    }
+
+    const staleAfterMs = Math.max(0, input.staleAfterMs ?? 0);
+    if (Date.now() - lastSuccessfulRefreshAtRef.current < staleAfterMs) {
+      return Promise.resolve();
+    }
+
+    return refresh();
+  }, [refresh]);
 
   const hydrate = useCallback(async () => {
     try {
@@ -180,6 +231,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const actions = useMemo<AppActions>(() => ({
     hydrate,
     refresh,
+    refreshIfStale,
     async signIn(input) {
       const result = await backendApi.signIn(input);
       await saveSessionToken(result.session.token);
@@ -399,6 +451,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       }
     },
     async setOnline({ online }) {
+      offlineOverrideRef.current = !online;
       updateState((current) => ({ ...current, online, now: new Date().toISOString() }));
       if (online && tokenRef.current) await refresh();
     },
@@ -408,6 +461,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     hydrate,
     loadWorkspace,
     refresh,
+    refreshIfStale,
     requireToken,
     updateState,
   ]);

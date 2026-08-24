@@ -2,6 +2,7 @@ import {
   checkoutKeyRequestSchema,
   currentUserAccountSchema,
   markHomeGuidePromptedRequestSchema,
+  realtimeEventSchema,
   registerRequestSchema,
   updateKeyRequestSchema,
   userAccountSchema,
@@ -64,5 +65,19 @@ describe('backend request contracts', () => {
     expect(publicUser).not.toHaveProperty('homeGuidePromptedAt');
     expect(markHomeGuidePromptedRequestSchema.parse({ prompted: true }).prompted).toBe(true);
     expect(() => markHomeGuidePromptedRequestSchema.parse({ prompted: false })).toThrow();
+  });
+
+  it('keeps realtime change notifications small and resource-scoped', () => {
+    const event = realtimeEventSchema.parse({
+      type: 'workspace.changed',
+      eventId: 'realtime-test',
+      occurredAt: '2026-08-24T08:00:00.000Z',
+      cabinetId: 'cabinet-test',
+      cabinetVersion: 7,
+      resources: ['keys', 'loans', 'events'],
+    });
+
+    expect(event).toMatchObject({ cabinetVersion: 7, resources: ['keys', 'loans', 'events'] });
+    expect(() => realtimeEventSchema.parse({ ...event, resources: [] })).toThrow();
   });
 });

@@ -55,6 +55,8 @@ Health Check Path:  /api/v1/health
 
 API 和 PostgreSQL 必须选择同一个美国区域，并使用数据库内部连接地址。Render 部署配置、资源规格、域名和生产迁移门禁将在正式部署阶段单独确定。
 
+反向代理和负载均衡器必须允许 `/api/v1/realtime` 的 WebSocket Upgrade，空闲超时必须大于 45 秒心跳周期，并对 `Authorization`、`Cookie` 和 `Sec-WebSocket-Protocol` 请求头禁用访问日志或执行整体脱敏。当前实时 Hub 是进程内实现，生产只能运行单个 API 实例；启用多实例前必须接入跨实例 Pub/Sub，否则不同实例上的客户端不会收到彼此的变更通知。
+
 ## 生产数据驻留要求
 
 生产环境的 API、数据库、应用日志、对象存储和所有灾备副本必须部署并存储在美国境内。禁止将生产数据、日志、附件、备份或灾备副本跨境复制到美国以外区域。

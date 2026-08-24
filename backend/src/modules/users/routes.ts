@@ -25,8 +25,16 @@ import {
 import { appendAudit } from '../audit/service.js';
 import { touchCabinet } from '../cabinets/service.js';
 import { createEntityId } from '../../common/security/ids.js';
+import {
+  publishRealtimeChange,
+  type CabinetRealtimeChange,
+  type RealtimePublisher,
+} from '../realtime/hub.js';
 
-export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
+export async function registerUserRoutes(
+  app: FastifyInstance,
+  options: { realtime: RealtimePublisher },
+): Promise<void> {
   app.get('/me', async (request) => {
     const currentUser = await requireAuth(request);
     return ok(toUserAccount(currentUser));
@@ -157,7 +165,8 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
     const input = changePasswordRequestSchema.parse(request.body);
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
-    return executeIdempotent(
+    let passwordChanged = false;
+    const response = await executeIdempotent(
       database,
       {
         actorId: currentUser.id,
@@ -191,16 +200,25 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
           targetId: currentUser.id,
           result: 'success',
         });
+        passwordChanged = true;
         return ok({ changed: true }, '密码已更新');
       },
     );
+    if (passwordChanged) {
+      options.realtime.disconnectOtherUserSessions(
+        currentUser.id,
+        currentUser.sessionId,
+      );
+    }
+    return response;
   });
 
   app.delete('/me', async (request) => {
     const input = writeOptionsSchema.parse(request.body ?? {});
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
-    return executeIdempotent(
+    const realtimeChanges: CabinetRealtimeChange[] = [];
+    const response = await executeIdempotent(
       database,
       {
         actorId: currentUser.id,
@@ -235,7 +253,13 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
               reason: 'account_deleted',
             },
           });
-          await touchCabinet(transaction, membership.cabinetId);
+          const touched = await touchCabinet(transaction, membership.cabinetId);
+          realtimeChanges.push({
+            additionalUserIds: [currentUser.id],
+            cabinetId: membership.cabinetId,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'memberships', 'events'],
+          });
         }
         await transaction
           .update(users)
@@ -264,5 +288,10 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
         return ok({ deleted: true }, '账户已删除');
       },
     );
+    for (const change of realtimeChanges) {
+      publishRealtimeChange(app, options.realtime, change);
+    }
+    options.realtime.disconnectUser(currentUser.id);
+    return response;
   });
 }

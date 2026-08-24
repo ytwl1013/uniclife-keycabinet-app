@@ -9,6 +9,7 @@ import { AppUiProvider } from '@/components/ui/app-ui-provider';
 import { AppProvider, useApp } from '@/app-state';
 import { I18nProvider, useTranslation } from '@/i18n';
 import { NotificationsProvider } from '@/features/notifications/notifications-provider';
+import { AppAutoRefresh } from '@/features/app-refresh/app-auto-refresh';
 import { useAppTheme } from '@/styles/theme';
 
 export const unstable_settings = {
@@ -77,6 +78,7 @@ export default function RootLayout() {
     <AppUiProvider>
       <I18nProvider>
         <AppProvider>
+          <AppAutoRefresh />
           <NotificationsProvider>
             <AppNavigationGate />
           </NotificationsProvider>

@@ -33,6 +33,7 @@ import {
   type PasswordResetNotifier,
 } from '../../integrations/notifications/password-reset-notifier.js';
 import { appendAudit } from '../audit/service.js';
+import type { RealtimePublisher } from '../realtime/hub.js';
 
 const LEGAL_POLICY_VERSION = 'legal-draft-2026-07';
 const dummyPasswordHash = hashPassword('not-a-real-account-password');
@@ -45,7 +46,7 @@ const passwordResetRateLimit = {
 
 export async function registerAuthRoutes(
   app: FastifyInstance,
-  options: { notifier?: PasswordResetNotifier } = {},
+  options: { notifier?: PasswordResetNotifier; realtime: RealtimePublisher },
 ): Promise<void> {
   const notifier = options.notifier ?? noopPasswordResetNotifier;
 
@@ -187,6 +188,7 @@ export async function registerAuthRoutes(
         result: 'success',
       });
     });
+    options.realtime.disconnectSession(currentUser.sessionId);
     return ok({ signedOut: true }, '已退出登录');
   });
 
@@ -371,6 +373,7 @@ export async function registerAuthRoutes(
         result: 'success',
       });
     });
+    options.realtime.disconnectUser(challenge.userId);
     return ok({ reset: true }, '密码已重置，请重新登录');
   });
 }
