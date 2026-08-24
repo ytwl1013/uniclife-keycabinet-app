@@ -87,9 +87,11 @@ function SlotCell({
   const cellRef = useRef<View>(null);
   const spotlightFrame = useRef<number | undefined>(undefined);
   const style = config[slot.status];
-  const href = slot.keyId
-    ? { pathname: '/cabinets/[cabinetId]/keys/[keyId]' as const, params: { cabinetId, keyId: slot.keyId } }
-    : { pathname: '/cabinets/[cabinetId]/keys/new' as const, params: { cabinetId, slotId: slot.id, slotNumber: String(slot.number) } };
+  const href = !slot.keyId
+    ? { pathname: '/cabinets/[cabinetId]/keys/new' as const, params: { cabinetId, slotId: slot.id, slotNumber: String(slot.number) } }
+    : slot.status === 'available'
+      ? { pathname: '/cabinets/[cabinetId]/loans/[keyId]' as const, params: { cabinetId, keyId: slot.keyId } }
+      : { pathname: '/cabinets/[cabinetId]/keys/[keyId]' as const, params: { cabinetId, keyId: slot.keyId } };
 
   const reportSpotlightRect = useCallback(() => {
     if (!spotlighted) return;

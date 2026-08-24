@@ -26,6 +26,23 @@ describe('simplified mobile navigation architecture', () => {
     expect(layout).toContain('<Stack.Screen name="loans/index"');
   });
 
+  it('opens available slots on check-out, keeps empty-slot registration, and moves key history below the check-out form', () => {
+    const slotGrid = source('src/features/cabinet-prototype/components/key-slot-grid.tsx');
+    const keyDetail = source('src/app/(details)/cabinets/[cabinetId]/keys/[keyId].tsx');
+    const checkout = source('src/app/(details)/cabinets/[cabinetId]/loans/[keyId].tsx');
+
+    expect(slotGrid).toContain("slot.status === 'available'");
+    expect(slotGrid).toContain("pathname: '/cabinets/[cabinetId]/loans/[keyId]'");
+    expect(slotGrid).toContain("pathname: '/cabinets/[cabinetId]/keys/new'");
+    expect(checkout).toContain("label={t(trKey('key.manageAction'))}");
+    expect(checkout).toContain("pathname: '/cabinets/[cabinetId]/keys/[keyId]'");
+    expect(checkout).toContain("<SectionTitle title={t(trKey('key.historyTitle'))}");
+    expect(checkout).toContain('<PrototypeEventList');
+    expect(keyDetail).not.toContain("loan.checkOutAction");
+    expect(keyDetail).not.toContain('<PrototypeEventList');
+    expect(keyDetail).toContain("loan.returnAction");
+  });
+
   it('puts the borrowed summary and Add cabinet action around the unfiltered cabinet list on Home', () => {
     const home = source('src/app/(tabs)/index.tsx');
     expect(home).toContain('testID="home-account-avatar-button"');

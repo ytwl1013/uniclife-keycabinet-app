@@ -6,8 +6,9 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { AppText } from '@/components/ui/app-text';
 import { DateTimeField } from '@/components/ui/date-time-field';
 import { isExpectedReturnAfter } from '@/components/ui/date-time';
+import { PrototypeEventList } from '@/features/cabinet-prototype/components/event-list';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
-import { ActionButton, FilterChip, FormField, Notice, ScreenHeader, SectionCard, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
+import { ActionButton, FilterChip, FormField, Notice, ScreenHeader, SectionCard, SectionTitle, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
 import { TranslationKey, useTranslation } from '@/i18n';
 
@@ -53,6 +54,8 @@ export default function CheckOutKeyRoute() {
       </SafeAreaView>
     );
   }
+
+  const history = app.events.filter((event) => event.keyId === key.id);
 
   const validate = () => {
     const next: Record<string, string> = {};
@@ -112,7 +115,20 @@ export default function CheckOutKeyRoute() {
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       <View className="border-b border-line bg-background">
         <View className="mx-auto w-full max-w-content px-screen py-3">
-          <ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />
+          <ScreenHeader
+            action={(
+              <ActionButton
+                compact
+                icon="settings"
+                label={t(trKey('key.manageAction'))}
+                onPress={() => router.push({ pathname: '/cabinets/[cabinetId]/keys/[keyId]', params: { cabinetId, keyId } } as never)}
+                tone="neutral"
+              />
+            )}
+            onBack={() => router.back()}
+            subtitle={cabinet.name}
+            title={t(trKey('loan.checkOutKey'), { key: key.name })}
+          />
         </View>
       </View>
 
@@ -179,6 +195,11 @@ export default function CheckOutKeyRoute() {
                 />
               </View>
             </View>
+          </SectionCard>
+
+          <SectionCard>
+            <SectionTitle title={t(trKey('key.historyTitle'))} />
+            <PrototypeEventList emptyLabel={t(trKey('key.historyEmpty'))} events={history} />
           </SectionCard>
         </ScrollView>
         {confirmation.dialog}
