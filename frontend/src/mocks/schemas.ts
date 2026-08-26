@@ -39,7 +39,6 @@ export const cabinetQrSchema = z.object({
   id,
   code: z.string().trim().refine((value) => parseCabinetQrPayload(value) !== null, 'Invalid cabinet QR payload'),
   skuId: id,
-  deviceUuid: z.string().uuid(),
   status: z.enum(['active', 'disabled']),
   createdAt: isoDate,
 });
@@ -178,7 +177,6 @@ function validateReferences(data: MockDomainData): string[] {
   unique(data.skus.map((item) => item.sku), 'sku.sku', issues);
   unique(data.qrs.map((item) => item.id), 'qr.id', issues);
   unique(data.qrs.map((item) => item.code), 'qr.code', issues);
-  unique(data.qrs.map((item) => item.deviceUuid), 'qr.device_uuid', issues);
   unique(data.cabinets.map((item) => item.id), 'cabinet.id', issues);
   unique(data.cabinets.map((item) => item.deviceUuid), 'cabinet.device_uuid', issues);
   unique(data.memberships.map((item) => item.id), 'membership.id', issues);
@@ -200,9 +198,8 @@ function validateReferences(data: MockDomainData): string[] {
   unique(data.consents.map((item) => item.id), 'consent.id', issues);
 
   for (const cabinet of data.cabinets) {
-    const qr = data.qrs.find((item) => item.deviceUuid === cabinet.deviceUuid);
     const sku = data.skus.find((item) => item.id === cabinet.skuId);
-    if (!skuIds.has(cabinet.skuId) || !qr || qr.skuId !== cabinet.skuId) {
+    if (!skuIds.has(cabinet.skuId)) {
       issues.push(`cabinet_reference:${cabinet.id}`);
     }
     const cabinetSlots = data.slots.filter((item) => item.cabinetId === cabinet.id);
@@ -216,8 +213,7 @@ function validateReferences(data: MockDomainData): string[] {
     if (
       !sku ||
       !payload ||
-      payload.sku !== sku.sku ||
-      payload.uuid !== qr.deviceUuid
+      payload.sku !== sku.sku
     ) {
       issues.push(`qr_reference:${qr.id}`);
     }

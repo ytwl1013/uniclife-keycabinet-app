@@ -1,11 +1,14 @@
 import {
-  bindCabinetRequestSchema,
+  createCabinetJoinInvitationRequestSchema,
   entityIdSchema,
+  initializeCabinetRequestSchema,
+  joinCabinetRequestSchema,
   renameCabinetRequestSchema,
   resolveCabinetQrRequestSchema,
   writeOptionsSchema,
 } from '@uniclife/shared';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
+import { and, asc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -15,7 +18,7 @@ import {
   toKey,
   toLoan,
   toMembership,
-  toQr,
+  toProductQr,
   toSku,
   toUser,
 } from '../../common/domain/mappers.js';
@@ -23,20 +26,22 @@ import { AppError, errorCode } from '../../common/http/errors.js';
 import { executeIdempotent } from '../../common/http/idempotency.js';
 import { ok } from '../../common/http/response.js';
 import { createEntityId } from '../../common/security/ids.js';
+import { createOpaqueToken, digestToken } from '../../common/security/tokens.js';
 import { requireDatabase, type AppDatabase } from '../../db/client.js';
 import {
   cabinetEvents,
+  cabinetJoinInvitations,
   cabinetMemberships,
-  cabinetQrs,
   cabinets,
   keys,
   keySlots,
   loans,
   productSkus,
+  productQrs,
   users,
 } from '../../db/schema.js';
 import { appendAudit } from '../audit/service.js';
-import { parseCabinetQrPayload } from './qr.js';
+import { parseJoinQrPayload, parseProductQrPayload } from './qr.js';
 import {
   getCabinetSummary,
   requireCabinetMember,
@@ -53,6 +58,11 @@ const memberParamsSchema = z.object({
   cabinetId: entityIdSchema,
   membershipId: entityIdSchema,
 });
+const invitationParamsSchema = z.object({
+  cabinetId: entityIdSchema,
+  invitationId: entityIdSchema,
+});
+const JOIN_INVITATION_TTL_MS = 10 * 60 * 1000;
 
 async function recordFailure(
   database: AppDatabase,
@@ -149,49 +159,69 @@ export async function registerCabinetRoutes(
 
   app.post('/resolve-qr', async (request) => {
     const input = resolveCabinetQrRequestSchema.parse(request.body);
-    await requireAuth(request);
+    const currentUser = await requireAuth(request);
     const database = requireDatabase();
-    const parsed = parseCabinetQrPayload(input.code);
-    if (!parsed) {
-      throw new AppError(404, 'QR_NOT_FOUND', '未识别该钥匙柜二维码');
+    const productCode = parseProductQrPayload(input.code);
+    if (productCode) {
+      const [row] = await database
+        .select({ qr: productQrs, sku: productSkus })
+        .from(productQrs)
+        .innerJoin(productSkus, eq(productQrs.skuId, productSkus.id))
+        .where(
+          and(
+            eq(productQrs.code, productCode.canonical),
+            eq(productSkus.sku, productCode.sku),
+          ),
+        )
+        .limit(1);
+      if (!row) throw new AppError(404, 'QR_NOT_FOUND', '未识别该产品二维码');
+      if (row.qr.status !== 'active') {
+        throw new AppError(409, 'QR_DISABLED', '该产品二维码已停用');
+      }
+      return ok({ kind: 'initialize', qr: toProductQr(row.qr), sku: toSku(row.sku) });
     }
+
+    const joinCode = parseJoinQrPayload(input.code);
+    if (!joinCode) throw new AppError(404, 'QR_NOT_FOUND', '未识别该二维码');
     const [row] = await database
-      .select({ qr: cabinetQrs, sku: productSkus })
-      .from(cabinetQrs)
-      .innerJoin(productSkus, eq(cabinetQrs.skuId, productSkus.id))
-      .where(
-        and(
-          eq(cabinetQrs.code, parsed.canonical),
-          eq(cabinetQrs.deviceUuid, parsed.deviceUuid),
-          eq(productSkus.sku, parsed.sku),
-        ),
-      )
+      .select({ invitation: cabinetJoinInvitations, cabinet: cabinets, sku: productSkus })
+      .from(cabinetJoinInvitations)
+      .innerJoin(cabinets, eq(cabinetJoinInvitations.cabinetId, cabinets.id))
+      .innerJoin(productSkus, eq(cabinets.skuId, productSkus.id))
+      .where(eq(cabinetJoinInvitations.tokenHash, digestToken(joinCode.token)))
       .limit(1);
-    if (!row) {
-      throw new AppError(404, 'QR_NOT_FOUND', '未识别该钥匙柜二维码');
+    if (!row) throw new AppError(404, 'JOIN_INVITATION_NOT_FOUND', '加入二维码无效');
+    if (row.invitation.revokedAt) {
+      throw new AppError(409, 'JOIN_INVITATION_REVOKED', '加入二维码已失效');
     }
-    if (row.qr.status !== 'active') {
-      throw new AppError(409, 'QR_DISABLED', '该二维码已停用');
+    if (row.invitation.usedAt) {
+      throw new AppError(409, 'JOIN_INVITATION_USED', '加入二维码已被使用');
     }
-    const [cabinet] = await database
+    if (Date.parse(row.invitation.expiresAt) <= Date.now()) {
+      throw new AppError(409, 'JOIN_INVITATION_EXPIRED', '加入二维码已过期');
+    }
+    const [membership] = await database
       .select()
-      .from(cabinets)
+      .from(cabinetMemberships)
       .where(
         and(
-          eq(cabinets.skuId, row.sku.id),
-          eq(cabinets.deviceUuid, row.qr.deviceUuid),
+          eq(cabinetMemberships.cabinetId, row.cabinet.id),
+          eq(cabinetMemberships.userId, currentUser.id),
+          eq(cabinetMemberships.active, true),
         ),
       )
       .limit(1);
     return ok({
-      qr: toQr(row.qr),
+      kind: 'join',
+      cabinet: toCabinet(row.cabinet),
       sku: toSku(row.sku),
-      ...(cabinet ? { cabinet: toCabinet(cabinet) } : {}),
+      expiresAt: row.invitation.expiresAt,
+      alreadyMember: Boolean(membership),
     });
   });
 
-  app.post('/bind', async (request) => {
-    const input = bindCabinetRequestSchema.parse(request.body);
+  app.post('/initialize', async (request) => {
+    const input = initializeCabinetRequestSchema.parse(request.body);
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
     let realtimeChange: CabinetRealtimeChange | undefined;
@@ -200,22 +230,21 @@ export async function registerCabinetRoutes(
         database,
         {
           actorId: currentUser.id,
-          operation: 'cabinets.bind',
+          operation: 'cabinets.initialize',
           requestId: input.requestId,
         },
         async (transaction) => {
-          const parsed = parseCabinetQrPayload(input.qrCode);
+          const parsed = parseProductQrPayload(input.productQrCode);
           if (!parsed) {
-            throw new AppError(404, 'QR_NOT_FOUND', '未识别该钥匙柜二维码');
+            throw new AppError(404, 'QR_NOT_FOUND', '未识别该产品二维码');
           }
           const [resolved] = await transaction
-            .select({ qr: cabinetQrs, sku: productSkus })
-            .from(cabinetQrs)
-            .innerJoin(productSkus, eq(cabinetQrs.skuId, productSkus.id))
+            .select({ qr: productQrs, sku: productSkus })
+            .from(productQrs)
+            .innerJoin(productSkus, eq(productQrs.skuId, productSkus.id))
             .where(
               and(
-                eq(cabinetQrs.code, parsed.canonical),
-                eq(cabinetQrs.deviceUuid, parsed.deviceUuid),
+                eq(productQrs.code, parsed.canonical),
                 eq(productSkus.sku, parsed.sku),
               ),
             )
@@ -227,75 +256,35 @@ export async function registerCabinetRoutes(
             throw new AppError(409, 'QR_DISABLED', '该二维码已停用');
           }
 
-          let [cabinet] = await transaction
-            .select()
-            .from(cabinets)
-            .where(eq(cabinets.deviceUuid, resolved.qr.deviceUuid))
-            .limit(1);
-          if (!cabinet) {
-            const cabinetId = createEntityId('cabinet');
-            [cabinet] = await transaction
-              .insert(cabinets)
-              .values({
-                id: cabinetId,
-                skuId: resolved.sku.id,
-                deviceUuid: resolved.qr.deviceUuid,
-                name: input.name ?? resolved.sku.name,
-                timeZone: input.timeZone,
-                status: 'online',
-              })
-              .returning();
-            if (!cabinet) {
-              throw new AppError(500, 'CABINET_CREATE_FAILED', '钥匙柜创建失败');
-            }
-            await transaction.insert(keySlots).values(
-              Array.from({ length: resolved.sku.capacity }, (_, index) => ({
-                id: createEntityId('slot'),
-                cabinetId,
-                position: index + 1,
-              })),
-            );
-          }
-
-          const [existingMembership] = await transaction
-            .select()
-            .from(cabinetMemberships)
-            .where(
-              and(
-                eq(cabinetMemberships.cabinetId, cabinet.id),
-                eq(cabinetMemberships.userId, currentUser.id),
-              ),
-            )
-            .limit(1);
-          if (existingMembership?.active) {
-            return ok({
-              cabinet: toCabinet(cabinet),
-              membership: toMembership(existingMembership),
-            });
-          }
-          let membership;
-          if (existingMembership) {
-            [membership] = await transaction
-              .update(cabinetMemberships)
-              .set({
-                active: true,
-                role: 'admin',
-                joinedAt: new Date().toISOString(),
-                removedAt: null,
-              })
-              .where(eq(cabinetMemberships.id, existingMembership.id))
-              .returning();
-          } else {
-            [membership] = await transaction
-              .insert(cabinetMemberships)
-              .values({
-                id: createEntityId('membership'),
-                cabinetId: cabinet.id,
-                userId: currentUser.id,
-                role: 'admin',
-              })
-              .returning();
-          }
+          const cabinetId = createEntityId('cabinet');
+          const [cabinet] = await transaction
+            .insert(cabinets)
+            .values({
+              id: cabinetId,
+              skuId: resolved.sku.id,
+              deviceUuid: randomUUID(),
+              name: input.name,
+              timeZone: input.timeZone,
+              status: 'offline',
+            })
+            .returning();
+          if (!cabinet) throw new AppError(500, 'CABINET_CREATE_FAILED', '钥匙柜创建失败');
+          await transaction.insert(keySlots).values(
+            Array.from({ length: resolved.sku.capacity }, (_, index) => ({
+              id: createEntityId('slot'),
+              cabinetId,
+              position: index + 1,
+            })),
+          );
+          const [membership] = await transaction
+            .insert(cabinetMemberships)
+            .values({
+              id: createEntityId('membership'),
+              cabinetId,
+              userId: currentUser.id,
+              role: 'admin',
+            })
+            .returning();
           if (!membership) {
             throw new AppError(500, 'MEMBERSHIP_CREATE_FAILED', '钥匙柜绑定失败');
           }
@@ -306,19 +295,19 @@ export async function registerCabinetRoutes(
               id: eventId,
               cabinetId: cabinet.id,
               actorId: currentUser.id,
-              type: 'cabinet_bound',
+              type: 'cabinet_initialized',
               summaryData: {
                 membershipId: membership.id,
                 role: membership.role,
                 sku: resolved.sku.sku,
-                deviceUuid: resolved.qr.deviceUuid,
+                productQrId: resolved.qr.id,
               },
             })
             .returning();
           const touched = await touchCabinet(transaction, cabinet.id);
           await appendAudit(transaction, {
             actorId: currentUser.id,
-            action: 'cabinets.bound',
+            action: 'cabinets.initialized',
             targetType: 'cabinet',
             targetId: cabinet.id,
             result: 'success',
@@ -332,7 +321,7 @@ export async function registerCabinetRoutes(
           return ok({
             cabinet: toCabinet(touched),
             membership: toMembership(membership),
-          }, '钥匙柜已绑定');
+          }, '新钥匙柜已初始化');
         },
       );
       publishRealtimeChange(app, options.realtime, realtimeChange);
@@ -341,9 +330,234 @@ export async function registerCabinetRoutes(
       await recordFailure(
         database,
         currentUser.id,
-        'cabinets.bound',
-        'cabinet_qr',
-        parseCabinetQrPayload(input.qrCode)?.deviceUuid ?? 'unknown',
+        'cabinets.initialized',
+        'product_qr',
+        parseProductQrPayload(input.productQrCode)?.canonical ?? 'unknown',
+        error,
+      );
+      throw error;
+    }
+  });
+
+  app.post('/:cabinetId/join-invitations', async (request) => {
+    const { cabinetId } = cabinetParamsSchema.parse(request.params);
+    createCabinetJoinInvitationRequestSchema.parse(request.body ?? {});
+    const currentUser = await requireAuth(request);
+    const database = requireDatabase();
+    try {
+      await requireCabinetMember(database, cabinetId, currentUser.id);
+      const token = createOpaqueToken();
+      const now = new Date().toISOString();
+      const expiresAt = new Date(Date.now() + JOIN_INVITATION_TTL_MS).toISOString();
+      const invitation = await database.transaction(async (transaction) => {
+        await transaction
+          .update(cabinetJoinInvitations)
+          .set({ revokedAt: now })
+          .where(
+            and(
+              eq(cabinetJoinInvitations.cabinetId, cabinetId),
+              isNull(cabinetJoinInvitations.usedAt),
+              isNull(cabinetJoinInvitations.revokedAt),
+            ),
+          );
+        const [created] = await transaction
+          .insert(cabinetJoinInvitations)
+          .values({
+            id: createEntityId('invitation'),
+            cabinetId,
+            createdBy: currentUser.id,
+            tokenHash: digestToken(token),
+            expiresAt,
+          })
+          .returning();
+        if (!created) {
+          throw new AppError(500, 'JOIN_INVITATION_CREATE_FAILED', '加入二维码生成失败');
+        }
+        await appendAudit(transaction, {
+          actorId: currentUser.id,
+          action: 'cabinets.join_invitation_created',
+          targetType: 'cabinet',
+          targetId: cabinetId,
+          result: 'success',
+          metadata: { invitationId: created.id, expiresAt },
+        });
+        return created;
+      });
+      return ok({
+        invitation: {
+          id: invitation.id,
+          cabinetId,
+          joinQrCode: `uniclife://cabinet/v1/join/${token}`,
+          expiresAt,
+        },
+      }, '加入二维码已生成');
+    } catch (error) {
+      await recordFailure(
+        database,
+        currentUser.id,
+        'cabinets.join_invitation_created',
+        'cabinet',
+        cabinetId,
+        error,
+      );
+      throw error;
+    }
+  });
+
+  app.delete('/:cabinetId/join-invitations/:invitationId', async (request) => {
+    const { cabinetId, invitationId } = invitationParamsSchema.parse(request.params);
+    writeOptionsSchema.parse(request.body ?? {});
+    const currentUser = await requireAuth(request);
+    const database = requireDatabase();
+    try {
+      await requireCabinetMember(database, cabinetId, currentUser.id);
+      const now = new Date().toISOString();
+      const [revoked] = await database
+        .update(cabinetJoinInvitations)
+        .set({ revokedAt: now })
+        .where(
+          and(
+            eq(cabinetJoinInvitations.id, invitationId),
+            eq(cabinetJoinInvitations.cabinetId, cabinetId),
+            isNull(cabinetJoinInvitations.usedAt),
+            isNull(cabinetJoinInvitations.revokedAt),
+          ),
+        )
+        .returning({ id: cabinetJoinInvitations.id });
+      if (!revoked) {
+        throw new AppError(404, 'JOIN_INVITATION_NOT_FOUND', '加入二维码不存在或已失效');
+      }
+      await appendAudit(database, {
+        actorId: currentUser.id,
+        action: 'cabinets.join_invitation_revoked',
+        targetType: 'cabinet',
+        targetId: cabinetId,
+        result: 'success',
+        metadata: { invitationId },
+      });
+      return ok({ revoked: true }, '加入二维码已失效');
+    } catch (error) {
+      await recordFailure(
+        database,
+        currentUser.id,
+        'cabinets.join_invitation_revoked',
+        'cabinet',
+        cabinetId,
+        error,
+      );
+      throw error;
+    }
+  });
+
+  app.post('/join', async (request) => {
+    const input = joinCabinetRequestSchema.parse(request.body);
+    const currentUser = await requireAuth(request);
+    const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
+    try {
+      const response = await executeIdempotent(
+        database,
+        { actorId: currentUser.id, operation: 'cabinets.join', requestId: input.requestId },
+        async (transaction) => {
+          const parsed = parseJoinQrPayload(input.joinQrCode);
+          if (!parsed) throw new AppError(404, 'JOIN_INVITATION_NOT_FOUND', '加入二维码无效');
+          const [row] = await transaction
+            .select({ invitation: cabinetJoinInvitations, cabinet: cabinets })
+            .from(cabinetJoinInvitations)
+            .innerJoin(cabinets, eq(cabinetJoinInvitations.cabinetId, cabinets.id))
+            .where(eq(cabinetJoinInvitations.tokenHash, digestToken(parsed.token)))
+            .limit(1);
+          if (!row) throw new AppError(404, 'JOIN_INVITATION_NOT_FOUND', '加入二维码无效');
+          const [existingMembership] = await transaction
+            .select()
+            .from(cabinetMemberships)
+            .where(
+              and(
+                eq(cabinetMemberships.cabinetId, row.cabinet.id),
+                eq(cabinetMemberships.userId, currentUser.id),
+              ),
+            )
+            .limit(1);
+          if (existingMembership?.active) {
+            return ok({
+              cabinet: toCabinet(row.cabinet),
+              membership: toMembership(existingMembership),
+            });
+          }
+          const now = new Date().toISOString();
+          const [consumed] = await transaction
+            .update(cabinetJoinInvitations)
+            .set({ usedAt: now, usedBy: currentUser.id })
+            .where(
+              and(
+                eq(cabinetJoinInvitations.id, row.invitation.id),
+                isNull(cabinetJoinInvitations.usedAt),
+                isNull(cabinetJoinInvitations.revokedAt),
+                gt(cabinetJoinInvitations.expiresAt, now),
+              ),
+            )
+            .returning({ id: cabinetJoinInvitations.id });
+          if (!consumed) {
+            throw new AppError(409, 'JOIN_INVITATION_INVALID', '加入二维码已过期或被使用');
+          }
+          let membership;
+          if (existingMembership) {
+            [membership] = await transaction
+              .update(cabinetMemberships)
+              .set({ active: true, role: 'admin', joinedAt: now, removedAt: null })
+              .where(eq(cabinetMemberships.id, existingMembership.id))
+              .returning();
+          } else {
+            [membership] = await transaction
+              .insert(cabinetMemberships)
+              .values({
+                id: createEntityId('membership'),
+                cabinetId: row.cabinet.id,
+                userId: currentUser.id,
+                role: 'admin',
+              })
+              .returning();
+          }
+          if (!membership) {
+            throw new AppError(500, 'MEMBERSHIP_CREATE_FAILED', '加入钥匙柜失败');
+          }
+          const eventId = createEntityId('event');
+          await transaction.insert(cabinetEvents).values({
+            id: eventId,
+            cabinetId: row.cabinet.id,
+            actorId: currentUser.id,
+            type: 'member_joined',
+            summaryData: { membershipId: membership.id, invitationId: row.invitation.id },
+          });
+          const touched = await touchCabinet(transaction, row.cabinet.id);
+          await appendAudit(transaction, {
+            actorId: currentUser.id,
+            action: 'cabinets.member_joined',
+            targetType: 'cabinet',
+            targetId: row.cabinet.id,
+            result: 'success',
+            metadata: { eventId, invitationId: row.invitation.id },
+          });
+          realtimeChange = {
+            cabinetId: row.cabinet.id,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'memberships', 'events'],
+          };
+          return ok(
+            { cabinet: toCabinet(touched), membership: toMembership(membership) },
+            '已加入钥匙柜',
+          );
+        },
+      );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
+    } catch (error) {
+      await recordFailure(
+        database,
+        currentUser.id,
+        'cabinets.member_joined',
+        'join_invitation',
+        'unknown',
         error,
       );
       throw error;

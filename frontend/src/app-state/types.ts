@@ -1,14 +1,16 @@
 import type {
   Cabinet,
   CabinetEvent,
+  CabinetJoinInvitation,
   CabinetMembership,
-  CabinetQr,
+  CabinetQrResolution,
   CurrentUserAccount,
   FeedbackRequest,
   FeedbackRecord,
   Key,
   KeySlot,
   Loan,
+  ProductQr,
   ProductSku,
   RegisterRequest,
   UserAccount,
@@ -19,11 +21,13 @@ export type {
   Cabinet,
   CabinetEvent,
   CabinetMembership,
-  CabinetQr,
+  CabinetJoinInvitation,
+  CabinetQrResolution,
   CurrentUserAccount,
   Key,
   KeySlot,
   Loan,
+  ProductQr,
   ProductSku,
   UserAccount,
   WriteOptions,
@@ -41,7 +45,7 @@ export type AppState = {
   version: number;
   users: UserAccount[];
   skus: ProductSku[];
-  qrs: CabinetQr[];
+  qrs: ProductQr[];
   cabinets: Cabinet[];
   memberships: CabinetMembership[];
   slots: KeySlot[];
@@ -59,13 +63,9 @@ export type EventFilter = {
   to?: string;
 };
 
-export type QrResolution = {
-  qr: CabinetQr;
-  sku: ProductSku;
-  cabinet?: Cabinet;
-};
+export type QrResolution = CabinetQrResolution;
 
-export type BindCabinetResult = {
+export type CabinetAccessResult = {
   cabinet: Cabinet;
   membership: CabinetMembership;
 };
@@ -93,9 +93,17 @@ export type AppActions = {
   submitFeedback(input: FeedbackRequest): Promise<{ submissionId: string; submittedAt: string }>;
   listFeedbackHistory(): Promise<FeedbackRecord[]>;
   resolveQr(input: { code: string } | string): Promise<QrResolution>;
-  bindCabinet(
-    input: { qrCode: string; name?: string; timeZone?: string } & WriteOptions,
-  ): Promise<BindCabinetResult>;
+  initializeCabinet(
+    input: { productQrCode: string; name: string; timeZone?: string } & WriteOptions,
+  ): Promise<CabinetAccessResult>;
+  createCabinetJoinInvitation(input: { cabinetId: string }): Promise<CabinetJoinInvitation>;
+  revokeCabinetJoinInvitation(input: {
+    cabinetId: string;
+    invitationId: string;
+  }): Promise<void>;
+  joinCabinet(
+    input: { joinQrCode: string } & WriteOptions,
+  ): Promise<CabinetAccessResult>;
   renameCabinet(input: { cabinetId: string; name: string } & WriteOptions): Promise<Cabinet>;
   removeMember(
     input: { cabinetId: string; membershipId: string } & WriteOptions,

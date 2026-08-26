@@ -128,8 +128,11 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | --- | --- | --- |
 | GET | `/cabinets` | 当前用户柜体列表及容量、占用、借出、逾期统计 |
 | GET | `/cabinets/:cabinetId` | 柜体、SKU、槽位、钥匙、成员和有效借用详情 |
-| POST | `/cabinets/resolve-qr` | 解析并校验 `uniclife://cabinet/<SKU>/<UUID>` |
-| POST | `/cabinets/bind` | 首次绑定时创建柜体和全部槽位；再次扫描恢复/返回成员关系 |
+| POST | `/cabinets/resolve-qr` | 解析产品初始化码或一次性柜体加入码，并返回判别类型 |
+| POST | `/cabinets/initialize` | 扫描同 SKU 共用的产品码，每个新的 `requestId` 创建一个新柜体和全部槽位 |
+| POST | `/cabinets/:cabinetId/join-invitations` | 为有效柜体成员生成十分钟有效的一次性加入二维码，并撤销旧的未使用二维码 |
+| DELETE | `/cabinets/:cabinetId/join-invitations/:invitationId` | 立即撤销未使用的加入二维码 |
+| POST | `/cabinets/join` | 原子消费一次性加入码并创建或恢复当前账户的 Admin 成员关系 |
 | PATCH | `/cabinets/:cabinetId` | 重命名柜体 |
 | DELETE | `/cabinets/:cabinetId/members/:membershipId` | 移除其他成员 |
 | DELETE | `/cabinets/:cabinetId/keys` | 永久删除柜内钥匙资料，将有效借用标记为 cancelled，并保留历史引用和事件 |
@@ -139,7 +142,11 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | POST | `/keys/:keyId/checkout` | 领取钥匙并创建有效借用和事件 |
 | POST | `/keys/:keyId/return` | 归还钥匙并关闭有效借用 |
 
-柜体写请求可携带 `expectedVersion`。服务端使用条件更新保证版本一致，冲突时整个事务回滚并返回当前版本。
+产品初始化码格式为 `uniclife://cabinet/v1/init/<SKU>/<PRODUCT_CODE>`。同一 SKU 使用同一个可批量印刷的码；每次用户重新扫码会生成新的 `requestId` 并创建独立柜体。同一扫码会话的网络重试必须复用 `requestId`，避免超时重试创建重复柜体。
+
+柜体加入码格式为 `uniclife://cabinet/v1/join/<OPAQUE_TOKEN>`，只由已绑定成员在箱子设置页生成。Token 使用密码学安全随机数，数据库只保存带服务端 pepper 的摘要；二维码十分钟过期、单次使用，生成新码会撤销旧码。日志、业务事件和审计 metadata 均不得保存 Token 原文。
+
+除初始化和加入外，柜体写请求可携带 `expectedVersion`。服务端使用条件更新保证版本一致，冲突时整个事务回滚并返回当前版本。
 
 领取和归还必须携带 8–128 字符的 `requestId`；其他写请求也建议携带。服务端按“操作者 + 操作类型 + requestId”保存 24 小时幂等结果，重复请求返回首次响应。
 
@@ -190,6 +197,7 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 - `RESET_CHALLENGE_INVALID`、`RESET_CODE_INVALID`
 - `FEEDBACK_UNAVAILABLE`、`FEEDBACK_SEND_FAILED`
 - `QR_NOT_FOUND`、`QR_DISABLED`
+- `JOIN_INVITATION_NOT_FOUND`、`JOIN_INVITATION_REVOKED`、`JOIN_INVITATION_USED`、`JOIN_INVITATION_EXPIRED`、`JOIN_INVITATION_INVALID`
 - `MEMBERSHIP_REQUIRED`、`MEMBER_NOT_FOUND`
 - `SLOT_NOT_FOUND`、`SLOT_OCCUPIED`
 - `KEY_NOT_FOUND`、`KEY_NOT_AVAILABLE`、`KEY_NOT_BORROWED`

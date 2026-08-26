@@ -1,18 +1,19 @@
 import type {
-  BindCabinetRequest,
   Cabinet,
   CabinetDetail,
   CabinetEvent,
+  CabinetJoinInvitation,
   CabinetMembership,
-  CabinetQr,
+  CabinetQrResolution,
   CabinetSummary,
   CheckoutKeyRequest,
   CurrentUserAccount,
   FeedbackRequest,
   FeedbackRecord,
+  InitializeCabinetRequest,
+  JoinCabinetRequest,
   Key,
   Loan,
-  ProductSku,
   RegisterRequest,
   ReturnKeyRequest,
   SignInRequest,
@@ -86,13 +87,31 @@ export const backendApi = {
   getCabinet: (token: string, cabinetId: string) =>
     callApi<CabinetDetail>(`/cabinets/${encodeURIComponent(cabinetId)}`, { token }),
   resolveCabinetQr: (token: string, code: string) =>
-    callApi<{ qr: CabinetQr; sku: ProductSku; cabinet?: Cabinet }>(
+    callApi<CabinetQrResolution>(
       '/cabinets/resolve-qr',
       { ...json('POST', { code }), token },
     ),
-  bindCabinet: (token: string, input: BindCabinetRequest) =>
+  initializeCabinet: (token: string, input: InitializeCabinetRequest) =>
     callApi<{ cabinet: Cabinet; membership: CabinetMembership }>(
-      '/cabinets/bind',
+      '/cabinets/initialize',
+      { ...json('POST', input), token },
+    ),
+  createCabinetJoinInvitation: (token: string, cabinetId: string) =>
+    callApi<{ invitation: CabinetJoinInvitation }>(
+      `/cabinets/${encodeURIComponent(cabinetId)}/join-invitations`,
+      { ...json('POST', {}), token },
+    ),
+  revokeCabinetJoinInvitation: (
+    token: string,
+    cabinetId: string,
+    invitationId: string,
+  ) => callApi<{ revoked: boolean }>(
+    `/cabinets/${encodeURIComponent(cabinetId)}/join-invitations/${encodeURIComponent(invitationId)}`,
+    { ...json('DELETE', {}), token },
+  ),
+  joinCabinet: (token: string, input: JoinCabinetRequest) =>
+    callApi<{ cabinet: Cabinet; membership: CabinetMembership }>(
+      '/cabinets/join',
       { ...json('POST', input), token },
     ),
   renameCabinet: (token: string, cabinetId: string, input: { name: string } & WriteOptions) =>

@@ -11,9 +11,11 @@
 | `password_reset_challenges` | 验证码尝试、短时重置 Token 和消费状态 | 重置 Token 摘要唯一；尝试次数非负 |
 | `consents` | 条款和隐私版本同意 | 用户 + 类型 + 政策版本唯一 |
 | `product_skus` | 产品型号和槽位容量 | SKU 唯一；容量大于 0 |
-| `cabinet_qrs` | SKU 与实体设备 UUID 的二维码身份 | code 和 device UUID 唯一 |
-| `cabinets` | 柜体资料、在线状态和并发版本 | device UUID 唯一；version 非负 |
+| `cabinet_qrs` | 旧版每设备二维码，仅为迁移兼容保留 | code 和旧 device UUID 唯一；新流程不再读取 |
+| `product_qrs` | 同一 SKU 批量印刷的产品初始化码 | code 唯一；每个 SKU 一个有效模板 |
+| `cabinets` | 应用内柜体实例、状态和并发版本 | 服务端实例 UUID 唯一；version 非负 |
 | `cabinet_memberships` | 用户与柜体的管理员关系 | 柜体 + 用户唯一；保留移除时间 |
+| `cabinet_join_invitations` | 设置页生成的一次性加入码摘要 | Token 摘要唯一；记录十分钟过期、使用和撤销状态 |
 | `key_slots` | 柜体固定位置 | 柜体 + position 唯一；position 大于 0 |
 | `keys` | 当前钥匙资料和槽位 | slot 唯一，保证一个槽位最多一把钥匙 |
 | `loans` | 领取与归还记录 | 每把钥匙最多一条 active 记录；预计归还晚于领取 |
@@ -46,10 +48,11 @@ pnpm db:seed:dev
 - 后续任何 schema 变化必须新增迁移，不能继续重写 `0000`。
 - `0001_peaceful_darkstar.sql` 新增登录次数、最近登录时间和首页导航提示时间。既有账户的导航提示时间在迁移时回填，避免上线后误弹；既有账户的历史登录次数无法还原，因此从 0 开始累计，最近登录时间在下一次成功登录后写入。回滚时优先以前向迁移停止读写这些字段；若必须删除列，应先部署不再依赖这些字段的应用版本，再删除约束和三列。
 - `0002_funny_stellaris.sql` 新增 `feedback_delivery_status` 与 `feedback_records`。迁移不回填此前只存在于邮箱或审计日志中的反馈；上线后记录从空列表开始。回滚应先部署不再调用反馈历史接口、且提交不再写记录的版本，再备份并删除表和枚举；直接回滚会永久丢失发送历史文字和状态。
+- `0003_glamorous_skin.sql` 新增按 SKU 复用的 `product_qrs`、一次性 `cabinet_join_invitations`，以及 `cabinet_initialized`、`member_joined` 事件类型。迁移保留旧柜体、成员和 `cabinet_qrs` 数据，不允许旧设备二维码继续新增成员。回滚前必须先部署仍支持旧绑定接口的应用版本；PostgreSQL 枚举值不能安全原位删除，因此回滚优先停止写入新类型并保留表结构，确需移除时应新建枚举并迁移现有事件。
 
 ## 开发种子
 
-`pnpm db:seed:dev` 幂等写入两个虚构 SKU 和两个未绑定二维码，供扫描绑定流程验证。它不创建用户、不写真实设备凭据，并在 `NODE_ENV=production` 下拒绝运行。
+`pnpm db:seed:dev` 幂等写入两个虚构 SKU 和每个 SKU 一个可复用产品初始化码，供“同码创建多个柜体”流程验证。它不创建用户、不写真实设备凭据，并在 `NODE_ENV=production` 下拒绝运行。
 
 ## 从本机数据库工具连接 Docker PostgreSQL
 

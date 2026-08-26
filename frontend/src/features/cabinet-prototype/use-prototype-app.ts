@@ -284,6 +284,18 @@ export function usePrototypeApp(): PrototypeApp {
       deleteAllKeys: async (input) => {
         await callAction(source, ['deleteCabinetKeys'], { ...input, ...writeOptions('delete-all-keys', input.cabinetId) });
       },
+      createJoinInvitation: async (input) => {
+        const result = record(await callAction(source, ['createCabinetJoinInvitation'], input));
+        return {
+          id: text(result.id),
+          cabinetId: text(result.cabinetId),
+          joinQrCode: text(result.joinQrCode),
+          expiresAt: text(result.expiresAt),
+        };
+      },
+      revokeJoinInvitation: async (input) => {
+        await callAction(source, ['revokeCabinetJoinInvitation'], input);
+      },
     };
 
     return {

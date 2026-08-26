@@ -93,8 +93,7 @@ function ScannerPreview({
 function ProductConfirmation({
   alreadyBound,
   binding,
-  expectedOwner,
-  onBind,
+  onConfirm,
   onNameChange,
   onOpen,
   onReset,
@@ -103,8 +102,7 @@ function ProductConfirmation({
 }: {
   alreadyBound: boolean;
   binding: boolean;
-  expectedOwner: boolean;
-  onBind: () => void;
+  onConfirm: () => void;
   onNameChange: (value: string) => void;
   onOpen: () => void;
   onReset: () => void;
@@ -112,6 +110,7 @@ function ProductConfirmation({
   cabinetName: string;
 }) {
   const { t } = useTranslation();
+  const initializing = resolution.kind === 'initialize';
 
   return (
     <View className="gap-section">
@@ -129,12 +128,12 @@ function ProductConfirmation({
               {resolution.sku.name}
             </AppText>
             <AppText variant="caption" tone="muted">
-              {resolution.cabinet?.name ?? t('scan.unboundDevice')}
+              {initializing ? t('cabinetScan.newCabinet') : resolution.cabinet.name}
             </AppText>
             {!alreadyBound ? (
               <View className="self-start pt-1">
-                <Pill tone={expectedOwner ? 'blue' : 'purple'}>
-                  {expectedOwner ? t('scan.modeOwner') : t('scan.modeMember')}
+                <Pill tone={initializing ? 'blue' : 'purple'}>
+                  {initializing ? t('scan.modeOwner') : t('scan.modeMember')}
                 </Pill>
               </View>
             ) : null}
@@ -150,8 +149,7 @@ function ProductConfirmation({
           />
         </View>
         <ProductDatum label={t('scan.color')} value={resolution.sku.color} />
-        <ProductDatum label={t('scan.deviceUuid')} value={resolution.qr.deviceUuid} />
-        {expectedOwner ? (
+        {initializing ? (
           <FormField
             label={t('scan.cabinetName')}
             onChangeText={onNameChange}
@@ -174,6 +172,13 @@ function ProductConfirmation({
           tone="success"
         />
       ) : null}
+      {initializing ? (
+        <Notice
+          description={t('cabinetScan.initializeWarningDescription')}
+          title={t('cabinetScan.initializeWarningTitle')}
+          tone="warning"
+        />
+      ) : null}
 
       <View className="gap-3">
         <ActionButton
@@ -184,9 +189,11 @@ function ProductConfirmation({
               ? t('scan.openCabinet')
               : binding
                 ? t('scan.binding')
-                : t('scan.bindAction')
+                : initializing
+                  ? t('cabinetScan.initializeAction')
+                  : t('cabinetScan.joinAction')
           }
-          onPress={alreadyBound ? onOpen : onBind}
+          onPress={alreadyBound ? onOpen : onConfirm}
         />
         <ActionButton
           disabled={binding}
@@ -199,11 +206,11 @@ function ProductConfirmation({
   );
 }
 
-export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: boolean }) {
+export function ScanFlow({ sample = false }: { mode: ScanMode; sample?: boolean }) {
   const router = useRouter();
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
-  const { actions, currentUser, selectors, state } = useApp();
+  const { actions, currentUser, state } = useApp();
   const { t } = useTranslation();
   const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
   const [cameraMountError, setCameraMountError] = useState<string | null>(null);
@@ -212,9 +219,11 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const [resolving, setResolving] = useState(false);
   const [binding, setBinding] = useState(false);
   const [cabinetName, setCabinetName] = useState('');
+  const [scannedCode, setScannedCode] = useState('');
   const scanLockRef = useRef(false);
   const systemScannerSubscriptionRef = useRef<ReturnType<typeof CameraView.onModernBarcodeScanned> | undefined>(undefined);
   const requestSequenceRef = useRef(0);
+  const actionRequestIdRef = useRef('');
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
@@ -243,36 +252,20 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   useEffect(() => () => systemScannerSubscriptionRef.current?.remove(), []);
 
   const demoCode = useMemo(() => {
-    const unboundQr = state.qrs.find(
-      (qr) =>
-        qr.status === 'active' &&
-        !state.cabinets.some(
-          (cabinet) =>
-            cabinet.skuId === qr.skuId && cabinet.deviceUuid === qr.deviceUuid,
-        ),
-    );
-    return unboundQr?.code ?? state.qrs.find((qr) => qr.status === 'active')?.code;
-  }, [state.cabinets, state.qrs]);
-  const alreadyBound = resolution
-    ? Boolean(
-        resolution.cabinet &&
-          selectors.membershipForCurrentUser(resolution.cabinet.id),
-      )
-    : false;
-  const expectedOwner = resolution
-    ? !resolution.cabinet ||
-      !state.memberships.some(
-        (membership) =>
-          membership.cabinetId === resolution.cabinet?.id && membership.active,
-      )
-    : mode === 'initialize';
+    return state.qrs.find((qr) => qr.status === 'active')?.code;
+  }, [state.qrs]);
+  const alreadyBound = resolution?.kind === 'join' && resolution.alreadyMember;
 
   useEffect(() => {
     if (!resolution) {
       setCabinetName('');
       return;
     }
-    setCabinetName(`Uniclife ${resolution.sku.capacity} Position Key Cabinet`);
+    setCabinetName(
+      resolution.kind === 'initialize'
+        ? `Uniclife ${resolution.sku.capacity} Position Key Cabinet`
+        : '',
+    );
   }, [resolution]);
 
   const openCabinet = useCallback(
@@ -293,6 +286,8 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     setResolving(false);
     setBinding(false);
     setCabinetName('');
+    setScannedCode('');
+    actionRequestIdRef.current = '';
   }, []);
 
   useEffect(() => {
@@ -315,7 +310,8 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
       error.code === 'QR_NOT_FOUND' ||
       error.code === 'QR_DISABLED' ||
       error.code === 'SKU_NOT_FOUND' ||
-      error.code === 'CABINET_NOT_FOUND'
+      error.code === 'CABINET_NOT_FOUND' ||
+      error.code.startsWith('JOIN_INVITATION_')
     ) {
       return 'invalid';
     }
@@ -333,6 +329,9 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
 
       try {
         const nextResolution = await actions.resolveQr({ code });
+        requestSequenceRef.current += 1;
+        actionRequestIdRef.current = `scan-${Date.now()}-${requestSequenceRef.current}`;
+        setScannedCode(code);
         setResolution(nextResolution);
       } catch (error) {
         setErrorKind(classifyError(error));
@@ -369,28 +368,38 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     }
   }, [binding, resolveCode, resolving]);
 
-  const bindCabinet = useCallback(async () => {
-    if (!resolution || binding || (expectedOwner && !cabinetName.trim())) {
+  const confirmQrAction = useCallback(async () => {
+    if (
+      !resolution ||
+      !scannedCode ||
+      binding ||
+      (resolution.kind === 'initialize' && !cabinetName.trim())
+    ) {
       return;
     }
     setBinding(true);
     setErrorKind(null);
-    requestSequenceRef.current += 1;
 
     try {
-      await actions.bindCabinet({
-        expectedVersion: state.version,
-        name: expectedOwner ? cabinetName.trim() : undefined,
-        qrCode: resolution.qr.code,
-        requestId: `scan-bind-${resolution.qr.id}-${requestSequenceRef.current}`,
-      });
+      if (resolution.kind === 'initialize') {
+        await actions.initializeCabinet({
+          name: cabinetName.trim(),
+          productQrCode: resolution.qr.code,
+          requestId: actionRequestIdRef.current,
+        });
+      } else {
+        await actions.joinCabinet({
+          joinQrCode: scannedCode,
+          requestId: actionRequestIdRef.current,
+        });
+      }
       router.replace('/(tabs)');
     } catch (error) {
       setErrorKind(classifyError(error));
     } finally {
       setBinding(false);
     }
-  }, [actions, binding, cabinetName, classifyError, expectedOwner, resolution, router, state.version]);
+  }, [actions, binding, cabinetName, classifyError, resolution, router, scannedCode]);
 
   const sessionUnavailable =
     state.sessionStatus !== 'authenticated' || currentUser === null;
@@ -450,11 +459,10 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
       <ProductConfirmation
         alreadyBound={alreadyBound}
         binding={binding}
-        expectedOwner={expectedOwner}
-        onBind={() => void bindCabinet()}
+        onConfirm={() => void confirmQrAction()}
         onNameChange={setCabinetName}
         onOpen={() => {
-          if (resolution.cabinet) {
+          if (resolution.kind === 'join') {
             openCabinet(resolution.cabinet.id);
           }
         }}

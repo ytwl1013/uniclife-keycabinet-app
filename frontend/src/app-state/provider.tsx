@@ -22,7 +22,7 @@ import { AppSelectors, createAppSelectors } from './selectors';
 import type {
   AppActions,
   AppState,
-  BindCabinetResult,
+  CabinetAccessResult,
   CurrentUserAccount,
   QrResolution,
 } from './types';
@@ -388,7 +388,9 @@ export function AppProvider({ children }: PropsWithChildren) {
         );
         updateState((current) => ({
           ...current,
-          qrs: uniqueById([result.qr, ...current.qrs]),
+          qrs: result.kind === 'initialize'
+            ? uniqueById([result.qr, ...current.qrs])
+            : current.qrs,
           skus: uniqueById([result.sku, ...current.skus]),
         }));
         return result;
@@ -396,13 +398,40 @@ export function AppProvider({ children }: PropsWithChildren) {
         return handleAuthorizedError(error);
       }
     },
-    async bindCabinet(input) {
+    async initializeCabinet(input) {
       const token = requireToken();
       try {
-        const result: BindCabinetResult = await backendApi.bindCabinet(token, {
+        const result: CabinetAccessResult = await backendApi.initializeCabinet(token, {
           ...input,
           timeZone: input.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC',
         });
+        await refresh();
+        return result;
+      } catch (error) {
+        return handleAuthorizedError(error);
+      }
+    },
+    async createCabinetJoinInvitation({ cabinetId }) {
+      const token = requireToken();
+      try {
+        const result = await backendApi.createCabinetJoinInvitation(token, cabinetId);
+        return result.invitation;
+      } catch (error) {
+        return handleAuthorizedError(error);
+      }
+    },
+    async revokeCabinetJoinInvitation({ cabinetId, invitationId }) {
+      const token = requireToken();
+      try {
+        await backendApi.revokeCabinetJoinInvitation(token, cabinetId, invitationId);
+      } catch (error) {
+        await handleAuthorizedError(error);
+      }
+    },
+    async joinCabinet(input) {
+      const token = requireToken();
+      try {
+        const result: CabinetAccessResult = await backendApi.joinCabinet(token, input);
         await refresh();
         return result;
       } catch (error) {

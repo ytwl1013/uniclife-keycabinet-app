@@ -2,7 +2,7 @@ import type {
   Cabinet,
   CabinetEvent,
   CabinetMembership,
-  CabinetQr,
+  ProductQr,
   CurrentUserAccount,
   Key,
   Loan,
@@ -13,7 +13,7 @@ import type {
 import type {
   cabinetEvents,
   cabinetMemberships,
-  cabinetQrs,
+  productQrs,
   cabinets,
   keys,
   loans,
@@ -59,12 +59,11 @@ export function toSku(row: typeof productSkus.$inferSelect): ProductSku {
   };
 }
 
-export function toQr(row: typeof cabinetQrs.$inferSelect): CabinetQr {
+export function toProductQr(row: typeof productQrs.$inferSelect): ProductQr {
   return {
     id: row.id,
     code: row.code,
     skuId: row.skuId,
-    deviceUuid: row.deviceUuid,
     status: row.status,
     createdAt: toIsoDate(row.createdAt),
   };

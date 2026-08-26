@@ -1,3 +1,5 @@
+import type { CabinetJoinInvitation } from '@uniclife/shared';
+
 export type CabinetRole = 'admin';
 
 export type CabinetStatus = 'online' | 'offline' | 'maintenance';
@@ -135,6 +137,11 @@ export type PrototypeActions = {
   returnKey(input: { cabinetId: string; keyId: string; returnedAt?: string }): Promise<void>;
   removeMember(input: { cabinetId: string; membershipId: string }): Promise<void>;
   deleteAllKeys(input: { cabinetId: string }): Promise<void>;
+  createJoinInvitation(input: { cabinetId: string }): Promise<CabinetJoinInvitation>;
+  revokeJoinInvitation(input: {
+    cabinetId: string;
+    invitationId: string;
+  }): Promise<void>;
 };
 
 export type PrototypeApp = PrototypeSnapshot & PrototypeActions;

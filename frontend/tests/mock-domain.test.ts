@@ -25,8 +25,8 @@ function service(userId = 'user-owner') {
   });
 }
 
-describe('new product catalog and cabinet binding', () => {
-  it('uses SKU plus UUID QR identities and allows multiple cabinets for one SKU', async () => {
+describe('product QR cabinet initialization', () => {
+  it('uses one reusable product QR per SKU', async () => {
     const seed = getSeedData();
     expect(seed.skus.map(({ sku, capacity, name }) => ({ sku, capacity, name }))).toEqual([
       { sku: 'BG5163-BK', capacity: 32, name: 'Uniclife 32 Position Key Cabinet' },
@@ -35,38 +35,37 @@ describe('new product catalog and cabinet binding', () => {
     expect(seed.slots.filter((slot) => slot.cabinetId === 'cabinet-hq')).toHaveLength(32);
     expect(seed.slots.filter((slot) => slot.cabinetId === 'cabinet-loft')).toHaveLength(60);
     expect(seed.slots.filter((slot) => slot.cabinetId === 'cabinet-studio')).toHaveLength(32);
-    expect(new Set(seed.qrs.map((qr) => qr.deviceUuid)).size).toBe(seed.qrs.length);
-    expect(seed.qrs.filter((qr) => qr.skuId === 'sku-bg5163-bk')).toHaveLength(3);
+    expect(seed.qrs).toHaveLength(2);
+    expect(seed.qrs.filter((qr) => qr.skuId === 'sku-bg5163-bk')).toHaveLength(1);
 
     const app = service();
-    const studio = await app.actions.resolveQr('uniclife://cabinet/BG5163-BK/a9a0929d-dd9d-46c3-8270-2f686921b53c');
-    const riverside = await app.actions.resolveQr('uniclife://cabinet/BG0680-BK/dc93abea-198b-4221-8fdb-7efc729081c7');
+    const studio = await app.actions.resolveQr('uniclife://cabinet/v1/init/BG5163-BK/uniclife-bg5163-bk-2026');
+    const riverside = await app.actions.resolveQr('uniclife://cabinet/v1/init/BG0680-BK/uniclife-bg0680-bk-2026');
     expect(studio.sku.sku).toBe('BG5163-BK');
-    expect(studio.cabinet?.name).toBe('Creative Studio');
+    expect(studio.kind).toBe('initialize');
     expect(riverside.sku.sku).toBe('BG0680-BK');
     expect(parseCabinetQrPayload(studio.qr.code)).toMatchObject({
       sku: 'BG5163-BK',
-      uuid: studio.qr.deviceUuid,
+      productCode: 'uniclife-bg5163-bk-2026',
     });
-    expect(createCabinetQrPayload('bg5163-bk', studio.qr.deviceUuid)).toBe(studio.qr.code);
+    expect(createCabinetQrPayload('bg5163-bk', 'uniclife-bg5163-bk-2026')).toBe(studio.qr.code);
   });
 
-  it('creates a cabinet from an unbound UUID and later joins the same UUID without renaming it', async () => {
+  it('creates a different cabinet for each deliberate scan of the same product QR', async () => {
     const initial = createInitialMockState({ currentUserId: 'user-demo', hydrated: true, now: FIXED_NOW });
     const app = createMockAppService({ storage: createMemoryStorage(), latencyMs: 0, now: () => new Date(FIXED_NOW), initialState: initial });
-    const qrCode = 'uniclife://cabinet/BG5163-BK/6abafe6b-2328-43e1-a461-70d3b660e5ef';
+    const qrCode = 'uniclife://cabinet/v1/init/BG5163-BK/uniclife-bg5163-bk-2026';
     const resolution = await app.actions.resolveQr(qrCode);
-    expect(resolution.cabinet).toBeUndefined();
+    expect(resolution.kind).toBe('initialize');
 
-    const initialized = await app.actions.bindCabinet({ qrCode, name: 'Studio Keys' });
+    const initialized = await app.actions.initializeCabinet({ productQrCode: qrCode, name: 'Studio Keys' });
     expect(initialized.cabinet.name).toBe('Studio Keys');
-    expect(initialized.cabinet.deviceUuid).toBe('6abafe6b-2328-43e1-a461-70d3b660e5ef');
     expect(initialized.membership.role).toBe('admin');
     expect(app.getState().slots.filter((slot) => slot.cabinetId === initialized.cabinet.id)).toHaveLength(32);
 
-    await app.actions.switchAccount({ userId: 'user-owner' });
-    const joined = await app.actions.bindCabinet({ qrCode, name: 'Should not replace' });
-    expect(joined.cabinet.name).toBe('Studio Keys');
+    const second = await app.actions.initializeCabinet({ productQrCode: qrCode, name: 'Second Cabinet' });
+    expect(second.cabinet.id).not.toBe(initialized.cabinet.id);
+    expect(second.cabinet.name).toBe('Second Cabinet');
   });
 
   it('renames cabinets and records an immutable audit event', async () => {
@@ -104,7 +103,7 @@ describe('single Admin permissions', () => {
     expect(await storage.getItem(MOCK_STORAGE_KEY)).not.toBeNull();
   });
 
-  it('migrates v2 opaque QR records to SKU plus UUID identities in v3', async () => {
+  it('normalizes v2 device QR records to reusable product QRs in v3', async () => {
     const v2 = createInitialMockState({ currentUserId: 'user-owner', hydrated: true, now: FIXED_NOW }) as unknown as Record<string, unknown>;
     const cabinetQrIds = new Map([
       ['cabinet-hq', 'qr-hq'],
@@ -124,7 +123,7 @@ describe('single Admin permissions', () => {
     const storage = createMemoryStorage({ [LEGACY_V2_MOCK_STORAGE_KEY]: JSON.stringify(v2) });
     const migrated = await loadStateOverlay(storage);
 
-    expect(migrated?.qrs.every((qr) => parseCabinetQrPayload(qr.code)?.uuid === qr.deviceUuid)).toBe(true);
+    expect(migrated?.qrs.every((qr) => parseCabinetQrPayload(qr.code)?.sku)).toBe(true);
     expect(migrated?.cabinets.every((cabinet) => Boolean(cabinet.deviceUuid))).toBe(true);
     expect(await storage.getItem(LEGACY_V2_MOCK_STORAGE_KEY)).toBeNull();
     expect(await storage.getItem(MOCK_STORAGE_KEY)).not.toBeNull();

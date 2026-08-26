@@ -50,11 +50,10 @@ export const productSkuSchema = z.object({
   imageAsset: z.string().min(1).max(256),
 });
 
-export const cabinetQrSchema = z.object({
+export const productQrSchema = z.object({
   id: entityIdSchema,
   code: z.string().min(1).max(256),
   skuId: entityIdSchema,
-  deviceUuid: z.string().uuid(),
   status: z.enum(['active', 'disabled']),
   createdAt: isoDateSchema,
 });
@@ -72,6 +71,21 @@ export const cabinetSchema = z.object({
   version: z.number().int().nonnegative(),
 });
 
+export const cabinetQrResolutionSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('initialize'),
+    qr: productQrSchema,
+    sku: productSkuSchema,
+  }),
+  z.object({
+    kind: z.literal('join'),
+    cabinet: cabinetSchema,
+    sku: productSkuSchema,
+    expiresAt: isoDateSchema,
+    alreadyMember: z.boolean(),
+  }),
+]);
+
 export const cabinetMembershipSchema = z.object({
   id: entityIdSchema,
   cabinetId: entityIdSchema,
@@ -80,6 +94,13 @@ export const cabinetMembershipSchema = z.object({
   active: z.boolean(),
   joinedAt: isoDateSchema,
   removedAt: isoDateSchema.optional(),
+});
+
+export const cabinetJoinInvitationSchema = z.object({
+  id: entityIdSchema,
+  cabinetId: entityIdSchema,
+  joinQrCode: z.string().min(1).max(256),
+  expiresAt: isoDateSchema,
 });
 
 export const keySlotSchema = z.object({
@@ -119,6 +140,8 @@ export const loanSchema = z.object({
 
 export const cabinetEventTypes = [
   'cabinet_bound',
+  'cabinet_initialized',
+  'member_joined',
   'cabinet_renamed',
   'member_removed',
   'key_added',
@@ -187,9 +210,11 @@ export type SupportedLocale = z.infer<typeof supportedLocaleSchema>;
 export type UserAccount = z.infer<typeof userAccountSchema>;
 export type CurrentUserAccount = z.infer<typeof currentUserAccountSchema>;
 export type ProductSku = z.infer<typeof productSkuSchema>;
-export type CabinetQr = z.infer<typeof cabinetQrSchema>;
+export type ProductQr = z.infer<typeof productQrSchema>;
 export type Cabinet = z.infer<typeof cabinetSchema>;
+export type CabinetQrResolution = z.infer<typeof cabinetQrResolutionSchema>;
 export type CabinetMembership = z.infer<typeof cabinetMembershipSchema>;
+export type CabinetJoinInvitation = z.infer<typeof cabinetJoinInvitationSchema>;
 export type KeySlot = z.infer<typeof keySlotSchema>;
 export type Key = z.infer<typeof keySchema>;
 export type Loan = z.infer<typeof loanSchema>;

@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import {
   realtimeEventSchema,
   realtimeProtocol,
@@ -9,8 +7,6 @@ import { describe, expect, it } from 'vitest';
 import WebSocket, { type RawData } from 'ws';
 
 import { buildServer } from '../src/app/server.js';
-import { requireDatabase } from '../src/db/client.js';
-import { cabinetQrs } from '../src/db/schema.js';
 
 const databaseTest = process.env.RUN_DATABASE_TESTS === 'true' ? describe : describe.skip;
 
@@ -95,15 +91,7 @@ databaseTest('realtime cross-session data flow', () => {
     try {
       const baseUrl = await app.listen({ host: '127.0.0.1', port: 0 });
       const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const deviceUuid = randomUUID();
-      const testCabinetQr = `uniclife://cabinet/BG5163-BK/${deviceUuid}`;
-      await requireDatabase().insert(cabinetQrs).values({
-        code: testCabinetQr,
-        deviceUuid,
-        id: `qr-realtime-${deviceUuid}`,
-        skuId: 'sku-bg5163-bk',
-        status: 'active',
-      });
+      const testCabinetQr = 'uniclife://cabinet/v1/init/BG5163-BK/uniclife-bg5163-bk-2026';
       const register = (label: string) => apiRequest(baseUrl, '/auth/register', {
         method: 'POST',
         payload: {
@@ -121,21 +109,34 @@ databaseTest('realtime cross-session data flow', () => {
       const tokenA = accountA.body.data.session.token as string;
       const tokenB = accountB.body.data.session.token as string;
 
-      const bind = (token: string, requestId: string) => apiRequest(baseUrl, '/cabinets/bind', {
+      const initialize = (token: string, requestId: string) => apiRequest(baseUrl, '/cabinets/initialize', {
         method: 'POST',
         token,
         payload: {
           name: 'Realtime Shared Cabinet',
-          qrCode: testCabinetQr,
+          productQrCode: testCabinetQr,
           requestId,
           timeZone: 'Asia/Shanghai',
         },
       });
-      const boundA = await bind(tokenA, `bind-a-${runId}`);
-      const boundB = await bind(tokenB, `bind-b-${runId}`);
+      const boundA = await initialize(tokenA, `initialize-a-${runId}`);
       expect(boundA.status).toBe(200);
+      const cabinetId = boundA.body.data.cabinet.id as string;
+      const invitation = await apiRequest(
+        baseUrl,
+        `/cabinets/${cabinetId}/join-invitations`,
+        { method: 'POST', token: tokenA, payload: {} },
+      );
+      expect(invitation.status).toBe(200);
+      const boundB = await apiRequest(baseUrl, '/cabinets/join', {
+        method: 'POST',
+        token: tokenB,
+        payload: {
+          joinQrCode: invitation.body.data.invitation.joinQrCode,
+          requestId: `join-b-${runId}`,
+        },
+      });
       expect(boundB.status).toBe(200);
-      const cabinetId = boundB.body.data.cabinet.id as string;
       let cabinetVersion = boundB.body.data.cabinet.version as number;
 
       socket = new WebSocket(

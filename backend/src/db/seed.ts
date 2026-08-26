@@ -1,6 +1,6 @@
 import { env } from '../common/config/env.js';
 import { closeDatabase, requireDatabase } from './client.js';
-import { cabinetQrs, productSkus } from './schema.js';
+import { productQrs, productSkus } from './schema.js';
 
 if (env.NODE_ENV === 'production') {
   throw new Error('Development seed cannot run in production');
@@ -37,20 +37,18 @@ await database
   .onConflictDoNothing();
 
 await database
-  .insert(cabinetQrs)
+  .insert(productQrs)
   .values([
     {
-      id: 'qr-bg5163-bk-unbound',
-      code: 'uniclife://cabinet/BG5163-BK/6abafe6b-2328-43e1-a461-70d3b660e5ef',
+      id: 'product-qr-bg5163-bk',
+      code: 'uniclife://cabinet/v1/init/BG5163-BK/uniclife-bg5163-bk-2026',
       skuId: 'sku-bg5163-bk',
-      deviceUuid: '6abafe6b-2328-43e1-a461-70d3b660e5ef',
       status: 'active',
     },
     {
-      id: 'qr-bg0680-bk-unbound',
-      code: 'uniclife://cabinet/BG0680-BK/2e2474ee-889a-4489-8bec-50ac5a054d37',
+      id: 'product-qr-bg0680-bk',
+      code: 'uniclife://cabinet/v1/init/BG0680-BK/uniclife-bg0680-bk-2026',
       skuId: 'sku-bg0680-bk',
-      deviceUuid: '2e2474ee-889a-4489-8bec-50ac5a054d37',
       status: 'active',
     },
   ])

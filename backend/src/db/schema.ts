@@ -29,6 +29,8 @@ export const feedbackDeliveryStatus = pgEnum('feedback_delivery_status', [
 ]);
 export const cabinetEventType = pgEnum('cabinet_event_type', [
   'cabinet_bound',
+  'cabinet_initialized',
+  'member_joined',
   'cabinet_renamed',
   'member_removed',
   'key_added',
@@ -144,6 +146,22 @@ export const cabinetQrs = pgTable(
   (table) => [index('cabinet_qrs_sku_id_idx').on(table.skuId)],
 );
 
+export const productQrs = pgTable(
+  'product_qrs',
+  {
+    id: id('id').primaryKey(),
+    code: varchar('code', { length: 256 }).notNull().unique(),
+    skuId: id('sku_id')
+      .notNull()
+      .references(() => productSkus.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+    status: qrStatus('status').notNull().default('active'),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex('product_qrs_sku_id_unique').on(table.skuId),
+  ],
+);
+
 export const cabinets = pgTable(
   'cabinets',
   {
@@ -184,6 +202,32 @@ export const cabinetMemberships = pgTable(
   (table) => [
     uniqueIndex('cabinet_memberships_cabinet_user_unique').on(table.cabinetId, table.userId),
     index('cabinet_memberships_user_active_idx').on(table.userId, table.active),
+  ],
+);
+
+export const cabinetJoinInvitations = pgTable(
+  'cabinet_join_invitations',
+  {
+    id: id('id').primaryKey(),
+    cabinetId: id('cabinet_id')
+      .notNull()
+      .references(() => cabinets.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+    createdBy: id('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'string' }).notNull(),
+    usedBy: id('used_by').references(() => users.id, {
+      onDelete: 'restrict',
+      onUpdate: 'cascade',
+    }),
+    usedAt: timestamp('used_at', { withTimezone: true, mode: 'string' }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'string' }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index('cabinet_join_invitations_cabinet_created_idx').on(table.cabinetId, table.createdAt),
+    index('cabinet_join_invitations_expires_at_idx').on(table.expiresAt),
   ],
 );
 

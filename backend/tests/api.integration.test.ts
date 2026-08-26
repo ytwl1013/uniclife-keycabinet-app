@@ -5,7 +5,7 @@ import { buildServer } from '../src/app/server.js';
 const databaseTest = process.env.RUN_DATABASE_TESTS === 'true' ? describe : describe.skip;
 
 databaseTest('backend API workflow', () => {
-  it('supports registration, cabinet binding, key checkout, return, and activity', async () => {
+  it('supports registration, cabinet initialization, key checkout, return, and activity', async () => {
     const app = await buildServer();
     const email = `api-${Date.now()}@example.com`;
     const registerResponse = await app.inject({
@@ -52,10 +52,10 @@ databaseTest('backend API workflow', () => {
 
     const bindResponse = await app.inject({
       method: 'POST',
-      url: '/api/v1/cabinets/bind',
+      url: '/api/v1/cabinets/initialize',
       headers: authorization,
       payload: {
-        qrCode: 'uniclife://cabinet/BG5163-BK/6abafe6b-2328-43e1-a461-70d3b660e5ef',
+        productQrCode: 'uniclife://cabinet/v1/init/BG5163-BK/uniclife-bg5163-bk-2026',
         name: 'Integration Cabinet',
         timeZone: 'Asia/Shanghai',
         requestId: 'bind-request-0001',
@@ -180,9 +180,10 @@ databaseTest('backend API workflow', () => {
     });
     expect(eventsResponse.statusCode).toBe(200);
     expect(eventsResponse.json().data.items.map((event: { type: string }) => event.type)).toEqual(
-      expect.arrayContaining(['cabinet_bound', 'key_added', 'checkout', 'return', 'keys_deleted']),
+      expect.arrayContaining(['cabinet_initialized', 'key_added', 'checkout', 'return', 'keys_deleted']),
     );
 
     await app.close();
   });
+
 });

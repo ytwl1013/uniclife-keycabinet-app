@@ -1,23 +1,23 @@
-const CABINET_QR_PREFIX = 'uniclife://cabinet/';
+const CABINET_QR_PREFIX = 'uniclife://cabinet/v1/init/';
 const SKU_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PRODUCT_CODE_PATTERN = /^[A-Za-z0-9_-]{16,128}$/;
 
 export type ParsedCabinetQrPayload = {
   canonical: string;
   sku: string;
-  uuid: string;
+  productCode: string;
 };
 
-export function createCabinetQrPayload(sku: string, uuid: string): string {
+export function createCabinetQrPayload(sku: string, productCode: string): string {
   const normalizedSku = sku.trim().toUpperCase();
-  const normalizedUuid = uuid.trim().toLowerCase();
+  const normalizedProductCode = productCode.trim();
   if (!SKU_PATTERN.test(normalizedSku)) {
     throw new Error('Cabinet QR SKUs must contain only letters, numbers, and hyphens.');
   }
-  if (!UUID_PATTERN.test(normalizedUuid)) {
-    throw new Error('Cabinet QR UUIDs must use canonical UUID format.');
+  if (!PRODUCT_CODE_PATTERN.test(normalizedProductCode)) {
+    throw new Error('Product QR codes must use 16–128 URL-safe characters.');
   }
-  return `${CABINET_QR_PREFIX}${normalizedSku}/${normalizedUuid}`;
+  return `${CABINET_QR_PREFIX}${normalizedSku}/${normalizedProductCode}`;
 }
 
 export function parseCabinetQrPayload(raw: string): ParsedCabinetQrPayload | null {
@@ -38,10 +38,10 @@ export function parseCabinetQrPayload(raw: string): ParsedCabinetQrPayload | nul
       return null;
     }
     const segments = parsed.pathname.split('/').filter(Boolean).map(decodeURIComponent);
-    if (segments.length !== 2) return null;
-    const [sku, uuid] = segments;
-    const canonical = createCabinetQrPayload(sku, uuid);
-    return { canonical, sku: sku.toUpperCase(), uuid: uuid.toLowerCase() };
+    if (segments.length !== 4 || segments[0] !== 'v1' || segments[1] !== 'init') return null;
+    const [, , sku, productCode] = segments;
+    const canonical = createCabinetQrPayload(sku, productCode);
+    return { canonical, sku: sku.toUpperCase(), productCode };
   } catch {
     return null;
   }

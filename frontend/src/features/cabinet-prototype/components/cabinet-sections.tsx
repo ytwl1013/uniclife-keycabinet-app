@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Linking, Pressable, ScrollView, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
@@ -298,6 +299,10 @@ export function CabinetSettings({
   const [cabinetName, setCabinetName] = useState(cabinet.name);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteCountdown, setDeleteCountdown] = useState(5);
+  const [joinInvitation, setJoinInvitation] = useState<
+    Awaited<ReturnType<PrototypeApp['createJoinInvitation']>>
+  >();
+  const [invitationClock, setInvitationClock] = useState(Date.now());
   const visibleMembers = app.members.filter((member) => member.cabinetId === cabinet.id);
   const configuredKeys = app.keys.filter((key) => key.cabinetId === cabinet.id);
   const confirmation = usePrototypeDialog();
@@ -308,6 +313,16 @@ export function CabinetSettings({
     const timer = setTimeout(() => setDeleteCountdown((value) => Math.max(0, value - 1)), 1000);
     return () => clearTimeout(timer);
   }, [deleteAllOpen, deleteCountdown]);
+  useEffect(() => {
+    if (!joinInvitation) return undefined;
+    const timer = setInterval(() => setInvitationClock(Date.now()), 1_000);
+    return () => clearInterval(timer);
+  }, [joinInvitation]);
+
+  const invitationSeconds = joinInvitation
+    ? Math.max(0, Math.ceil((Date.parse(joinInvitation.expiresAt) - invitationClock) / 1_000))
+    : 0;
+  const invitationExpired = Boolean(joinInvitation && invitationSeconds === 0);
 
   const run = async (id: string, action: () => Promise<void>, successKey: string) => {
     setBusyId(id);
@@ -348,6 +363,36 @@ export function CabinetSettings({
     await run('rename', () => app.renameCabinet({ cabinetId: cabinet.id, name: next }), 'cabinet.renamedSuccess');
   };
 
+  const generateJoinInvitation = async () => {
+    setBusyId('join-invitation');
+    try {
+      const invitation = await app.createJoinInvitation({ cabinetId: cabinet.id });
+      setJoinInvitation(invitation);
+      setInvitationClock(Date.now());
+    } catch {
+      Alert.alert(t(trKey('cabinet.actionFailedTitle')), t('cabinetInvite.failed'));
+    } finally {
+      setBusyId(undefined);
+    }
+  };
+
+  const revokeJoinInvitation = async () => {
+    if (!joinInvitation) return;
+    setBusyId('join-invitation');
+    try {
+      await app.revokeJoinInvitation({
+        cabinetId: cabinet.id,
+        invitationId: joinInvitation.id,
+      });
+      setJoinInvitation(undefined);
+      Alert.alert(t(trKey('cabinet.successTitle')), t('cabinetInvite.revoked'));
+    } catch {
+      Alert.alert(t(trKey('cabinet.actionFailedTitle')), t('cabinetInvite.failed'));
+    } finally {
+      setBusyId(undefined);
+    }
+  };
+
   return (
     <View className="min-w-0 flex-1">
       <FlatList
@@ -362,6 +407,58 @@ export function CabinetSettings({
               <SectionTitle description={t(trKey('cabinet.renameDescription'))} title={t(trKey('cabinet.renameTitle'))} />
               <FormField label={t(trKey('cabinet.cabinetNameLabel'))} onChangeText={setCabinetName} placeholder={t(trKey('scan.cabinetNamePlaceholder'))} value={cabinetName} />
               <ActionButton disabled={Boolean(busyId) || !cabinetName.trim() || cabinetName.trim() === cabinet.name} icon="settings" label={t(trKey('cabinet.renameAction'))} onPress={() => void rename()} tone="neutral" />
+            </SectionCard>
+            <SectionCard>
+              <SectionTitle
+                description={t('cabinetInvite.description')}
+                title={t('cabinetInvite.title')}
+              />
+              {joinInvitation && !invitationExpired ? (
+                <View className="items-center gap-4">
+                  <View className="rounded-card bg-white p-4">
+                    <QRCode
+                      backgroundColor="#ffffff"
+                      color="#111827"
+                      size={220}
+                      value={joinInvitation.joinQrCode}
+                    />
+                  </View>
+                  <AppText className="font-mono" selectable variant="label" tone="muted">
+                    {t('cabinetInvite.expiresIn', {
+                      minutes: Math.floor(invitationSeconds / 60),
+                      seconds: String(invitationSeconds % 60).padStart(2, '0'),
+                    })}
+                  </AppText>
+                  <View className="w-full gap-3">
+                    <ActionButton
+                      disabled={Boolean(busyId) || app.isOffline}
+                      label={t('cabinetInvite.refresh')}
+                      onPress={() => void generateJoinInvitation()}
+                      tone="neutral"
+                    />
+                    <ActionButton
+                      disabled={Boolean(busyId) || app.isOffline}
+                      label={t('cabinetInvite.revoke')}
+                      onPress={() => void revokeJoinInvitation()}
+                      tone="danger"
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View className="gap-3">
+                  {invitationExpired ? (
+                    <AppText tone="danger">{t('cabinetInvite.expired')}</AppText>
+                  ) : null}
+                  <ActionButton
+                    disabled={Boolean(busyId) || app.isOffline}
+                    icon="scan"
+                    label={busyId === 'join-invitation'
+                      ? t('cabinetInvite.generating')
+                      : t('cabinetInvite.generate')}
+                    onPress={() => void generateJoinInvitation()}
+                  />
+                </View>
+              )}
             </SectionCard>
             <SectionTitle description={t(trKey('cabinet.membersDescription'))} title={t(trKey('cabinet.membersTitle'), { count: visibleMembers.length })} />
           </View>

@@ -264,12 +264,21 @@ describe('simplified mobile navigation architecture', () => {
     expect(existsSync(path('src/mocks/export-delivery.web.ts'))).toBe(false);
   });
 
-  it('uses the native camera path and editable cabinet name confirmation', () => {
+  it('uses the native camera path for product initialization and invitation joining', () => {
     const scan = source('src/features/scan/components/scan-flow.tsx');
     expect(scan).toContain('<CameraView');
     expect(scan).toContain('onBarcodeScanned');
     expect(scan).toContain("t('scan.cabinetName')");
-    expect(scan).toContain('name: expectedOwner ? cabinetName.trim() : undefined');
+    expect(scan).toContain('await actions.initializeCabinet');
+    expect(scan).toContain('await actions.joinCabinet');
+  });
+
+  it('places the one-time cabinet join QR in cabinet settings', () => {
+    const sections = source('src/features/cabinet-prototype/components/cabinet-sections.tsx');
+    expect(sections).toContain('<QRCode');
+    expect(sections).toContain('app.createJoinInvitation');
+    expect(sections).toContain('app.revokeJoinInvitation');
+    expect(sections).toContain("t('cabinetInvite.expiresIn'");
   });
 
   it('opens cabinet details on Keys with only Keys, Activity, and Settings', () => {

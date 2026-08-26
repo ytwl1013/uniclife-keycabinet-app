@@ -45,11 +45,11 @@ pnpm dev
 
 - `pnpm dev:db`：启动只监听 `127.0.0.1:5432` 的 PostgreSQL 17 开发容器。
 - `pnpm db:migrate:dev`：将 `backend/src/db/migrations` 中尚未执行的迁移应用到开发库。
-- `pnpm db:seed:dev`：幂等写入两个虚构产品 SKU 和两个未绑定测试二维码，不创建账户。
+- `pnpm db:seed:dev`：幂等写入两个虚构产品 SKU 和各自可复用的产品初始化二维码，不创建账户。
 - `pnpm dev`：同时启动 Fastify 热更新服务和 Expo 开发服务。
 - `pnpm dev:db:down`：停止开发数据库但保留 Docker volume 中的数据。
 
-前端运行时直接调用 `EXPO_PUBLIC_API_BASE_URL` 指向的后端，原型 Mock 数据只保留给单元测试，不再挂载到应用。首次启动后请注册账户，再扫描开发 seed 生成的二维码绑定柜体；仅启动 Expo 而未启动后端时，登录和业务数据不会回退到 Demo。
+前端运行时直接调用 `EXPO_PUBLIC_API_BASE_URL` 指向的后端，原型 Mock 数据只保留给单元测试，不再挂载到应用。首次启动后请注册账户，再扫描开发 seed 对应的产品二维码（`docs/demo-qr-codes/bg5163-product.png` 或 `docs/demo-qr-codes/bg0680-product.png`）初始化新柜体；加入已有柜体必须扫描其设置页生成的一次性加入二维码。仅启动 Expo 而未启动后端时，登录和业务数据不会回退到 Demo。
 
 后端按 `NODE_ENV` 加载对应的 `.env.<environment>`，生产环境由 Render 注入变量。Expo 本地开发统一使用被 Git 忽略的 `frontend/.env.local`，生产构建使用 EAS 的 production 环境。不要提交真实 `.env`、数据库密码、设备密钥、Token、Cookie 或证书。
 

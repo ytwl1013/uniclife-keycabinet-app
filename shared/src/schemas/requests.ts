@@ -91,14 +91,25 @@ export const feedbackHistoryQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
-export const cabinetQrPayloadSchema = z.string().trim().max(256).regex(
-  /^uniclife:\/\/cabinet\/[A-Za-z0-9-]{1,64}\/[0-9a-fA-F-]{36}$/,
+export const productQrPayloadSchema = z.string().trim().max(256).regex(
+  /^uniclife:\/\/cabinet\/v1\/init\/[A-Za-z0-9-]{1,64}\/[A-Za-z0-9_-]{16,128}$/,
 );
+export const cabinetJoinQrPayloadSchema = z.string().trim().max(256).regex(
+  /^uniclife:\/\/cabinet\/v1\/join\/[A-Za-z0-9_-]{32,128}$/,
+);
+export const cabinetQrPayloadSchema = z.union([
+  productQrPayloadSchema,
+  cabinetJoinQrPayloadSchema,
+]);
 export const resolveCabinetQrRequestSchema = z.object({ code: cabinetQrPayloadSchema });
-export const bindCabinetRequestSchema = writeOptionsSchema.extend({
-  qrCode: cabinetQrPayloadSchema,
-  name: cabinetNameSchema.optional(),
+export const initializeCabinetRequestSchema = writeOptionsSchema.extend({
+  productQrCode: productQrPayloadSchema,
+  name: cabinetNameSchema,
   timeZone: z.string().trim().min(1).max(64).default('UTC'),
+});
+export const createCabinetJoinInvitationRequestSchema = writeOptionsSchema;
+export const joinCabinetRequestSchema = writeOptionsSchema.extend({
+  joinQrCode: cabinetJoinQrPayloadSchema,
 });
 export const renameCabinetRequestSchema = writeOptionsSchema.extend({ name: cabinetNameSchema });
 
@@ -143,7 +154,11 @@ export const eventListQuerySchema = z.object({
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type SignInRequest = z.infer<typeof signInRequestSchema>;
-export type BindCabinetRequest = z.infer<typeof bindCabinetRequestSchema>;
+export type InitializeCabinetRequest = z.infer<typeof initializeCabinetRequestSchema>;
+export type CreateCabinetJoinInvitationRequest = z.infer<
+  typeof createCabinetJoinInvitationRequestSchema
+>;
+export type JoinCabinetRequest = z.infer<typeof joinCabinetRequestSchema>;
 export type AddKeyRequest = z.infer<typeof addKeyRequestSchema>;
 export type UpdateKeyRequest = z.infer<typeof updateKeyRequestSchema>;
 export type CheckoutKeyRequest = z.infer<typeof checkoutKeyRequestSchema>;
