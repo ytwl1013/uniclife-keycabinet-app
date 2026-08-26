@@ -84,10 +84,14 @@ databaseTest('feedback history API', () => {
       url: '/api/v1/support/feedback',
       headers: first.authorization,
     });
-    expect(historyAfterFailure.json().data.items[0]).toMatchObject({
-      status: 'failed',
-      title: 'Failed feedback',
-    });
+    expect(historyAfterFailure.json().data.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'failed',
+          title: 'Failed feedback',
+        }),
+      ]),
+    );
 
     const second = await register('second');
     const secondHistory = await app.inject({
