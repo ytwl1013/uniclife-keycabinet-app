@@ -3,7 +3,7 @@ import type { PropsWithChildren } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const heroUiConfig = {
-  toast: false,
+  toast: true,
 } as const;
 
 export function AppUiProvider({ children }: PropsWithChildren) {

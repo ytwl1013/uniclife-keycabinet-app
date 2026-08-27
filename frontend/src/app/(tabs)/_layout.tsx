@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HapticTab } from '@/components/haptic-tab';
 import { AppIconName } from '@/components/ui/app-icon';
 import { BottomTabIcon } from '@/components/ui/bottom-tab-icon';
+import { useApp } from '@/app-state';
 import { TranslationKey, useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
 import { navigationMetrics, useAppTheme } from '@/styles/theme';
 
 const tabRoutes = [
@@ -21,7 +21,7 @@ const tabRoutes = [
 
 export default function TabLayout() {
   const { t } = useTranslation();
-  const { state } = useMockApp();
+  const { state } = useApp();
   const { palette } = useAppTheme();
   const insets = useSafeAreaInsets();
   const tabBarBottomPadding = Math.max(insets.bottom, navigationMetrics.tabBarPaddingBottom);

@@ -4,9 +4,10 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
-import { Pill } from '@/components/ui/pill';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { SwipeSegmentPager } from '@/components/ui/swipe-segment-pager';
 import { CabinetActivity, CabinetKeys, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
+import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { ActionButton, Notice, ScreenHeader, SegmentControl, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
@@ -21,6 +22,7 @@ export default function CabinetDetailRoute() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const app = usePrototypeApp();
+  const { onRefresh, refreshing } = useAppRefresh();
   const [segment, setSegment] = useState<CabinetSegment>('keys');
   const [guideRect, setGuideRect] = useState<SpotlightRect>();
   const [guideVisible, setGuideVisible] = useState(params.guide === 'register-key');
@@ -31,9 +33,11 @@ export default function CabinetDetailRoute() {
     return (
       <SafeAreaView className="flex-1 bg-background">
         <ScrollView
+          alwaysBounceVertical
           className="flex-1"
           contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
           contentInsetAdjustmentBehavior="automatic"
+          refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
           showsVerticalScrollIndicator={false}>
           <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.loadingTitle'))} />
           <StatePanel description={t(trKey('cabinet.loadingDescription'))} loading title={t(trKey('cabinet.loadingTitle'))} />
@@ -46,9 +50,11 @@ export default function CabinetDetailRoute() {
     return (
       <SafeAreaView className="flex-1 bg-background">
         <ScrollView
+          alwaysBounceVertical
           className="flex-1"
           contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
           contentInsetAdjustmentBehavior="automatic"
+          refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
           showsVerticalScrollIndicator={false}>
           <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.notFoundTitle'))} />
           <StatePanel
@@ -73,13 +79,35 @@ export default function CabinetDetailRoute() {
         <CabinetKeys
           app={app}
           cabinet={cabinet}
+          onRefresh={onRefresh}
           onSpotlightRect={guideVisible ? setGuideRect : undefined}
+          refreshing={refreshing}
           spotlightSlotId={guideVisible ? guideSlot?.id : undefined}
         />
       ),
     },
-    { value: 'activity', content: <CabinetActivity app={app} cabinet={cabinet} /> },
-    { value: 'settings', content: <CabinetSettings app={app} cabinet={cabinet} /> },
+    {
+      value: 'activity',
+      content: (
+        <CabinetActivity
+          app={app}
+          cabinet={cabinet}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+        />
+      ),
+    },
+    {
+      value: 'settings',
+      content: (
+        <CabinetSettings
+          app={app}
+          cabinet={cabinet}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+        />
+      ),
+    },
   ] as const;
 
   return (
@@ -88,7 +116,6 @@ export default function CabinetDetailRoute() {
         <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="gap-3">
           <ScreenHeader
-            action={<Pill tone={cabinet.status === 'online' ? 'green' : cabinet.status === 'maintenance' ? 'orange' : 'gray'}>{t(trKey(`cabinet.status.${cabinet.status}`))}</Pill>}
             onBack={() => router.back()}
             subtitle={cabinet.location}
             title={cabinet.name}

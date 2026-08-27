@@ -1,9 +1,9 @@
 import { Redirect, Stack } from 'expo-router';
 
-import { useMockApp } from '@/mocks';
+import { useApp } from '@/app-state';
 
 export default function DetailRoutesLayout() {
-  const { state } = useMockApp();
+  const { state } = useApp();
 
   if (!state.hydrated) {
     return null;
@@ -25,6 +25,7 @@ export default function DetailRoutesLayout() {
       <Stack.Screen name="account/change-password" />
       <Stack.Screen name="account/delete" />
       <Stack.Screen name="account/contact-support" />
+      <Stack.Screen name="account/feedback-history" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="scan" />
       <Stack.Screen name="loans/index" />

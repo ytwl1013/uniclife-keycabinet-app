@@ -10,7 +10,7 @@ import {
 } from './storage';
 import {
   AddKeyInput,
-  BindCabinetResult,
+  CabinetAccessResult,
   Cabinet,
   CabinetEvent,
   CabinetMembership,
@@ -58,7 +58,9 @@ export type MockAppActions = {
   changePassword(input: { currentPassword: string; newPassword: string }): Promise<void>;
   deleteAccount(input?: WriteOptions): Promise<void>;
   resolveQr(input: { code: string } | string): Promise<QrResolution>;
-  bindCabinet(input: { qrCode: string; name?: string } & WriteOptions): Promise<BindCabinetResult>;
+  initializeCabinet(
+    input: { productQrCode: string; name: string } & WriteOptions,
+  ): Promise<CabinetAccessResult>;
   renameCabinet(input: RenameCabinetInput): Promise<Cabinet>;
   removeMember(input: { cabinetId: string; membershipId: string } & WriteOptions): Promise<void>;
   addKey(input: AddKeyInput): Promise<Key>;
@@ -568,21 +570,14 @@ export function createMockAppService(
     const sku = state.skus.find((candidate) => candidate.sku === parsed.sku);
     assertMock(sku, 'SKU_NOT_FOUND');
     const qr = state.qrs.find(
-      (candidate) =>
-        candidate.code === parsed.canonical &&
-        candidate.skuId === sku.id &&
-        candidate.deviceUuid === parsed.uuid,
+      (candidate) => candidate.code === parsed.canonical && candidate.skuId === sku.id,
     );
     assertMock(qr, 'QR_NOT_FOUND');
     assertMock(qr.status === 'active', 'QR_DISABLED');
-    const cabinet = state.cabinets.find(
-      (candidate) =>
-        candidate.skuId === sku.id && candidate.deviceUuid === qr.deviceUuid,
-    );
-    return clone({ qr, sku, cabinet });
+    return clone({ kind: 'initialize' as const, qr, sku });
   };
 
-  const bindCabinet: MockAppActions['bindCabinet'] = async (input) => {
+  const initializeCabinet: MockAppActions['initializeCabinet'] = async (input) => {
     const initialUser = assertNetworkSession();
     const initialSessionRevision = sessionRevision;
     await waitForNetwork();
@@ -591,86 +586,48 @@ export function createMockAppService(
       user.id === initialUser.id && sessionRevision === initialSessionRevision,
       'SESSION_EXPIRED',
     );
-    const parsed = parseCabinetQrPayload(input.qrCode);
+    const parsed = parseCabinetQrPayload(input.productQrCode);
     assertMock(parsed, 'QR_NOT_FOUND');
     const sku = state.skus.find((candidate) => candidate.sku === parsed.sku);
     assertMock(sku, 'SKU_NOT_FOUND');
     const qr = state.qrs.find(
-      (candidate) =>
-        candidate.code === parsed.canonical &&
-        candidate.skuId === sku.id &&
-        candidate.deviceUuid === parsed.uuid,
+      (candidate) => candidate.code === parsed.canonical && candidate.skuId === sku.id,
     );
     assertMock(qr, 'QR_NOT_FOUND');
     assertMock(qr.status === 'active', 'QR_DISABLED');
-    const existingCabinet = state.cabinets.find(
-      (candidate) =>
-        candidate.skuId === sku.id && candidate.deviceUuid === qr.deviceUuid,
-    );
-    const existing = existingCabinet
-      ? state.memberships.find(
-          (membership) =>
-            membership.cabinetId === existingCabinet.id &&
-            membership.userId === user.id &&
-            membership.active,
-        )
-      : undefined;
-    if (existing && existingCabinet) {
-      return clone({ cabinet: existingCabinet, membership: existing });
-    }
-    return commit('bind-cabinet', omitWriteOptions(input), (draft, currentUser) => {
+    return commit('initialize-cabinet', omitWriteOptions(input), (draft, currentUser) => {
       const draftSku = draft.skus.find((candidate) => candidate.sku === parsed.sku);
       const draftQr = draft.qrs.find(
-        (candidate) =>
-          candidate.code === parsed.canonical &&
-          candidate.skuId === draftSku?.id &&
-          candidate.deviceUuid === parsed.uuid,
+        (candidate) => candidate.code === parsed.canonical && candidate.skuId === draftSku?.id,
       );
       assertMock(draftSku, 'SKU_NOT_FOUND');
       assertMock(draftQr, 'QR_NOT_FOUND');
-      let cabinet = draft.cabinets.find(
-        (candidate) =>
-          candidate.skuId === draftSku.id && candidate.deviceUuid === draftQr.deviceUuid,
-      );
-      if (!cabinet) {
-        const cabinetId = id('cabinet');
-        cabinet = {
-          id: cabinetId,
-          skuId: draftSku.id,
-          deviceUuid: draftQr.deviceUuid,
-          name: input.name?.trim() || draftSku.name,
-          location: '',
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-          status: 'online',
-          lastSyncedAt: draft.now,
-          createdAt: draft.now,
-          version: 0,
-        };
-        draft.cabinets.push(cabinet);
-        for (let position = 1; position <= draftSku.capacity; position += 1) {
-          draft.slots.push({
-            id: id('slot'),
-            cabinetId,
-            position,
-            keyId: null,
-          });
-        }
+      const cabinetId = id('cabinet');
+      const cabinet: Cabinet = {
+        id: cabinetId,
+        skuId: draftSku.id,
+        deviceUuid: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+          const value = Math.floor(Math.random() * 16);
+          return (character === 'x' ? value : (value & 0x3) | 0x8).toString(16);
+        }),
+        name: input.name.trim(),
+        location: '',
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        status: 'offline',
+        lastSyncedAt: draft.now,
+        createdAt: draft.now,
+        version: 0,
+      };
+      draft.cabinets.push(cabinet);
+      for (let position = 1; position <= draftSku.capacity; position += 1) {
+        draft.slots.push({
+          id: id('slot'),
+          cabinetId,
+          position,
+          keyId: null,
+        });
       }
-      const previousMembership = draft.memberships.find(
-        (membership) =>
-          membership.cabinetId === cabinet.id && membership.userId === currentUser.id,
-      );
-      if (previousMembership?.active) {
-        return { cabinet, membership: previousMembership };
-      }
-      const hasMembers = draft.memberships.some(
-        (membership) => membership.cabinetId === cabinet.id && membership.active,
-      );
-      if (!hasMembers && input.name !== undefined) {
-        assertMock(input.name.trim().length > 0, 'INVALID_INPUT');
-        cabinet.name = input.name.trim();
-      }
-      const membership: CabinetMembership = previousMembership ?? {
+      const membership: CabinetMembership = {
         id: id('membership'),
         cabinetId: cabinet.id,
         userId: currentUser.id,
@@ -678,24 +635,17 @@ export function createMockAppService(
         active: true,
         joinedAt: draft.now,
       };
-      if (previousMembership) {
-        previousMembership.active = true;
-        previousMembership.joinedAt = draft.now;
-        previousMembership.role = 'admin';
-        delete previousMembership.removedAt;
-      } else {
-        draft.memberships.push(membership);
-      }
+      draft.memberships.push(membership);
       appendEvent(draft, {
         cabinetId: cabinet.id,
         actorId: currentUser.id,
-        type: 'cabinet_bound',
+        type: 'cabinet_initialized',
         reversible: false,
         summaryData: {
           membershipId: membership.id,
           role: membership.role,
           sku: draftSku.sku,
-          deviceUuid: draftQr.deviceUuid,
+          productQrId: draftQr.id,
         },
       });
       touchCabinet(draft, cabinet.id);
@@ -991,7 +941,7 @@ export function createMockAppService(
     changePassword,
     deleteAccount,
     resolveQr,
-    bindCabinet,
+    initializeCabinet,
     renameCabinet,
     removeMember,
     addKey,

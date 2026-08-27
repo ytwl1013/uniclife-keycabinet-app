@@ -6,9 +6,10 @@ import 'react-native-reanimated';
 import '../../global.css';
 
 import { AppUiProvider } from '@/components/ui/app-ui-provider';
+import { AppProvider, useApp } from '@/app-state';
 import { I18nProvider, useTranslation } from '@/i18n';
 import { NotificationsProvider } from '@/features/notifications/notifications-provider';
-import { MockAppProvider, useMockApp } from '@/mocks';
+import { AppAutoRefresh } from '@/features/app-refresh/app-auto-refresh';
 import { useAppTheme } from '@/styles/theme';
 
 export const unstable_settings = {
@@ -17,7 +18,7 @@ export const unstable_settings = {
 
 function AppNavigation() {
   const { t } = useTranslation();
-  const { state } = useMockApp();
+  const { state } = useApp();
   const { mode, navigationTheme, palette } = useAppTheme();
   const authenticated = state.sessionStatus === 'authenticated';
 
@@ -49,7 +50,7 @@ function AppNavigation() {
 
 function AppNavigationGate() {
   const { t } = useTranslation();
-  const { state } = useMockApp();
+  const { state } = useApp();
   const { palette } = useAppTheme();
 
   if (!state.hydrated) {
@@ -76,11 +77,12 @@ export default function RootLayout() {
   return (
     <AppUiProvider>
       <I18nProvider>
-        <MockAppProvider>
+        <AppProvider>
+          <AppAutoRefresh />
           <NotificationsProvider>
             <AppNavigationGate />
           </NotificationsProvider>
-        </MockAppProvider>
+        </AppProvider>
       </I18nProvider>
     </AppUiProvider>
   );

@@ -3,12 +3,12 @@ import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppText } from '@/components/ui/app-text';
+import { useApp } from '@/app-state';
 import { useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
 
 export default function AppEntryRoute() {
   const { t } = useTranslation();
-  const { state } = useMockApp();
+  const { state } = useApp();
 
   if (!state.hydrated) {
     return (

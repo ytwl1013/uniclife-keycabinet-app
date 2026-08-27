@@ -5,9 +5,11 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
 import { PrototypeEventEmpty, PrototypeEventRow } from '@/features/cabinet-prototype/components/event-list';
+import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { FilterChip, Notice, SectionCard, SectionTitle, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { CabinetEventKind } from '@/features/cabinet-prototype/types';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
@@ -24,6 +26,7 @@ export default function ActivityRoute() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ filter?: string | string[] }>();
   const app = usePrototypeApp();
+  const { onRefresh, refreshing } = useAppRefresh();
   const requestedFilter = Array.isArray(params.filter) ? params.filter[0] : params.filter;
   const [kind, setKind] = useState<KindFilter>(requestedFilter === 'borrowed' ? 'borrowed' : 'all');
   const [actorId, setActorId] = useState('all');
@@ -79,6 +82,7 @@ export default function ActivityRoute() {
 
       <View className="mx-auto min-w-0 w-full max-w-content flex-1">
       <FlatList
+        alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
         contentInsetAdjustmentBehavior="automatic"
@@ -117,6 +121,7 @@ export default function ActivityRoute() {
           </View>
         )}
         ListHeaderComponentStyle={{ marginBottom: 12 }}
+        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         renderItem={({ index, item }) => (
           <SectionCard>
             <PrototypeEventRow

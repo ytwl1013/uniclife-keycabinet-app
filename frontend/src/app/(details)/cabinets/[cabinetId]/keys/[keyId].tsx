@@ -5,7 +5,6 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
-import { PrototypeEventList } from '@/features/cabinet-prototype/components/event-list';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
 import { ActionButton, FormField, Notice, ScreenHeader, SectionCard, SectionTitle, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { maskContact, usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
@@ -46,7 +45,6 @@ export default function KeyDetailRoute() {
     );
   }
 
-  const history = app.events.filter((event) => event.keyId === key.id);
   const statusTone = key.status === 'available' ? 'green' : key.status === 'overdue' ? 'red' : 'orange';
   const dirty = name.trim() !== key.name || note.trim() !== key.note;
 
@@ -91,6 +89,7 @@ export default function KeyDetailRoute() {
         description: t(trKey('loan.returnedDescription')),
         confirmLabel: t(trKey('loan.done')),
       });
+      router.back();
     } catch {
       await confirmation.present({
         title: t(trKey('loan.actionFailedTitle')),
@@ -142,14 +141,7 @@ export default function KeyDetailRoute() {
     }
   };
 
-  const primaryAction = key.status === 'available' ? (
-    <ActionButton
-      disabled={busy || app.isOffline}
-      icon="checkOut"
-      label={t(trKey('loan.checkOutAction'))}
-      onPress={() => router.push({ pathname: '/cabinets/[cabinetId]/loans/[keyId]', params: { cabinetId, keyId } } as never)}
-    />
-  ) : (
+  const primaryAction = key.status === 'available' ? null : (
     <ActionButton disabled={busy || app.isOffline} icon="return" label={t(trKey('loan.returnAction'))} onPress={() => void returnKey()} />
   );
 
@@ -184,29 +176,35 @@ export default function KeyDetailRoute() {
 
           <SectionCard>
             <SectionTitle title={t(trKey('key.detailsTitle'))} />
-            <FormField label={t(trKey('key.nameLabel'))} onChangeText={setName} placeholder={t(trKey('key.namePlaceholder'))} value={name} />
-            <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
-            <ActionButton disabled={!dirty || busy || app.isOffline} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
-            <ActionButton
-              disabled={Boolean(key.activeLoan) || busy || app.isOffline}
-              icon="error"
-              label={t(trKey('key.deleteAction'))}
-              onPress={() => void deleteKey()}
-              tone="danger"
-            />
-          </SectionCard>
-
-          <SectionCard>
-            <SectionTitle title={t(trKey('key.historyTitle'))} />
-            <PrototypeEventList emptyLabel={t(trKey('key.historyEmpty'))} events={history} />
+            {key.activeLoan ? (
+              <>
+                <DetailRow label={t(trKey('key.nameLabel'))} value={key.name} />
+                <DetailRow label={t(trKey('key.noteLabel'))} value={key.note.trim() || t(trKey('loan.notProvided'))} />
+              </>
+            ) : (
+              <>
+                <FormField label={t(trKey('key.nameLabel'))} onChangeText={setName} placeholder={t(trKey('key.namePlaceholder'))} value={name} />
+                <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
+                <ActionButton disabled={!dirty || busy || app.isOffline} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
+                <ActionButton
+                  disabled={busy || app.isOffline}
+                  icon="error"
+                  label={t(trKey('key.deleteAction'))}
+                  onPress={() => void deleteKey()}
+                  tone="danger"
+                />
+              </>
+            )}
           </SectionCard>
         </ScrollView>
         {confirmation.dialog}
       </View>
 
-      <View className="border-t border-line bg-background">
-        <View className="mx-auto w-full max-w-content px-screen py-3">{primaryAction}</View>
-      </View>
+      {primaryAction ? (
+        <View className="border-t border-line bg-background">
+          <View className="mx-auto w-full max-w-content px-screen py-3">{primaryAction}</View>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -215,7 +213,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-start justify-between gap-3 border-b border-line pb-3">
       <AppText className="flex-1" variant="body" tone="muted">{label}</AppText>
-      <AppText className="max-w-[62%] text-right" variant="label" tone="foreground">{value}</AppText>
+      <AppText className="max-w-[62%] text-right" selectable variant="label" tone="foreground">{value}</AppText>
     </View>
   );
 }

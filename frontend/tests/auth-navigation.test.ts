@@ -34,13 +34,19 @@ describe('authentication navigation', () => {
     expect(existsSync(resolve(__dirname, '../src/app/(auth)/welcome.tsx'))).toBe(false);
   });
 
-  it('preserves back navigation through preview and workspace setup', () => {
+  it('sends returning users home while keeping workspace setup after registration', () => {
     const signIn = source('src/app/(auth)/sign-in.tsx');
+    const signUp = source('src/app/(auth)/sign-up.tsx');
     const onboarding = source('src/app/onboarding.tsx');
     const scan = source('src/features/scan/components/scan-flow.tsx');
 
-    expect(signIn).toContain("params: { preview: '1' }");
-    expect(signIn).toContain('router.push({');
+    expect(signIn).toContain('await actions.signIn({ email: nextEmail, password })');
+    expect(signIn).toContain("const homeRoute = '/(tabs)' as Href");
+    expect(signIn).toContain('router.replace(homeRoute)');
+    expect(signIn).not.toContain('onboardingRoute');
+    expect(signUp).toContain('router.replace(onboardingRoute)');
+    expect(signIn).not.toContain('useDemo');
+    expect(signIn).not.toContain("params: { preview: '1' }");
     expect(onboarding).toContain("router.push({ pathname: '/(details)/scan'");
     expect(onboarding).toContain('void signOut(true)');
     expect(onboarding).toContain('router.back()');

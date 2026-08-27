@@ -1,41 +1,15 @@
 [
   {
-    "id": "qr-hq",
-    "code": "uniclife://cabinet/BG5163-BK/c59841b6-bab3-47ee-b280-47da3b29bd27",
+    "id": "product-qr-bg5163-bk",
+    "code": "uniclife://cabinet/v1/init/BG5163-BK/uniclife-bg5163-bk-2026",
     "skuId": "sku-bg5163-bk",
-    "deviceUuid": "c59841b6-bab3-47ee-b280-47da3b29bd27",
-    "status": "active",
-    "createdAt": "2026-05-05T08:00:00.000Z"
-  },
-  {
-    "id": "qr-loft",
-    "code": "uniclife://cabinet/BG0680-BK/dc93abea-198b-4221-8fdb-7efc729081c7",
-    "skuId": "sku-bg0680-bk",
-    "deviceUuid": "dc93abea-198b-4221-8fdb-7efc729081c7",
-    "status": "active",
-    "createdAt": "2026-05-06T08:00:00.000Z"
-  },
-  {
-    "id": "qr-studio",
-    "code": "uniclife://cabinet/BG5163-BK/a9a0929d-dd9d-46c3-8270-2f686921b53c",
-    "skuId": "sku-bg5163-bk",
-    "deviceUuid": "a9a0929d-dd9d-46c3-8270-2f686921b53c",
-    "status": "active",
-    "createdAt": "2026-05-07T08:00:00.000Z"
-  },
-  {
-    "id": "qr-bg5163-bk-unbound",
-    "code": "uniclife://cabinet/BG5163-BK/6abafe6b-2328-43e1-a461-70d3b660e5ef",
-    "skuId": "sku-bg5163-bk",
-    "deviceUuid": "6abafe6b-2328-43e1-a461-70d3b660e5ef",
     "status": "active",
     "createdAt": "2026-08-11T00:00:00.000Z"
   },
   {
-    "id": "qr-bg0680-bk-unbound",
-    "code": "uniclife://cabinet/BG0680-BK/2e2474ee-889a-4489-8bec-50ac5a054d37",
+    "id": "product-qr-bg0680-bk",
+    "code": "uniclife://cabinet/v1/init/BG0680-BK/uniclife-bg0680-bk-2026",
     "skuId": "sku-bg0680-bk",
-    "deviceUuid": "2e2474ee-889a-4489-8bec-50ac5a054d37",
     "status": "active",
     "createdAt": "2026-08-11T00:00:00.000Z"
   }

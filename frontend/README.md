@@ -2,10 +2,9 @@
 
 Expo SDK 54 React Native app for the UnicLife key cabinet product.
 
-The current implementation is a frontend-only interactive prototype. Accounts,
-QR binding, cabinet synchronisation, loans, and audit events
-are simulated locally; no production email, hardware, database or remote sync
-service is connected.
+The app uses the unified backend request layer for accounts, cabinet access,
+loans, and audit events. Validated local mock data remains for isolated tests and
+prototype tooling; no production email or cabinet hardware service is connected.
 
 ## Structure
 
@@ -23,10 +22,10 @@ global.css                       Uniwind, Tailwind CSS 4, HeroUI, and design tok
 tests/                           Component and flow tests
 ```
 
-Production backend calls must go through `src/api`. Prototype screens call the
-asynchronous service exposed by `src/mocks` and must never import seed JSON
-directly. Do not hardcode real API URLs, accounts, tokens, device numbers, or
-personnel data in screens.
+Production backend calls must go through `src/api`. Prototype-oriented screens
+consume the app-state action interface and must never import seed JSON directly.
+Do not hardcode real API URLs, accounts, tokens, device numbers, or personnel
+data in screens.
 
 ## Prototype walkthrough
 
@@ -43,15 +42,19 @@ All seeded identities, contact details, SKU artwork and QR payloads are
 fictional demo data. Generated cabinet artwork is presentation-only and does
 not contain a scannable product code.
 
-## Cabinet QR identity
+## Cabinet QR flows
 
-Cabinet QR payloads use `uniclife://cabinet/<SKU>/<UUID>`. The SKU identifies
-the product model and determines its metadata and slot capacity; the UUID
-uniquely identifies one physical cabinet. Multiple cabinet UUIDs can therefore
-share the same SKU. The first successful binding creates the cabinet record and
-its slots, while later scans of the same SKU/UUID resolve that existing cabinet.
-The local storage schema is v3; v1 and v2 prototype state is migrated to this
-identity model during hydration.
+Reusable product QR payloads use
+`uniclife://cabinet/v1/init/<SKU>/<PRODUCT_CODE>`. All cabinets of the same SKU
+scan the same printable code; each newly confirmed scan initializes a separate
+cabinet instance and its slots. A repeated network submission with the same
+request ID returns the original result instead of creating a duplicate.
+
+Joining an existing cabinet requires a current Admin to generate a one-time
+`uniclife://cabinet/v1/join/<OPAQUE_TOKEN>` QR in Cabinet Settings. The code
+identifies exactly one cabinet, expires after ten minutes, and becomes invalid
+after use, revocation, or replacement. The local mock storage schema remains v3;
+older prototype state is normalized during hydration for isolated tests.
 
 The prototype supports `en-US`, `en-GB`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`,
 `pt-PT`, `nl-NL`, `pl-PL`, `zh-CN`, and `zh-TW`, with system-locale selection or an in-app
@@ -69,12 +72,20 @@ override.
 ## Commands
 
 ```bash
+cp .env.development.example .env.local
 pnpm --filter @uniclife/frontend dev
 pnpm --filter @uniclife/frontend lint
 pnpm --filter @uniclife/frontend typecheck
 pnpm --filter @uniclife/frontend test
 pnpm --filter @uniclife/frontend exec expo export --platform web
 ```
+
+For device development, set `EXPO_PUBLIC_API_BASE_URL` in `.env.local` to the
+development Mac's LAN IPv4 address, for example
+`http://192.168.1.100:4000/api/v1`. The device and Mac must use the same local
+network. Production builds obtain the same public variable names from the EAS
+production environment and require an HTTPS API URL. Never store a secret in an
+`EXPO_PUBLIC_*` variable because Expo embeds it in the client bundle.
 
 Activity logs are read-only in the app and cannot be downloaded. All cabinet
 memberships use the single Admin role. Key deletion is permanent; cabinet,

@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { useApp } from '@/app-state';
 import {
   AuthErrorNotice,
   AuthField,
@@ -10,14 +11,13 @@ import {
 } from '@/features/auth/components/auth-ui';
 import { authErrorKey } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
 
 import { AccountLoading, AccountPage, FeedbackBanner } from './account-ui';
 
 export function ChangeEmailScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { actions, currentUser, state } = useMockApp();
+  const { actions, currentUser, state } = useApp();
   const [email, setEmail] = useState(currentUser?.email ?? '');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

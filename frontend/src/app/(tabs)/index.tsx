@@ -3,23 +3,27 @@ import { Dialog } from 'heroui-native/dialog';
 import { createRef, useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutChangeEvent, Pressable, ScrollView, View } from 'react-native';
 
+import { Cabinet, ProductSku, useApp } from '@/app-state';
 import { AppIcon } from '@/components/ui/app-icon';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { ProductImage } from '@/components/ui/product-image';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { UserAvatar } from '@/features/account/components/account-ui';
+import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
+import { shouldAutomaticallyPromptHomeGuide } from '@/features/home/home-guide';
 import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { useNotifications } from '@/features/notifications/notifications-provider';
 import { useTranslation } from '@/i18n';
-import { Cabinet, ProductSku, useMockApp } from '@/mocks';
 
 const GUIDE_STEPS = 3;
 
 export default function HomeRoute() {
   const params = useLocalSearchParams<{ guideStep?: string }>();
   const { t } = useTranslation();
-  const { currentUser, selectors, state } = useMockApp();
+  const { actions, currentUser, selectors, state } = useApp();
   const { unreadCount } = useNotifications();
+  const { onRefresh, refreshing } = useAppRefresh();
   const cabinets = selectors.cabinetsForCurrentUser();
   const borrowedKeys = selectors.borrowedKeys();
   const [guideConfirmationVisible, setGuideConfirmationVisible] = useState(false);
@@ -32,6 +36,7 @@ export default function HomeRoute() {
   const guideRequest = useRef(0);
   const guideFrame = useRef<number | undefined>(undefined);
   const resumedGuide = useRef(false);
+  const automaticGuideUserId = useRef<string | undefined>(undefined);
   const overdueCount = borrowedKeys.filter((key) => {
     const loan = state.loans.find((candidate) => candidate.keyId === key.id && candidate.status === 'active');
     return Boolean(loan?.expectedReturnAt && Date.parse(loan.expectedReturnAt) < Date.parse(state.now));
@@ -71,8 +76,17 @@ export default function HomeRoute() {
     };
     guideFrame.current = requestAnimationFrame(measureWhenReady);
   }, [guideTargetRefs]);
+  const acknowledgeAutomaticGuidePrompt = useCallback(() => {
+    if (!currentUser || currentUser.homeGuidePromptedAt !== null) return;
+    void actions.markHomeGuidePrompted().catch(() => undefined);
+  }, [actions, currentUser]);
+  const setGuideConfirmationOpen = (visible: boolean) => {
+    setGuideConfirmationVisible(visible);
+    if (!visible) acknowledgeAutomaticGuidePrompt();
+  };
   const startGuide = () => {
     setGuideConfirmationVisible(false);
+    acknowledgeAutomaticGuidePrompt();
     prepareGuideStep(0);
   };
   const closeGuide = () => {
@@ -87,6 +101,15 @@ export default function HomeRoute() {
     prepareGuideStep(1);
     router.setParams({ guideStep: undefined });
   }, [params.guideStep, prepareGuideStep]);
+  useEffect(() => {
+    if (
+      !state.hydrated ||
+      !shouldAutomaticallyPromptHomeGuide(currentUser, automaticGuideUserId.current)
+    ) return;
+    if (!currentUser) return;
+    automaticGuideUserId.current = currentUser.id;
+    setGuideConfirmationVisible(true);
+  }, [currentUser, state.hydrated]);
   useEffect(() => () => {
     guideRequest.current += 1;
     if (guideFrame.current !== undefined) cancelAnimationFrame(guideFrame.current);
@@ -169,13 +192,19 @@ export default function HomeRoute() {
       </View>
 
       <ScrollView
+        alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerClassName="mx-auto w-full max-w-content gap-6 px-screen pb-screen pt-screen"
         ref={scrollRef}
+        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         showsVerticalScrollIndicator={false}>
         <View className="gap-3" collapsable={false} onLayout={sectionLayout(0)} ref={guideTargetRefs[0]}>
           <AppText className="px-1" variant="title" tone="foreground">{t('home.activeLoansTitle')}</AppText>
-          <View className="gap-4 rounded-card border border-line bg-surface p-5 shadow-card" testID="home-borrowed-summary">
+          <Pressable
+            accessibilityRole="button"
+            className="gap-4 rounded-card border border-line bg-surface p-5 shadow-card active:opacity-75"
+            onPress={() => router.push('/(details)/loans' as Href)}
+            testID="home-borrowed-summary">
             <View className="flex-row items-center gap-4">
               <View className="h-14 w-14 items-center justify-center rounded-pill bg-warning-soft">
                 <AppIcon name="key" size={27} tone="warning" />
@@ -187,16 +216,14 @@ export default function HomeRoute() {
                 </View>
                 <AppText variant="caption" tone={overdueCount ? 'danger' : 'muted'}>{t('home.overdueCountLabel', { count: overdueCount })}</AppText>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                className="min-h-11 flex-row items-center justify-center gap-2 rounded-control bg-brand px-4 active:opacity-75"
-                onPress={() => router.push('/(details)/loans' as Href)}
+              <View
+                className="min-h-11 flex-row items-center justify-center gap-2 rounded-control bg-brand px-4"
                 testID="home-return-borrowed-key">
                 <AppIcon name="return" size={19} tone="onBrand" />
                 <AppText variant="label" tone="onBrand">{t('home.returnBorrowedKey')}</AppText>
-              </Pressable>
+              </View>
             </View>
-          </View>
+          </Pressable>
         </View>
 
         <View className="gap-3" collapsable={false} onLayout={sectionLayout(1)} ref={guideTargetRefs[1]}>
@@ -224,7 +251,7 @@ export default function HomeRoute() {
 
       </ScrollView>
 
-      <Dialog isOpen={guideConfirmationVisible} onOpenChange={setGuideConfirmationVisible}>
+      <Dialog isOpen={guideConfirmationVisible} onOpenChange={setGuideConfirmationOpen}>
         <Dialog.Portal unstable_accessibilityContainerViewIsModal>
           <Dialog.Overlay />
           <Dialog.Content className="w-full max-w-[430px] gap-4" isSwipeable={false} testID="home-guide-prompt-modal">
@@ -241,7 +268,7 @@ export default function HomeRoute() {
             <Pressable
               accessibilityRole="button"
               className="min-h-12 flex-1 items-center justify-center rounded-control border border-line bg-surface px-4 active:opacity-70"
-              onPress={() => setGuideConfirmationVisible(false)}>
+              onPress={() => setGuideConfirmationOpen(false)}>
               <AppText variant="label" tone="foreground">{t('home.guideLater')}</AppText>
             </Pressable>
             <Pressable
@@ -284,7 +311,7 @@ export default function HomeRoute() {
 
 function CabinetCard({ cabinet, sku }: { cabinet: Cabinet; sku?: ProductSku }) {
   const { t } = useTranslation();
-  const { selectors } = useMockApp();
+  const { selectors } = useApp();
   const metrics = selectors.cabinetMetrics(cabinet.id);
   return (
     <Pressable className="flex-row items-center gap-4 rounded-card border border-line bg-surface p-3" onPress={() => router.push({ pathname: '/cabinets/[cabinetId]', params: { cabinetId: cabinet.id } } as Href)}>
@@ -292,10 +319,9 @@ function CabinetCard({ cabinet, sku }: { cabinet: Cabinet; sku?: ProductSku }) {
         <ProductImage accessibilityLabel={sku?.name ?? cabinet.name} assetKey={sku?.imageAsset} variant="thumbnail" />
       </View>
       <View className="min-w-0 flex-1 gap-1.5">
-        <AppText variant="caption" tone={cabinet.status === 'online' ? 'success' : 'muted'}>{t(`cabinet.status.${cabinet.status}`)}</AppText>
         <AppText variant="title" tone="foreground">{cabinet.name}</AppText>
         <AppText numberOfLines={1} variant="caption" tone="muted">{cabinet.location}</AppText>
-        <AppText variant="caption" tone="content">{t('common.cabinetMeta', { slots: metrics.capacity, overdue: metrics.overdue, status: t(`cabinet.status.${cabinet.status}`) })}</AppText>
+        <AppText variant="caption" tone="content">{t('common.cabinetMeta', { slots: metrics.capacity, overdue: metrics.overdue })}</AppText>
       </View>
       <AppIcon name="chevronRight" size={23} tone="muted" />
     </Pressable>

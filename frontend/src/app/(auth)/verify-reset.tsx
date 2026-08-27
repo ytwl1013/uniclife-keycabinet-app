@@ -14,8 +14,8 @@ import {
   rememberResetToken,
   useAuthActions,
 } from '@/features/auth/use-auth-actions';
+import { localPasswordResetEnabled } from '@/config/developer';
 import { useTranslation } from '@/i18n';
-import { localPasswordResetEnabled } from '@/mocks';
 
 const forgotPasswordRoute = '/(auth)/forgot-password' as Href;
 const signInRoute = '/(auth)/sign-in' as Href;

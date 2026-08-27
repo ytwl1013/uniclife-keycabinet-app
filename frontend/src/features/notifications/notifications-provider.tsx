@@ -10,9 +10,9 @@ import {
 } from 'react';
 
 import { AppIconName, AppIconTone } from '@/components/ui/app-icon';
+import { useApp } from '@/app-state';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
 import { isNotifiableEvent } from '@/features/notifications/notification-policy';
-import { useMockApp } from '@/mocks';
 
 export type AppNotification = {
   id: string;
@@ -49,7 +49,7 @@ const eventIcon = {
 
 export function NotificationsProvider({ children }: PropsWithChildren) {
   const app = usePrototypeApp();
-  const { currentUser } = useMockApp();
+  const { currentUser } = useApp();
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
   const storageKey = `uniclife.notifications.read.v1.${currentUser?.id ?? 'anonymous'}`;

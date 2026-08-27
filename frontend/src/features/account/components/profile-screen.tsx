@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { useApp } from '@/app-state';
 import { AppText } from '@/components/ui/app-text';
 import {
   AuthErrorNotice,
@@ -12,14 +13,13 @@ import {
 } from '@/features/auth/components/auth-ui';
 import { authErrorKey } from '@/features/auth/use-auth-actions';
 import { useTranslation } from '@/i18n';
-import { useMockApp } from '@/mocks';
 
 import { AccountLoading, AccountPage, FeedbackBanner, UserAvatar } from './account-ui';
 
 export function ProfileScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { actions, currentUser, state } = useMockApp();
+  const { actions, currentUser, state } = useApp();
   const [displayName, setDisplayName] = useState(currentUser?.displayName ?? '');
   const [avatarUri, setAvatarUri] = useState<string | undefined>(currentUser?.avatarUri);
   const [error, setError] = useState('');

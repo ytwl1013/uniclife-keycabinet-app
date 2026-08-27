@@ -1,5 +1,6 @@
+import { useApp } from '@/app-state';
+import { ApiError } from '@/api/client';
 import { TranslationKey } from '@/i18n';
-import { useMockApp } from '@/mocks';
 
 export type AuthCredentials = {
   email: string;
@@ -41,19 +42,25 @@ export function clearResetChallenge(challengeId: string) {
 }
 
 export function useAuthActions() {
-  const { actions, currentUser, state } = useMockApp();
+  const { actions, currentUser, state } = useApp();
 
   return {
     currentUser,
     hydrated: state.hydrated,
     actions: {
       signIn: (input: AuthCredentials) => actions.signIn(input),
-      register: (input: RegistrationInput) =>
-        actions.register({
+      register: (input: RegistrationInput) => {
+        if (!input.acceptedTerms || !input.acceptedPrivacy) {
+          throw new ApiError(400, 'INVALID_INPUT', '请先同意服务条款和隐私政策');
+        }
+        return actions.register({
           ...input,
           displayName: input.displayName.trim(),
           locale: input.locale as Parameters<typeof actions.register>[0]['locale'],
-        }),
+          acceptedTerms: true,
+          acceptedPrivacy: true,
+        });
+      },
       signOut: () => actions.signOut(),
       requestPasswordReset: (email: string) => actions.requestPasswordReset({ email }),
       getPasswordResetPreview: (challengeId: string) =>

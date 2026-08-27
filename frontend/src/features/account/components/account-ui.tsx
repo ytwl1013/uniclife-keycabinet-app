@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
 import { useAppTheme } from '@/styles/theme';
 
@@ -62,6 +63,8 @@ type AccountPageProps = PropsWithChildren<{
   backLabel?: string;
   headerShown?: boolean;
   onBack?: () => void;
+  onRefresh?: () => void;
+  refreshing?: boolean;
   trailing?: ReactNode;
 }>;
 
@@ -71,6 +74,8 @@ export function AccountPage({
   description,
   headerShown = true,
   onBack,
+  onRefresh,
+  refreshing = false,
   title,
   trailing,
 }: AccountPageProps) {
@@ -109,12 +114,16 @@ export function AccountPage({
       ) : null}
 
       <ScrollView
+        alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerClassName={`pb-screen ${
           headerShown ? 'pt-screen' : 'pt-3'
         }`}
         contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
+        refreshControl={onRefresh ? (
+          <AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />
+        ) : undefined}
         showsVerticalScrollIndicator={false}>
         <View className="mx-auto w-full max-w-content gap-6 px-screen">
           {children}

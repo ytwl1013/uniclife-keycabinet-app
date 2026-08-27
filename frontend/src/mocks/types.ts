@@ -36,11 +36,10 @@ export type ProductSku = {
   imageAsset: string;
 };
 
-export type CabinetQr = {
+export type ProductQr = {
   id: string;
   code: string;
   skuId: string;
-  deviceUuid: string;
   status: 'active' | 'disabled';
   createdAt: string;
 };
@@ -106,6 +105,8 @@ export type Loan = {
 
 export const cabinetEventTypes = [
   'cabinet_bound',
+  'cabinet_initialized',
+  'member_joined',
   'cabinet_renamed',
   'member_removed',
   'member_role_changed',
@@ -154,7 +155,7 @@ export type ConsentRecord = {
 export type MockDomainData = {
   users: UserAccount[];
   skus: ProductSku[];
-  qrs: CabinetQr[];
+  qrs: ProductQr[];
   cabinets: Cabinet[];
   memberships: CabinetMembership[];
   slots: KeySlot[];
@@ -236,12 +237,12 @@ export type MockStorage = {
 };
 
 export type QrResolution = {
-  qr: CabinetQr;
+  kind: 'initialize';
+  qr: ProductQr;
   sku: ProductSku;
-  cabinet?: Cabinet;
 };
 
-export type BindCabinetResult = {
+export type CabinetAccessResult = {
   cabinet: Cabinet;
   membership: CabinetMembership;
 };

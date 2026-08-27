@@ -36,7 +36,9 @@ The current pipeline is intentionally small because this repository is still in
 the initialization planning stage. The `repository_policy` job verifies:
 
 - `AGENTS.md` and `README.md` exist.
-- Secret-like files such as `.env`, private keys, and certificates are absent.
+- Secret-like files such as `.env`, private keys, and certificates are absent;
+  environment-specific `*.example` templates containing placeholders are
+  allowed.
 - Obvious private key material is absent.
 - Secret-like environment assignments are not committed.
 

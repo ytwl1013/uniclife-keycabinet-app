@@ -3,6 +3,7 @@ import { ReactElement, useCallback, useLayoutEffect, useRef } from 'react';
 import { FlatList, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { AppIcon, AppIconTone } from '@/components/ui/app-icon';
+import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
 import { SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { TranslationKey, useTranslation } from '@/i18n';
@@ -22,14 +23,18 @@ export function PrototypeKeySlotGrid({
   cabinetId,
   empty,
   header,
+  onRefresh,
   onSpotlightRect,
+  refreshing,
   slots,
   spotlightSlotId,
 }: {
   cabinetId: string;
   empty: ReactElement;
   header: ReactElement;
+  onRefresh: () => void;
   onSpotlightRect?: (rect: SpotlightRect) => void;
+  refreshing: boolean;
   slots: SlotView[];
   spotlightSlotId?: string;
 }) {
@@ -38,6 +43,7 @@ export function PrototypeKeySlotGrid({
 
   return (
     <FlatList
+      alwaysBounceVertical
       className="min-w-0 flex-1"
       columnWrapperStyle={{ columnGap: 10 }}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 20, paddingHorizontal: 20, paddingTop: 20, rowGap: 10 }}
@@ -49,6 +55,7 @@ export function PrototypeKeySlotGrid({
       ListHeaderComponent={header}
       ListHeaderComponentStyle={{ marginBottom: 18 }}
       numColumns={columns}
+      refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
       renderItem={({ item }) => (
         <SlotCell
           cabinetId={cabinetId}
@@ -80,9 +87,11 @@ function SlotCell({
   const cellRef = useRef<View>(null);
   const spotlightFrame = useRef<number | undefined>(undefined);
   const style = config[slot.status];
-  const href = slot.keyId
-    ? { pathname: '/cabinets/[cabinetId]/keys/[keyId]' as const, params: { cabinetId, keyId: slot.keyId } }
-    : { pathname: '/cabinets/[cabinetId]/keys/new' as const, params: { cabinetId, slotId: slot.id, slotNumber: String(slot.number) } };
+  const href = !slot.keyId
+    ? { pathname: '/cabinets/[cabinetId]/keys/new' as const, params: { cabinetId, slotId: slot.id, slotNumber: String(slot.number) } }
+    : slot.status === 'available'
+      ? { pathname: '/cabinets/[cabinetId]/loans/[keyId]' as const, params: { cabinetId, keyId: slot.keyId } }
+      : { pathname: '/cabinets/[cabinetId]/keys/[keyId]' as const, params: { cabinetId, keyId: slot.keyId } };
 
   const reportSpotlightRect = useCallback(() => {
     if (!spotlighted) return;

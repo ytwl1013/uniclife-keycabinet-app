@@ -4,32 +4,45 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "predev": "pnpm --filter @uniclife/shared build",
+    "dev": "NODE_ENV=development tsx watch src/index.ts",
+    "prebuild": "pnpm --filter @uniclife/shared build",
     "build": "tsc -p tsconfig.json",
+    "prelint": "pnpm --filter @uniclife/shared build",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "pretypecheck": "pnpm --filter @uniclife/shared build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "pretest": "pnpm --filter @uniclife/shared build",
     "test": "vitest run",
-    "db:generate": "drizzle-kit generate",
+    "db:generate": "NODE_ENV=development drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "start": "node dist/index.js"
+    "db:migrate:dev": "NODE_ENV=development drizzle-kit migrate",
+    "db:seed:dev": "NODE_ENV=development tsx src/db/seed.ts",
+    "start": "NODE_ENV=production node dist/index.js"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",
     "@fastify/helmet": "^13.0.2",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/sensible": "^6.0.3",
-    "drizzle-orm": "^0.45.2",
+    "@fastify/websocket": "^11.3.0",
+    "@uniclife/shared": "workspace:*",
     "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.45.2",
     "fastify": "^5.6.2",
-    "postgres": "^3.4.9",
+    "nodemailer": "^9.0.5",
     "pino": "^10.1.0",
+    "postgres": "^3.4.9",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^20.14.2",
+    "@types/nodemailer": "^8.0.1",
+    "@types/ws": "^8.18.1",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.15"
+    "vitest": "^4.0.15",
+    "ws": "^8.21.3"
   }
 }

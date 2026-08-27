@@ -1,18 +1,23 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Keyboard, ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
+import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { DateTimeField } from '@/components/ui/date-time-field';
 import { isExpectedReturnAfter } from '@/components/ui/date-time';
+import { CheckoutKeyboardAccessories } from '@/features/cabinet-prototype/components/checkout-keyboard-accessory';
+import { PrototypeEventList } from '@/features/cabinet-prototype/components/event-list';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
-import { ActionButton, FilterChip, FormField, Notice, ScreenHeader, SectionCard, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
+import { ActionButton, FilterChip, FormField, Notice, ScreenHeader, SectionCard, SectionTitle, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
 import { TranslationKey, useTranslation } from '@/i18n';
 
 const trKey = (key: string) => key as TranslationKey;
 const quickReturnOptions = [1, 3, 7] as const;
+const borrowerNameKeyboardAccessoryId = 'checkout-borrower-name-actions';
+const borrowerContactKeyboardAccessoryId = 'checkout-borrower-contact-actions';
 type QuickReturnDays = (typeof quickReturnOptions)[number];
 
 export default function CheckOutKeyRoute() {
@@ -35,7 +40,18 @@ export default function CheckOutKeyRoute() {
   const [quickReturnDays, setQuickReturnDays] = useState<QuickReturnDays>();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const confirmation = usePrototypeDialog();
+
+  useEffect(() => {
+    if (process.env.EXPO_OS === 'ios') return;
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   if (!cabinet || !key || key.status !== 'available') {
     return (
@@ -54,6 +70,8 @@ export default function CheckOutKeyRoute() {
     );
   }
 
+  const history = app.events.filter((event) => event.keyId === key.id);
+
   const validate = () => {
     const next: Record<string, string> = {};
     const checkedOut = new Date(checkedOutAt);
@@ -68,6 +86,7 @@ export default function CheckOutKeyRoute() {
 
   const submit = async () => {
     if (!validate()) return;
+    Keyboard.dismiss();
     setBusy(true);
     try {
       await app.checkoutKey({
@@ -112,7 +131,20 @@ export default function CheckOutKeyRoute() {
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       <View className="border-b border-line bg-background">
         <View className="mx-auto w-full max-w-content px-screen py-3">
-          <ScreenHeader onBack={() => router.back()} subtitle={cabinet.name} title={t(trKey('loan.checkOutKey'), { key: key.name })} />
+          <ScreenHeader
+            action={(
+              <ActionButton
+                compact
+                icon="settings"
+                label={t(trKey('key.manageAction'))}
+                onPress={() => router.push({ pathname: '/cabinets/[cabinetId]/keys/[keyId]', params: { cabinetId, keyId } } as never)}
+                tone="neutral"
+              />
+            )}
+            onBack={() => router.back()}
+            subtitle={cabinet.name}
+            title={t(trKey('loan.checkOutKey'), { key: key.name })}
+          />
         </View>
       </View>
 
@@ -124,16 +156,26 @@ export default function CheckOutKeyRoute() {
           contentInsetAdjustmentBehavior="never"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
+          <View className="flex-row items-center gap-2 rounded-control border border-brand/20 bg-brand-soft px-3 py-2">
+            <AppIcon name="key" size={16} tone="brand" />
+            <AppText className="min-w-0 flex-1" selectable variant="caption" tone="content">
+              {key.note.trim()
+                ? t(trKey('loan.keyNoteReminder'), { note: key.note.trim() })
+                : t(trKey('loan.keyNoteEmptyReminder'))}
+            </AppText>
+          </View>
           {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
           <SectionCard>
             <FormField
               error={errors.borrowerName}
+              inputAccessoryViewID={borrowerNameKeyboardAccessoryId}
               label={t(trKey('loan.borrowerName'))}
               onChangeText={(value) => { setBorrowerName(value); setErrors((current) => ({ ...current, borrowerName: '' })); }}
               placeholder={t(trKey('loan.borrowerNamePlaceholder'))}
               value={borrowerName}
             />
             <FormField
+              inputAccessoryViewID={borrowerContactKeyboardAccessoryId}
               label={t(trKey('loan.borrowerContactOptional'))}
               onChangeText={setBorrowerContact}
               placeholder={t(trKey('loan.borrowerContactPlaceholder'))}
@@ -180,13 +222,31 @@ export default function CheckOutKeyRoute() {
               </View>
             </View>
           </SectionCard>
+
+          <SectionCard>
+            <SectionTitle title={t(trKey('key.historyTitle'))} />
+            <PrototypeEventList emptyLabel={t(trKey('key.historyEmpty'))} events={history} />
+          </SectionCard>
         </ScrollView>
         {confirmation.dialog}
       </View>
 
+      <CheckoutKeyboardAccessories
+        disabled={busy || app.isOffline}
+        label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))}
+        nativeIDs={[borrowerNameKeyboardAccessoryId, borrowerContactKeyboardAccessoryId]}
+        onPress={() => void submit()}
+      />
+
       <SafeAreaView className="border-t border-line bg-background" edges={['bottom']}>
-        <View className="mx-auto w-full max-w-content px-screen pt-3">
-          <ActionButton disabled={busy || app.isOffline} icon="checkOut" label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))} onPress={() => void submit()} />
+        <View className={`mx-auto w-full max-w-content px-screen ${keyboardVisible ? 'items-end py-2' : 'pt-3'}`}>
+          <ActionButton
+            compact={keyboardVisible}
+            disabled={busy || app.isOffline}
+            icon="checkOut"
+            label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))}
+            onPress={() => void submit()}
+          />
         </View>
       </SafeAreaView>
     </SafeAreaView>

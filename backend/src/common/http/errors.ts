@@ -3,10 +3,60 @@ import { ZodError } from 'zod';
 
 import { fail } from './response.js';
 
+export class AppError extends Error {
+  readonly code: string;
+  readonly statusCode: number;
+  readonly details?: unknown;
+
+  constructor(statusCode: number, code: string, message: string, details?: unknown) {
+    super(message);
+    this.name = 'AppError';
+    this.statusCode = statusCode;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+export function assertApp(
+  condition: unknown,
+  statusCode: number,
+  code: string,
+  message: string,
+  details?: unknown,
+): asserts condition {
+  if (!condition) {
+    throw new AppError(statusCode, code, message, details);
+  }
+}
+
+export function errorCode(error: unknown): string {
+  if (error instanceof AppError) {
+    return error.code;
+  }
+  if (isPostgresError(error) && error.code === '23505') {
+    return 'RESOURCE_CONFLICT';
+  }
+  return 'INTERNAL_ERROR';
+}
+
 export function registerErrorHandler(app: FastifyInstance): void {
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {
-      return reply.status(400).send(fail('VALIDATION_ERROR', '请求参数不合法', error.flatten()));
+      return reply
+        .status(400)
+        .send(fail('VALIDATION_ERROR', '请求参数不合法', error.flatten()));
+    }
+
+    if (error instanceof AppError) {
+      return reply.status(error.statusCode).send(fail(error.code, error.message, error.details ?? null));
+    }
+
+    if (isPostgresError(error) && error.code === '23505') {
+      return reply.status(409).send(fail('RESOURCE_CONFLICT', '资源已存在或状态已变化'));
+    }
+
+    if (error instanceof Error && error.message === 'DATABASE_NOT_CONFIGURED') {
+      return reply.status(503).send(fail('DATABASE_NOT_CONFIGURED', '数据库未配置'));
     }
 
     const statusCode = getStatusCode(error);
@@ -14,11 +64,20 @@ export function registerErrorHandler(app: FastifyInstance): void {
     const message = statusCode >= 500 ? '服务暂时不可用' : getMessage(error);
 
     if (statusCode >= 500) {
-      app.log.error(error);
+      request.log.error({ err: error }, 'request failed');
     }
 
     return reply.status(statusCode).send(fail(code, message));
   });
+}
+
+function isPostgresError(error: unknown): error is { code: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as { code?: unknown }).code === 'string'
+  );
 }
 
 function getStatusCode(error: unknown): number {
@@ -26,14 +85,9 @@ function getStatusCode(error: unknown): number {
     const statusCode = (error as { statusCode?: unknown }).statusCode;
     return typeof statusCode === 'number' ? statusCode : 500;
   }
-
   return 500;
 }
 
 function getMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return '请求失败';
+  return error instanceof Error ? error.message : '请求失败';
 }
