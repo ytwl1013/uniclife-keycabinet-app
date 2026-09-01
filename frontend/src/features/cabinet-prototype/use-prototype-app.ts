@@ -130,6 +130,7 @@ export function usePrototypeApp(): PrototypeApp {
       returnedAt: text(loan.returnedAt) || undefined,
       operatorUserId: text(loan.operatorId, text(loan.operatorUserId)),
     }));
+    const loanViewById = new Map(loanViews.map((loan) => [loan.id, loan]));
 
     const activeLoanByKey = new Map(
       rawLoans
@@ -225,12 +226,11 @@ export function usePrototypeApp(): PrototypeApp {
         const keyName = text(summary.keyName, key?.name ?? t(trKey('key.unknown')));
         const actorName = text(actor.name, text(actor.displayName, text(actor.email, t(trKey('activity.systemActor')))));
         const targetName = text(summary.memberName, text(summary.targetName));
-        let detail: string | undefined;
-        if (text(summary.borrowerName)) {
-          detail = t(trKey('loan.borrowerDetail'), { borrower: text(summary.borrowerName) });
-        } else if (targetName) {
-          detail = t(trKey('activity.memberDetail'), { member: targetName });
-        }
+        const relatedLoan = loanViewById.get(text(event.relatedLoanId));
+        const borrowerName = text(summary.borrowerName, relatedLoan?.borrowerName) || undefined;
+        const detail = targetName
+          ? t(trKey('activity.memberDetail'), { member: targetName })
+          : undefined;
         return {
           id: text(event.id),
           cabinetId: text(event.cabinetId),
@@ -242,6 +242,7 @@ export function usePrototypeApp(): PrototypeApp {
           createdAt: text(event.occurredAt, text(event.createdAt)),
           title: t(trKey(`activity.event.${kind}`), { key: keyName, actor: actorName }),
           detail,
+          borrowerName,
           borrowerContact: text(summary.borrowerContact) || undefined,
         };
       })

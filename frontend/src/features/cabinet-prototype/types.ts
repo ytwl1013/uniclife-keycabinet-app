@@ -1,4 +1,5 @@
 import type { CabinetJoinInvitation } from '@uniclife/shared';
+import type { ActivityEvent, ActivityEventKind } from '@/features/activity/types';
 
 export type CabinetRole = 'admin';
 
@@ -69,32 +70,9 @@ export type MemberView = {
   boundAt: string;
 };
 
-export type CabinetEventKind =
-  | 'checkOut'
-  | 'return'
-  | 'keyAdded'
-  | 'keyUpdated'
-  | 'undo'
-  | 'memberAdded'
-  | 'memberRemoved'
-  | 'roleChanged'
-  | 'keysCleared'
-  | 'keysRestored'
-  | 'admin';
+export type CabinetEventKind = ActivityEventKind;
 
-export type EventView = {
-  id: string;
-  cabinetId: string;
-  keyId?: string;
-  keyName?: string;
-  actorUserId: string;
-  actorName: string;
-  kind: CabinetEventKind;
-  createdAt: string;
-  title: string;
-  detail?: string;
-  borrowerContact?: string;
-};
+export type EventView = ActivityEvent;
 
 export type ActivityFilters = {
   cabinetId?: string;

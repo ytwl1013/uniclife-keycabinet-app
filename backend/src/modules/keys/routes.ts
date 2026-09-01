@@ -441,7 +441,10 @@ export async function registerKeyRoutes(
               type: 'return',
               occurredAt: returnedAt,
               relatedLoanId: activeLoan.id,
-              summaryData: { keyName: current.name },
+              summaryData: {
+                borrowerName: activeLoan.borrowerName,
+                keyName: current.name,
+              },
             })
             .returning();
           const [updatedLoan] = await transaction

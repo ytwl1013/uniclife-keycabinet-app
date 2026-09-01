@@ -10,11 +10,13 @@ import { AppText } from '@/components/ui/app-text';
 import { Pill, PillTone } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
 import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
+import { ActivityTimelineItem } from '@/features/activity/components/activity-timeline';
+import { useActivityPagination } from '@/features/activity/use-activity-pagination';
 import { TranslationKey, useTranslation } from '@/i18n';
 import { SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 
 import { CabinetEventKind, CabinetView, PrototypeApp } from '../types';
-import { PrototypeEventEmpty, PrototypeEventList, PrototypeEventRow } from './event-list';
+import { PrototypeEventEmpty, PrototypeEventList } from './event-list';
 import { PrototypeKeySlotGrid } from './key-slot-grid';
 import { usePrototypeDialog } from './prototype-dialog';
 import { ActionButton, FilterChip, FormField, InlineButton, SearchInput, SectionCard, SectionTitle, Stat, StatePanel } from './prototype-ui';
@@ -195,7 +197,10 @@ export function CabinetActivity({
   const [time, setTime] = useState<'all' | 'week' | 'month'>('all');
   const [actorId, setActorId] = useState('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const cabinetEvents = app.events.filter((event) => event.cabinetId === cabinet.id);
+  const cabinetEvents = useMemo(
+    () => app.events.filter((event) => event.cabinetId === cabinet.id),
+    [app.events, cabinet.id],
+  );
   const operators = useMemo(() => {
     const seen = new Set<string>();
     return cabinetEvents.filter((event) => {
@@ -216,6 +221,11 @@ export function CabinetActivity({
       return event.kind === kind;
     });
   }, [actorId, app.now, cabinetEvents, kind, time]);
+  const {
+    hasMore,
+    loadMore,
+    visibleEntries: visibleEvents,
+  } = useActivityPagination(events, `${cabinet.id}:${kind}:${actorId}:${time}`);
   const activeFilters = [
     kind !== 'all' ? { id: 'kind', label: t(trKey(`activity.filter.${kind}`)), clear: () => setKind('all') } : null,
     actorId !== 'all' ? { id: 'actor', label: operators.find((operator) => operator.id === actorId)?.name ?? actorId, clear: () => setActorId('all') } : null,
@@ -228,7 +238,8 @@ export function CabinetActivity({
         alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
-        data={events}
+        contentInsetAdjustmentBehavior="automatic"
+        data={visibleEvents}
         keyExtractor={(event) => event.id}
         ListEmptyComponent={<PrototypeEventEmpty label={t(trKey('activity.emptyFiltered'))} />}
         ListHeaderComponent={(
@@ -255,13 +266,12 @@ export function CabinetActivity({
           </View>
         )}
         ListHeaderComponentStyle={{ marginBottom: 12 }}
+        onEndReached={hasMore ? loadMore : undefined}
+        onEndReachedThreshold={0.35}
         refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
-        renderItem={({ index, item }) => (
+        renderItem={({ item }) => (
           <SectionCard>
-            <PrototypeEventRow
-              event={item}
-              isLast={index === events.length - 1}
-            />
+            <ActivityTimelineItem event={item} />
           </SectionCard>
         )}
         showsVerticalScrollIndicator={false}

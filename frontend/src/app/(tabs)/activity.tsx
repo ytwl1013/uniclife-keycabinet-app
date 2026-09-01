@@ -8,7 +8,9 @@ import { AppIcon } from '@/components/ui/app-icon';
 import { AppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
-import { PrototypeEventEmpty, PrototypeEventRow } from '@/features/cabinet-prototype/components/event-list';
+import { ActivityTimelineItem } from '@/features/activity/components/activity-timeline';
+import { useActivityPagination } from '@/features/activity/use-activity-pagination';
+import { PrototypeEventEmpty } from '@/features/cabinet-prototype/components/event-list';
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { FilterChip, Notice, SectionCard, SectionTitle, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { CabinetEventKind } from '@/features/cabinet-prototype/types';
@@ -55,6 +57,14 @@ export default function ActivityRoute() {
       return event.kind === kind;
     });
   }, [actorId, app.events, app.keys, app.now, kind, time]);
+  const {
+    hasMore,
+    loadMore,
+    visibleEntries: visibleEvents,
+  } = useActivityPagination(
+    app.isLoading ? [] : events,
+    `${kind}:${actorId}:${time}`,
+  );
 
   const borrowedKeys = app.keys.filter((key) => key.activeLoan);
   const activeFilters = [
@@ -86,7 +96,7 @@ export default function ActivityRoute() {
         className="min-w-0 flex-1"
         contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
         contentInsetAdjustmentBehavior="automatic"
-        data={app.isLoading ? [] : events}
+        data={visibleEvents}
         keyExtractor={(event) => event.id}
         ListEmptyComponent={app.isLoading ? (
           <StatePanel description={t(trKey('activity.loadingDescription'))} loading title={t(trKey('activity.loadingTitle'))} />
@@ -121,13 +131,12 @@ export default function ActivityRoute() {
           </View>
         )}
         ListHeaderComponentStyle={{ marginBottom: 12 }}
+        onEndReached={hasMore ? loadMore : undefined}
+        onEndReachedThreshold={0.35}
         refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
-        renderItem={({ index, item }) => (
+        renderItem={({ item }) => (
           <SectionCard>
-            <PrototypeEventRow
-              event={item}
-              isLast={index === events.length - 1}
-            />
+            <ActivityTimelineItem event={item} />
           </SectionCard>
         )}
         showsVerticalScrollIndicator={false}
