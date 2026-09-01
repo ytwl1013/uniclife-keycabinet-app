@@ -68,6 +68,29 @@ describe('eleven-region localisation', () => {
     expect(resolveLocale('sv-SE', 'sv')).toBe('en-US');
   });
 
+  it('localises account settings in every selectable language', () => {
+    const expectedLabels = {
+      'en-US': ['Personal account', 'System default'],
+      'en-GB': ['Personal account', 'System default'],
+      'de-DE': ['Persönliches Konto', 'Systemstandard'],
+      'fr-FR': ['Compte personnel', 'Réglage du système'],
+      'es-ES': ['Cuenta personal', 'Predeterminado del sistema'],
+      'it-IT': ['Account personale', 'Predefinita di sistema'],
+      'pt-PT': ['Conta pessoal', 'Predefinição do sistema'],
+      'nl-NL': ['Persoonlijk account', 'Systeemstandaard'],
+      'pl-PL': ['Konto osobiste', 'Domyślny systemowy'],
+      'zh-CN': ['个人账号', '跟随系统'],
+      'zh-TW': ['個人帳戶', '跟隨系統'],
+    } as const;
+
+    for (const locale of supportedLocales) {
+      expect([
+        catalog[locale].account.personalAccountTitle,
+        catalog[locale].account.systemLanguage,
+      ]).toEqual(expectedLabels[locale]);
+    }
+  });
+
   it('interpolates operational text and formats dates and numbers in every locale', () => {
     const i18n = new I18n(catalog);
     for (const locale of supportedLocales) {
@@ -88,8 +111,7 @@ describe('eleven-region localisation', () => {
   it('keeps prototype terminology out of normal product copy', () => {
     const forbidden = /\b(demo|prototype|simulated|fictional|seeded)\b/i;
     for (const locale of supportedLocales) {
-      const normalCopy = leafEntries(catalog[locale]).filter(([path]) => path !== 'account.simulatedTime');
-      expect(normalCopy.filter(([, value]) => forbidden.test(value))).toEqual([]);
+      expect(leafEntries(catalog[locale]).filter(([, value]) => forbidden.test(value))).toEqual([]);
     }
   });
 

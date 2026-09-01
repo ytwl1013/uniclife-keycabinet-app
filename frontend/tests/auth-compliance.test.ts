@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { createInitialMockState } from '../src/mocks/seed';
@@ -84,6 +84,16 @@ describe('authentication and consent workflow', () => {
     expect(signUp).not.toContain('marketingOptIn');
     expect(account).not.toContain('marketingConsent');
     expect(account).not.toContain('setMarketingConsent');
+  });
+
+  it('removes the developer settings entry and route', () => {
+    const account = readFileSync(resolve(__dirname, '../src/features/account/components/account-screen.tsx'), 'utf8');
+    const detailsLayout = readFileSync(resolve(__dirname, '../src/app/(details)/_layout.tsx'), 'utf8');
+    const developerRoute = resolve(__dirname, '../src/app/(details)/account/developer-settings.tsx');
+
+    expect(account).not.toContain('developerSettings');
+    expect(detailsLayout).not.toContain('developer-settings');
+    expect(existsSync(developerRoute)).toBe(false);
   });
 
   it('keeps the transient verification challenge for password reset', async () => {

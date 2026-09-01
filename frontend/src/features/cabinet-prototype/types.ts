@@ -1,7 +1,7 @@
 import type { CabinetJoinInvitation } from '@uniclife/shared';
 import type { ActivityEvent, ActivityEventKind } from '@/features/activity/types';
 
-export type CabinetRole = 'admin';
+export type CabinetRole = 'superAdmin' | 'admin';
 
 export type CabinetStatus = 'online' | 'offline' | 'maintenance';
 
@@ -114,6 +114,7 @@ export type PrototypeActions = {
   checkoutKey(input: CheckoutInput): Promise<void>;
   returnKey(input: { cabinetId: string; keyId: string; returnedAt?: string }): Promise<void>;
   removeMember(input: { cabinetId: string; membershipId: string }): Promise<void>;
+  transferSuperAdmin(input: { cabinetId: string; membershipId: string }): Promise<void>;
   deleteAllKeys(input: { cabinetId: string }): Promise<void>;
   createJoinInvitation(input: { cabinetId: string }): Promise<CabinetJoinInvitation>;
   revokeJoinInvitation(input: {

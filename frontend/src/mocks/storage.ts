@@ -5,7 +5,8 @@ import { parsePersistedState } from './schemas';
 import { getSeedData } from './seed';
 import { MockAppState, MockStorage } from './types';
 
-export const MOCK_STORAGE_KEY = '@uniclife/mock-app-state/v3';
+export const MOCK_STORAGE_KEY = '@uniclife/mock-app-state/v4';
+export const LEGACY_V3_MOCK_STORAGE_KEY = '@uniclife/mock-app-state/v3';
 export const LEGACY_V2_MOCK_STORAGE_KEY = '@uniclife/mock-app-state/v2';
 export const LEGACY_MOCK_STORAGE_KEY = '@uniclife/mock-app-state/v1';
 
@@ -38,6 +39,17 @@ function toPersistedState(state: MockAppState): Omit<MockAppState, 'hydrated'> {
 export async function loadStateOverlay(storage: MockStorage): Promise<Omit<MockAppState, 'hydrated'> | null> {
   const raw = await storage.getItem(MOCK_STORAGE_KEY);
   if (!raw) {
+    const v3Raw = await storage.getItem(LEGACY_V3_MOCK_STORAGE_KEY);
+    if (v3Raw) {
+      try {
+        const migrated = parsePersistedState(migrateMembershipRoles(JSON.parse(v3Raw)));
+        await storage.setItem(MOCK_STORAGE_KEY, JSON.stringify(migrated));
+        await storage.removeItem(LEGACY_V3_MOCK_STORAGE_KEY);
+        return migrated;
+      } catch {
+        throw new MockAppError('STORAGE_DATA_INVALID');
+      }
+    }
     const v2Raw = await storage.getItem(LEGACY_V2_MOCK_STORAGE_KEY);
     if (v2Raw) {
       try {
@@ -76,6 +88,7 @@ export async function saveStateOverlay(storage: MockStorage, state: MockAppState
 
 export async function clearStateOverlay(storage: MockStorage): Promise<void> {
   await storage.removeItem(MOCK_STORAGE_KEY);
+  await storage.removeItem(LEGACY_V3_MOCK_STORAGE_KEY);
   await storage.removeItem(LEGACY_V2_MOCK_STORAGE_KEY);
   await storage.removeItem(LEGACY_MOCK_STORAGE_KEY);
 }
@@ -86,6 +99,36 @@ function records(value: unknown): LegacyRecord[] {
   return Array.isArray(value)
     ? value.filter((item): item is LegacyRecord => Boolean(item && typeof item === 'object'))
     : [];
+}
+
+function membershipsWithSuperAdmins(value: unknown): LegacyRecord[] {
+  const memberships: LegacyRecord[] = records(value).map(
+    (membership): LegacyRecord => ({ ...membership, role: 'admin' }),
+  );
+  const earliestActiveByCabinet = new Map<string, LegacyRecord>();
+  for (const membership of memberships) {
+    if (membership.active !== true) continue;
+    const cabinetId = String(membership.cabinetId);
+    const current = earliestActiveByCabinet.get(cabinetId);
+    const order = `${String(membership.joinedAt)}:${String(membership.id)}`;
+    const currentOrder = current
+      ? `${String(current.joinedAt)}:${String(current.id)}`
+      : undefined;
+    if (!currentOrder || order < currentOrder) earliestActiveByCabinet.set(cabinetId, membership);
+  }
+  const superAdminIds = new Set(
+    [...earliestActiveByCabinet.values()].map((membership) => String(membership.id)),
+  );
+  return memberships.map((membership) => ({
+    ...membership,
+    role: superAdminIds.has(String(membership.id)) ? 'super_admin' : 'admin',
+  }));
+}
+
+function migrateMembershipRoles(input: unknown): unknown {
+  if (!input || typeof input !== 'object') throw new MockAppError('STORAGE_DATA_INVALID');
+  const legacy = input as LegacyRecord;
+  return { ...legacy, memberships: membershipsWithSuperAdmins(legacy.memberships) };
 }
 
 function migrateV2State(input: unknown): unknown {
@@ -104,6 +147,7 @@ function migrateV2State(input: unknown): unknown {
         ? { ...cabinet, ...previous, deviceUuid: cabinet.deviceUuid }
         : cabinet;
     }),
+    memberships: membershipsWithSuperAdmins(legacy.memberships),
   };
 }
 
@@ -144,7 +188,7 @@ function migrateV1State(input: unknown): unknown {
         ? { ...cabinet, ...previous, skuId: cabinetSkuMap[String(previous.skuId)] ?? cabinet.skuId, deviceUuid: cabinet.deviceUuid }
         : cabinet;
     }),
-    memberships: records(legacy.memberships).map((membership) => ({ ...membership, role: 'admin' })),
+    memberships: membershipsWithSuperAdmins(legacy.memberships),
     slots: seed.slots.map((slot) => ({ ...slot, keyId: keyIdBySlotId.get(slot.id) ?? null })),
     keys: migratedKeys,
     loans: records(legacy.loans),

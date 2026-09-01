@@ -20,7 +20,7 @@ export const qrStatus = pgEnum('qr_status', ['active', 'disabled']);
 export const keyStatus = pgEnum('key_status', ['available', 'borrowed']);
 export const loanStatus = pgEnum('loan_status', ['active', 'returned', 'cancelled']);
 export const consentKind = pgEnum('consent_kind', ['terms', 'privacy']);
-export const membershipRole = pgEnum('membership_role', ['admin']);
+export const membershipRole = pgEnum('membership_role', ['super_admin', 'admin']);
 export const auditResult = pgEnum('audit_result', ['success', 'failure']);
 export const feedbackDeliveryStatus = pgEnum('feedback_delivery_status', [
   'sending',
@@ -32,6 +32,7 @@ export const cabinetEventType = pgEnum('cabinet_event_type', [
   'cabinet_initialized',
   'member_joined',
   'cabinet_renamed',
+  'super_admin_transferred',
   'member_removed',
   'key_added',
   'key_updated',
@@ -201,6 +202,9 @@ export const cabinetMemberships = pgTable(
   },
   (table) => [
     uniqueIndex('cabinet_memberships_cabinet_user_unique').on(table.cabinetId, table.userId),
+    uniqueIndex('cabinet_memberships_active_super_admin_unique')
+      .on(table.cabinetId)
+      .where(sql`${table.active} = true AND ${table.role} = 'super_admin'`),
     index('cabinet_memberships_user_active_idx').on(table.userId, table.active),
   ],
 );

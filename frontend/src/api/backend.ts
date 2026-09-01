@@ -119,6 +119,28 @@ export const backendApi = {
       `/cabinets/${encodeURIComponent(cabinetId)}`,
       { ...json('PATCH', input), token },
     ),
+  disconnectCabinet: (token: string, cabinetId: string, input: WriteOptions) =>
+    callApi<{ removed: boolean; cabinetVersion: number }>(
+      `/cabinets/${encodeURIComponent(cabinetId)}/membership`,
+      { ...json('DELETE', input), token },
+    ),
+  deleteCabinet: (token: string, cabinetId: string, input: WriteOptions) =>
+    callApi<{ deleted: boolean; disconnectedMemberCount: number }>(
+      `/cabinets/${encodeURIComponent(cabinetId)}`,
+      { ...json('DELETE', input), token },
+    ),
+  transferCabinetSuperAdmin: (
+    token: string,
+    cabinetId: string,
+    input: { membershipId: string } & WriteOptions,
+  ) => callApi<{
+    previousSuperAdmin: CabinetMembership;
+    nextSuperAdmin: CabinetMembership;
+    cabinetVersion: number;
+  }>(
+    `/cabinets/${encodeURIComponent(cabinetId)}/super-admin-transfer`,
+    { ...json('POST', input), token },
+  ),
   removeMember: (token: string, cabinetId: string, membershipId: string, input: WriteOptions) =>
     callApi<{ removed: boolean }>(
       `/cabinets/${encodeURIComponent(cabinetId)}/members/${encodeURIComponent(membershipId)}`,

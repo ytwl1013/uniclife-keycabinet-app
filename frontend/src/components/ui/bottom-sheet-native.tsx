@@ -1,9 +1,9 @@
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native/bottom-sheet';
 import { useCallback } from 'react';
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 
-import { useAppTheme } from '@/styles/theme';
+import { getFixedBottomSheetHeight, useAppTheme } from '@/styles/theme';
 
 import { BottomSheetContent } from './bottom-sheet-content';
 import type { BottomSheetProps } from './bottom-sheet-types';
@@ -20,7 +20,16 @@ export function BottomSheet({
   title,
   visible,
 }: BottomSheetProps) {
+  const { height } = useWindowDimensions();
   const { palette } = useAppTheme();
+  const fixed = size === 'fixed';
+  const fixedSheetHeight = getFixedBottomSheetHeight(height);
+  const snapPoints =
+    fixed
+      ? [fixedSheetHeight]
+      : size === 'large'
+        ? LARGE_SHEET_SNAP_POINTS
+        : NATIVE_SHEET_SNAP_POINTS;
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
       if (!isOpen) {
@@ -45,10 +54,14 @@ export function BottomSheet({
             borderTopRightRadius: 28,
           }}
           contentContainerProps={{ style: { flex: 1, padding: 0 } }}
+          enableContentPanningGesture={!fixed}
           enableDynamicSizing={false}
+          enableHandlePanningGesture={!fixed}
+          enableOverDrag={!fixed}
+          handleComponent={fixed ? null : undefined}
           handleIndicatorStyle={{ backgroundColor: palette.line }}
           index={0}
-          snapPoints={size === 'large' ? LARGE_SHEET_SNAP_POINTS : NATIVE_SHEET_SNAP_POINTS}>
+          snapPoints={snapPoints}>
           <BottomSheetContent
             closeLabel={closeLabel}
             fillAvailable

@@ -112,6 +112,9 @@ export const joinCabinetRequestSchema = writeOptionsSchema.extend({
   joinQrCode: cabinetJoinQrPayloadSchema,
 });
 export const renameCabinetRequestSchema = writeOptionsSchema.extend({ name: cabinetNameSchema });
+export const transferCabinetSuperAdminRequestSchema = writeOptionsSchema.extend({
+  membershipId: entityIdSchema,
+});
 
 export const addKeyRequestSchema = writeOptionsSchema.extend({
   slotId: entityIdSchema,
@@ -159,6 +162,9 @@ export type CreateCabinetJoinInvitationRequest = z.infer<
   typeof createCabinetJoinInvitationRequestSchema
 >;
 export type JoinCabinetRequest = z.infer<typeof joinCabinetRequestSchema>;
+export type TransferCabinetSuperAdminRequest = z.infer<
+  typeof transferCabinetSuperAdminRequestSchema
+>;
 export type AddKeyRequest = z.infer<typeof addKeyRequestSchema>;
 export type UpdateKeyRequest = z.infer<typeof updateKeyRequestSchema>;
 export type CheckoutKeyRequest = z.infer<typeof checkoutKeyRequestSchema>;

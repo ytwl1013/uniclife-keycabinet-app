@@ -5,10 +5,11 @@ import {
   joinCabinetRequestSchema,
   renameCabinetRequestSchema,
   resolveCabinetQrRequestSchema,
+  transferCabinetSuperAdminRequestSchema,
   writeOptionsSchema,
 } from '@uniclife/shared';
 import { randomUUID } from 'node:crypto';
-import { and, asc, eq, gt, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -29,6 +30,7 @@ import { createEntityId } from '../../common/security/ids.js';
 import { createOpaqueToken, digestToken } from '../../common/security/tokens.js';
 import { requireDatabase, type AppDatabase } from '../../db/client.js';
 import {
+  auditLogs,
   cabinetEvents,
   cabinetJoinInvitations,
   cabinetMemberships,
@@ -44,7 +46,9 @@ import { appendAudit } from '../audit/service.js';
 import { parseJoinQrPayload, parseProductQrPayload } from './qr.js';
 import {
   getCabinetSummary,
+  lockCabinet,
   requireCabinetMember,
+  requireCabinetSuperAdmin,
   touchCabinet,
 } from './service.js';
 import {
@@ -282,7 +286,7 @@ export async function registerCabinetRoutes(
               id: createEntityId('membership'),
               cabinetId,
               userId: currentUser.id,
-              role: 'admin',
+              role: 'super_admin',
             })
             .returning();
           if (!membership) {
@@ -623,6 +627,312 @@ export async function registerCabinetRoutes(
     }
   });
 
+  app.post('/:cabinetId/super-admin-transfer', async (request) => {
+    const { cabinetId } = cabinetParamsSchema.parse(request.params);
+    const input = transferCabinetSuperAdminRequestSchema.parse(request.body);
+    const currentUser = await requireAuth(request);
+    const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
+    try {
+      const response = await executeIdempotent(
+        database,
+        {
+          actorId: currentUser.id,
+          operation: 'cabinets.transfer_super_admin',
+          requestId: input.requestId,
+        },
+        async (transaction) => {
+          await lockCabinet(transaction, cabinetId);
+          const currentMembership = await requireCabinetSuperAdmin(
+            transaction,
+            cabinetId,
+            currentUser.id,
+          );
+          const [target] = await transaction
+            .select()
+            .from(cabinetMemberships)
+            .where(
+              and(
+                eq(cabinetMemberships.id, input.membershipId),
+                eq(cabinetMemberships.cabinetId, cabinetId),
+                eq(cabinetMemberships.active, true),
+              ),
+            )
+            .limit(1);
+          if (!target) {
+            throw new AppError(404, 'MEMBER_NOT_FOUND', '管理员不存在');
+          }
+          if (target.id === currentMembership.id || target.role === 'super_admin') {
+            throw new AppError(409, 'SUPER_ADMIN_TRANSFER_TARGET_INVALID', '请选择其他管理员');
+          }
+
+          const [previousSuperAdmin] = await transaction
+            .update(cabinetMemberships)
+            .set({ role: 'admin' })
+            .where(
+              and(
+                eq(cabinetMemberships.id, currentMembership.id),
+                eq(cabinetMemberships.active, true),
+                eq(cabinetMemberships.role, 'super_admin'),
+              ),
+            )
+            .returning();
+          const [nextSuperAdmin] = await transaction
+            .update(cabinetMemberships)
+            .set({ role: 'super_admin' })
+            .where(
+              and(
+                eq(cabinetMemberships.id, target.id),
+                eq(cabinetMemberships.active, true),
+                eq(cabinetMemberships.role, 'admin'),
+              ),
+            )
+            .returning();
+          if (!previousSuperAdmin || !nextSuperAdmin) {
+            throw new AppError(500, 'SUPER_ADMIN_TRANSFER_FAILED', '超级管理员权限转让失败');
+          }
+
+          const eventId = createEntityId('event');
+          await transaction.insert(cabinetEvents).values({
+            id: eventId,
+            cabinetId,
+            actorId: currentUser.id,
+            type: 'super_admin_transferred',
+            summaryData: {
+              previousMembershipId: previousSuperAdmin.id,
+              previousUserId: previousSuperAdmin.userId,
+              nextMembershipId: nextSuperAdmin.id,
+              nextUserId: nextSuperAdmin.userId,
+            },
+          });
+          const touched = await touchCabinet(transaction, cabinetId, input.expectedVersion);
+          await appendAudit(transaction, {
+            actorId: currentUser.id,
+            action: 'cabinets.super_admin_transferred',
+            targetType: 'cabinet',
+            targetId: cabinetId,
+            result: 'success',
+            metadata: {
+              eventId,
+              previousMembershipId: previousSuperAdmin.id,
+              nextMembershipId: nextSuperAdmin.id,
+            },
+          });
+          realtimeChange = {
+            additionalUserIds: [previousSuperAdmin.userId, nextSuperAdmin.userId],
+            cabinetId,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'memberships', 'events'],
+          };
+          return ok(
+            {
+              previousSuperAdmin: toMembership(previousSuperAdmin),
+              nextSuperAdmin: toMembership(nextSuperAdmin),
+              cabinetVersion: touched.version,
+            },
+            '超级管理员权限已转让',
+          );
+        },
+      );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
+    } catch (error) {
+      await recordFailure(
+        database,
+        currentUser.id,
+        'cabinets.super_admin_transferred',
+        'cabinet',
+        cabinetId,
+        error,
+      );
+      throw error;
+    }
+  });
+
+  app.delete('/:cabinetId', async (request) => {
+    const { cabinetId } = cabinetParamsSchema.parse(request.params);
+    const input = writeOptionsSchema.parse(request.body ?? {});
+    const currentUser = await requireAuth(request);
+    const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
+    try {
+      const response = await executeIdempotent(
+        database,
+        {
+          actorId: currentUser.id,
+          operation: 'cabinets.delete',
+          requestId: input.requestId,
+        },
+        async (transaction) => {
+          const currentCabinet = await lockCabinet(transaction, cabinetId);
+          await requireCabinetSuperAdmin(transaction, cabinetId, currentUser.id);
+          if (
+            input.expectedVersion !== undefined &&
+            currentCabinet.version !== input.expectedVersion
+          ) {
+            throw new AppError(409, 'VERSION_CONFLICT', '钥匙柜数据已更新，请刷新后重试', {
+              expectedVersion: input.expectedVersion,
+              actualVersion: currentCabinet.version,
+            });
+          }
+
+          const [membershipRows, keyRows, loanRows, eventRows] = await Promise.all([
+            transaction
+              .select()
+              .from(cabinetMemberships)
+              .where(eq(cabinetMemberships.cabinetId, cabinetId)),
+            transaction.select().from(keys).where(eq(keys.cabinetId, cabinetId)),
+            transaction.select().from(loans).where(eq(loans.cabinetId, cabinetId)),
+            transaction
+              .select({ keyId: cabinetEvents.keyId, relatedLoanId: cabinetEvents.relatedLoanId })
+              .from(cabinetEvents)
+              .where(eq(cabinetEvents.cabinetId, cabinetId)),
+          ]);
+          const relatedAuditTargetIds = [...new Set([
+            cabinetId,
+            ...membershipRows.map((membership) => membership.id),
+            ...keyRows.map((key) => key.id),
+            ...loanRows.map((loan) => loan.id),
+            ...eventRows.flatMap((event) => [event.keyId, event.relatedLoanId]),
+          ].filter((id): id is string => Boolean(id)))];
+
+          await transaction.delete(auditLogs).where(
+            or(
+              inArray(auditLogs.targetId, relatedAuditTargetIds),
+              sql<boolean>`${auditLogs.metadata}->>'cabinetId' = ${cabinetId}`,
+            ),
+          );
+          await transaction
+            .delete(cabinetJoinInvitations)
+            .where(eq(cabinetJoinInvitations.cabinetId, cabinetId));
+          await transaction.delete(loans).where(eq(loans.cabinetId, cabinetId));
+          await transaction.delete(keys).where(eq(keys.cabinetId, cabinetId));
+          await transaction.delete(keySlots).where(eq(keySlots.cabinetId, cabinetId));
+          await transaction.delete(cabinetEvents).where(eq(cabinetEvents.cabinetId, cabinetId));
+          await transaction
+            .delete(cabinetMemberships)
+            .where(eq(cabinetMemberships.cabinetId, cabinetId));
+          await transaction.delete(cabinets).where(eq(cabinets.id, cabinetId));
+
+          await appendAudit(transaction, {
+            actorId: currentUser.id,
+            action: 'cabinets.deleted',
+            targetType: 'cabinet',
+            targetId: cabinetId,
+            result: 'success',
+            metadata: {
+              membershipCount: membershipRows.length,
+              keyCount: keyRows.length,
+              loanCount: loanRows.length,
+            },
+          });
+          realtimeChange = {
+            additionalUserIds: membershipRows.map((membership) => membership.userId),
+            cabinetId,
+            cabinetVersion: currentCabinet.version + 1,
+            resources: ['cabinets', 'memberships', 'keys', 'loans', 'events'],
+          };
+          return ok(
+            {
+              deleted: true,
+              disconnectedMemberCount: membershipRows.filter((membership) => membership.active).length,
+            },
+            '钥匙柜及其全部信息已删除',
+          );
+        },
+      );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
+    } catch (error) {
+      await recordFailure(database, currentUser.id, 'cabinets.deleted', 'cabinet', cabinetId, error);
+      throw error;
+    }
+  });
+
+  app.delete('/:cabinetId/membership', async (request) => {
+    const { cabinetId } = cabinetParamsSchema.parse(request.params);
+    const input = writeOptionsSchema.parse(request.body ?? {});
+    const currentUser = await requireAuth(request);
+    const database = requireDatabase();
+    let realtimeChange: CabinetRealtimeChange | undefined;
+    try {
+      const response = await executeIdempotent(
+        database,
+        {
+          actorId: currentUser.id,
+          operation: 'cabinets.disconnect',
+          requestId: input.requestId,
+        },
+        async (transaction) => {
+          await lockCabinet(transaction, cabinetId);
+          const membership = await requireCabinetMember(transaction, cabinetId, currentUser.id);
+          if (membership.role === 'super_admin') {
+            throw new AppError(
+              409,
+              'SUPER_ADMIN_TRANSFER_REQUIRED',
+              '请先转让超级管理员权限，或删除整个箱子',
+            );
+          }
+          const now = new Date().toISOString();
+          await transaction
+            .update(cabinetMemberships)
+            .set({ active: false, removedAt: now })
+            .where(
+              and(
+                eq(cabinetMemberships.id, membership.id),
+                eq(cabinetMemberships.active, true),
+                eq(cabinetMemberships.role, 'admin'),
+              ),
+            );
+          const eventId = createEntityId('event');
+          await transaction.insert(cabinetEvents).values({
+            id: eventId,
+            cabinetId,
+            actorId: currentUser.id,
+            type: 'member_removed',
+            occurredAt: now,
+            summaryData: {
+              membershipId: membership.id,
+              removedUserId: currentUser.id,
+              reason: 'self_disconnected',
+            },
+          });
+          const touched = await touchCabinet(transaction, cabinetId, input.expectedVersion);
+          await appendAudit(transaction, {
+            actorId: currentUser.id,
+            action: 'cabinets.disconnected',
+            targetType: 'cabinet',
+            targetId: cabinetId,
+            result: 'success',
+            metadata: { eventId, membershipId: membership.id },
+          });
+          realtimeChange = {
+            additionalUserIds: [currentUser.id],
+            cabinetId,
+            cabinetVersion: touched.version,
+            resources: ['cabinets', 'memberships', 'events'],
+          };
+          return ok(
+            { removed: true, cabinetVersion: touched.version },
+            '箱子已从当前账户移除',
+          );
+        },
+      );
+      publishRealtimeChange(app, options.realtime, realtimeChange);
+      return response;
+    } catch (error) {
+      await recordFailure(
+        database,
+        currentUser.id,
+        'cabinets.disconnected',
+        'cabinet',
+        cabinetId,
+        error,
+      );
+      throw error;
+    }
+  });
+
   app.delete('/:cabinetId/members/:membershipId', async (request) => {
     const { cabinetId, membershipId } = memberParamsSchema.parse(request.params);
     const input = writeOptionsSchema.parse(request.body ?? {});
@@ -638,7 +948,8 @@ export async function registerCabinetRoutes(
           requestId: input.requestId,
         },
         async (transaction) => {
-          await requireCabinetMember(transaction, cabinetId, currentUser.id);
+          await lockCabinet(transaction, cabinetId);
+          await requireCabinetSuperAdmin(transaction, cabinetId, currentUser.id);
           const [target] = await transaction
             .select()
             .from(cabinetMemberships)
@@ -656,11 +967,24 @@ export async function registerCabinetRoutes(
           if (target.userId === currentUser.id) {
             throw new AppError(403, 'PERMISSION_DENIED', '不能移除自己的管理员身份');
           }
+          if (target.role === 'super_admin') {
+            throw new AppError(403, 'SUPER_ADMIN_PROTECTED', '超级管理员不能被其他管理员移除');
+          }
           const now = new Date().toISOString();
-          await transaction
+          const [removed] = await transaction
             .update(cabinetMemberships)
             .set({ active: false, removedAt: now })
-            .where(eq(cabinetMemberships.id, target.id));
+            .where(
+              and(
+                eq(cabinetMemberships.id, target.id),
+                eq(cabinetMemberships.active, true),
+                eq(cabinetMemberships.role, 'admin'),
+              ),
+            )
+            .returning({ id: cabinetMemberships.id });
+          if (!removed) {
+            throw new AppError(409, 'MEMBER_ROLE_CHANGED', '管理员角色已变化，请刷新后重试');
+          }
           await transaction.insert(cabinetEvents).values({
             id: createEntityId('event'),
             cabinetId,

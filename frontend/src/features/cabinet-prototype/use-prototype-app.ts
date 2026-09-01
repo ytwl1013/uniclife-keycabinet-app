@@ -59,8 +59,8 @@ async function callAction(source: AppSource, names: string[], input: UnknownReco
   return Promise.resolve(source.actions[name](input as never));
 }
 
-function role(_value: unknown): CabinetRole {
-  return 'admin';
+function role(value: unknown): CabinetRole {
+  return value === 'super_admin' ? 'superAdmin' : 'admin';
 }
 
 function cabinetStatus(value: unknown): CabinetStatus {
@@ -76,7 +76,12 @@ function normalizeEventKind(value: unknown): CabinetEventKind {
   if (normalized.includes('key_updated') || normalized.includes('update_key') || normalized.includes('note')) return 'keyUpdated';
   if (normalized.includes('member_added') || normalized.includes('bind')) return 'memberAdded';
   if (normalized.includes('member_removed') || normalized.includes('unbind')) return 'memberRemoved';
-  if (normalized.includes('role') || normalized.includes('admin_grant') || normalized.includes('admin_revoke')) return 'roleChanged';
+  if (
+    normalized.includes('super_admin_transferred') ||
+    normalized.includes('role') ||
+    normalized.includes('admin_grant') ||
+    normalized.includes('admin_revoke')
+  ) return 'roleChanged';
   if (normalized.includes('clear')) return 'keysCleared';
   if (normalized.includes('restore')) return 'keysRestored';
   return 'admin';
@@ -281,6 +286,12 @@ export function usePrototypeApp(): PrototypeApp {
       },
       removeMember: async (input) => {
         await callAction(source, ['removeMember'], { ...input, ...writeOptions('remove-member', input.cabinetId) });
+      },
+      transferSuperAdmin: async (input) => {
+        await callAction(source, ['transferCabinetSuperAdmin'], {
+          ...input,
+          ...writeOptions('transfer-super-admin', input.cabinetId),
+        });
       },
       deleteAllKeys: async (input) => {
         await callAction(source, ['deleteCabinetKeys'], { ...input, ...writeOptions('delete-all-keys', input.cabinetId) });

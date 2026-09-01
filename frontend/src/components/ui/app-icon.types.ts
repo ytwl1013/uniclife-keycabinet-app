@@ -30,6 +30,7 @@ export type AppIconName =
   | 'filter'
   | 'checkOut'
   | 'settings'
+  | 'trash'
   | 'empty'
   | 'check'
   | 'expand';

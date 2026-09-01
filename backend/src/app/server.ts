@@ -9,6 +9,7 @@ import { env } from '../common/config/env.js';
 import { registerErrorHandler } from '../common/http/errors.js';
 import { closeDatabase } from '../db/client.js';
 import { registerHealthRoutes } from '../modules/health/routes.js';
+import { registerAdminRoutes } from '../modules/admin/routes.js';
 import { registerAuthRoutes } from '../modules/auth/routes.js';
 import { registerCabinetRoutes } from '../modules/cabinets/routes.js';
 import { registerKeyRoutes } from '../modules/keys/routes.js';
@@ -67,6 +68,10 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   });
 
   await app.register(registerHealthRoutes, { prefix: '/api/v1/health' });
+  await app.register(registerAdminRoutes, {
+    prefix: '/api/v1/admin',
+    realtime,
+  });
   await app.register(registerAuthRoutes, {
     prefix: '/api/v1/auth',
     notifier: options.passwordResetNotifier,

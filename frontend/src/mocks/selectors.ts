@@ -131,7 +131,7 @@ export function createMockSelectors(state: MockAppState) {
   };
 
   const canManageCabinet = (cabinetId: string): boolean => {
-    return membershipForUser(cabinetId)?.role === 'admin';
+    return Boolean(membershipForUser(cabinetId));
   };
 
   const borrowedKeys = (cabinetId?: string): Key[] =>

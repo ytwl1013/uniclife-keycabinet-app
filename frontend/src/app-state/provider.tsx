@@ -448,6 +448,36 @@ export function AppProvider({ children }: PropsWithChildren) {
         return handleAuthorizedError(error);
       }
     },
+    async disconnectCabinet({ cabinetId, ...input }) {
+      const token = requireToken();
+      try {
+        await backendApi.disconnectCabinet(token, cabinetId, input);
+        await refresh();
+      } catch (error) {
+        await handleAuthorizedError(error);
+      }
+    },
+    async deleteCabinet({ cabinetId, ...input }) {
+      const token = requireToken();
+      try {
+        await backendApi.deleteCabinet(token, cabinetId, input);
+        await refresh();
+      } catch (error) {
+        await handleAuthorizedError(error);
+      }
+    },
+    async transferCabinetSuperAdmin({ cabinetId, membershipId, ...input }) {
+      const token = requireToken();
+      try {
+        await backendApi.transferCabinetSuperAdmin(token, cabinetId, {
+          membershipId,
+          ...input,
+        });
+        await refresh();
+      } catch (error) {
+        await handleAuthorizedError(error);
+      }
+    },
     async removeMember({ cabinetId, membershipId, ...input }) {
       const token = requireToken();
       try {

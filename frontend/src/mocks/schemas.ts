@@ -60,7 +60,7 @@ export const membershipSchema = z.object({
   id,
   cabinetId: id,
   userId: id,
-  role: z.literal('admin'),
+  role: z.enum(['super_admin', 'admin']),
   active: z.boolean(),
   joinedAt: isoDate,
   removedAt: isoDate.optional(),

@@ -1,5 +1,6 @@
 import {
   checkoutKeyRequestSchema,
+  cabinetMembershipSchema,
   currentUserAccountSchema,
   feedbackHistoryQuerySchema,
   feedbackRecordSchema,
@@ -8,6 +9,7 @@ import {
   realtimeEventSchema,
   registerRequestSchema,
   updateKeyRequestSchema,
+  transferCabinetSuperAdminRequestSchema,
   userAccountSchema,
 } from '@uniclife/shared';
 import { describe, expect, it } from 'vitest';
@@ -82,6 +84,26 @@ describe('backend request contracts', () => {
 
     expect(event).toMatchObject({ cabinetVersion: 7, resources: ['keys', 'loans', 'events'] });
     expect(() => realtimeEventSchema.parse({ ...event, resources: [] })).toThrow();
+  });
+
+  it('distinguishes the single Super Admin role and validates transfer targets', () => {
+    const baseMembership = {
+      id: 'membership-test',
+      cabinetId: 'cabinet-test',
+      userId: 'user-test',
+      active: true,
+      joinedAt: '2026-08-24T08:00:00.000Z',
+    };
+    expect(cabinetMembershipSchema.parse({
+      ...baseMembership,
+      role: 'super_admin',
+    }).role).toBe('super_admin');
+    expect(cabinetMembershipSchema.parse({ ...baseMembership, role: 'admin' }).role).toBe('admin');
+    expect(() => cabinetMembershipSchema.parse({ ...baseMembership, role: 'owner' })).toThrow();
+    expect(transferCabinetSuperAdminRequestSchema.parse({
+      membershipId: 'membership-next',
+      requestId: 'transfer-request-1',
+    }).membershipId).toBe('membership-next');
   });
 
   it('validates feedback content and compressed image boundaries', () => {

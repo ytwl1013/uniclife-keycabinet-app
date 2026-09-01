@@ -10,6 +10,14 @@ const backendRoot = fileURLToPath(new URL('../../../', import.meta.url));
 loadEnvironmentFiles(backendRoot, runtimeEnvironment);
 
 const envSchema = z.object({
+  ADMIN_API_TOKEN: z
+    .string()
+    .min(32)
+    .max(512)
+    .refine((value) => !value.includes('<') && !value.includes('>') && !value.startsWith('replace-with'), {
+      message: 'ADMIN_API_TOKEN must not be an example placeholder',
+    })
+    .optional(),
   AUTH_ALLOW_RESET_CODE_PREVIEW: z
     .enum(['true', 'false'])
     .default('false')

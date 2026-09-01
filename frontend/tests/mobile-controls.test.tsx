@@ -64,10 +64,17 @@ describe('mobile selection and confirmations', () => {
       resolve(__dirname, '../src/features/account/components/account-screen.tsx'),
       'utf8',
     );
+    const nativeSheet = readFileSync(
+      resolve(__dirname, '../src/components/ui/bottom-sheet-native.tsx'),
+      'utf8',
+    );
 
-    expect(source).toContain('size="large"');
+    expect(source).toContain('size="fixed"');
     expect(source).not.toContain('<ScrollView');
     expect(source).toContain('accessibilityRole="radiogroup"');
+    expect(nativeSheet).toContain('enableContentPanningGesture={!fixed}');
+    expect(nativeSheet).toContain('enableHandlePanningGesture={!fixed}');
+    expect(nativeSheet).toContain('handleComponent={fixed ? null : undefined}');
   });
 
   it('uses icon-only tabs with translated accessibility names', () => {

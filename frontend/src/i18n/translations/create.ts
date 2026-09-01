@@ -21,3 +21,9 @@ function merge<T extends Record<string, unknown>>(base: T, overrides: DeepPartia
 export function createTranslation(overrides: DeepPartial<TranslationSchema>): TranslationSchema {
   return merge(en as unknown as TranslationSchema & Record<string, unknown>, overrides) as TranslationSchema;
 }
+
+export function defineAccountTranslation(
+  translation: TranslationSchema['account'],
+): TranslationSchema['account'] {
+  return translation;
+}

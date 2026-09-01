@@ -227,7 +227,20 @@ export default function HomeRoute() {
         </View>
 
         <View className="gap-3" collapsable={false} onLayout={sectionLayout(1)} ref={guideTargetRefs[1]}>
-          <AppText className="px-1" variant="title" tone="foreground">{t('home.cabinetsTitle')}</AppText>
+          <View className="flex-row items-center justify-between gap-3 px-1">
+            <AppText className="min-w-0 flex-1" variant="title" tone="foreground">
+              {t('home.cabinetsTitle')}
+            </AppText>
+            <Pressable
+              accessibilityLabel={t('cabinetManagement.openAction')}
+              accessibilityRole="button"
+              className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
+              hitSlop={8}
+              onPress={() => router.push('/(details)/cabinets/manage' as Href)}
+              testID="home-cabinet-settings-button">
+              <AppIcon name="settings" size={21} tone="brand" />
+            </Pressable>
+          </View>
           {cabinets.length ? cabinets.map((cabinet) => (
             <CabinetCard cabinet={cabinet} key={cabinet.id} sku={selectors.skuById(cabinet.skuId)} />
           )) : (

@@ -315,6 +315,7 @@ export function CabinetSettings({
   const [invitationClock, setInvitationClock] = useState(Date.now());
   const visibleMembers = app.members.filter((member) => member.cabinetId === cabinet.id);
   const configuredKeys = app.keys.filter((key) => key.cabinetId === cabinet.id);
+  const isSuperAdmin = cabinet.role === 'superAdmin';
   const confirmation = usePrototypeDialog();
 
   useEffect(() => setCabinetName(cabinet.name), [cabinet.name]);
@@ -347,6 +348,7 @@ export function CabinetSettings({
   };
 
   const removeMember = async (membershipId: string, name: string) => {
+    setOpenMemberMenu(undefined);
     const confirmed = await confirmation.present({
       title: t(trKey('cabinet.removeMemberTitle')),
       description: t(trKey('cabinet.removeMemberDescription'), { name }),
@@ -355,6 +357,24 @@ export function CabinetSettings({
       tone: 'danger',
     });
     if (confirmed) await run(membershipId, () => app.removeMember({ cabinetId: cabinet.id, membershipId }), 'cabinet.memberRemovedSuccess');
+  };
+
+  const transferSuperAdmin = async (membershipId: string, name: string) => {
+    setOpenMemberMenu(undefined);
+    const confirmed = await confirmation.present({
+      title: t(trKey('cabinet.transferSuperAdminTitle')),
+      description: t(trKey('cabinet.transferSuperAdminDescription'), { name }),
+      confirmLabel: t(trKey('cabinet.transferSuperAdminConfirm')),
+      cancelLabel: t(trKey('cabinet.cancel')),
+      tone: 'danger',
+    });
+    if (confirmed) {
+      await run(
+        membershipId,
+        () => app.transferSuperAdmin({ cabinetId: cabinet.id, membershipId }),
+        'cabinet.superAdminTransferredSuccess',
+      );
+    }
   };
 
   const openDeleteAll = () => {
@@ -497,7 +517,10 @@ export function CabinetSettings({
         )}
         refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         renderItem={({ item: member }) => {
-          const canRemove = member.userId !== app.currentUserId;
+          const canManageMember =
+            isSuperAdmin &&
+            member.userId !== app.currentUserId &&
+            member.role !== 'superAdmin';
           return (
             <View className="gap-2 rounded-control border border-line bg-surface p-3">
               <View className="flex-row items-center gap-3">
@@ -509,8 +532,10 @@ export function CabinetSettings({
                   <AppText numberOfLines={1} variant="caption" tone="muted">{member.email}</AppText>
                 </View>
                 <View className="items-end gap-1">
-                  <Pill tone="blue">{t(trKey('cabinet.role.admin'))}</Pill>
-                  {canRemove ? (
+                  <Pill tone={member.role === 'superAdmin' ? 'purple' : 'blue'}>
+                    {t(trKey(`cabinet.role.${member.role}`))}
+                  </Pill>
+                  {canManageMember ? (
                     <Pressable
                       accessibilityLabel={t(trKey('cabinet.memberActions'))}
                       accessibilityRole="button"
@@ -523,7 +548,17 @@ export function CabinetSettings({
               </View>
               {openMemberMenu === member.id ? (
                 <View className="flex-row flex-wrap items-center justify-end gap-3 border-t border-line pt-2">
-                  {canRemove ? <InlineButton disabled={Boolean(busyId)} label={t(trKey('cabinet.removeMember'))} onPress={() => void removeMember(member.id, member.name)} tone="danger" /> : null}
+                  <InlineButton
+                    disabled={Boolean(busyId)}
+                    label={t(trKey('cabinet.transferSuperAdmin'))}
+                    onPress={() => void transferSuperAdmin(member.id, member.name)}
+                  />
+                  <InlineButton
+                    disabled={Boolean(busyId)}
+                    label={t(trKey('cabinet.removeMember'))}
+                    onPress={() => void removeMember(member.id, member.name)}
+                    tone="danger"
+                  />
                 </View>
               ) : null}
             </View>

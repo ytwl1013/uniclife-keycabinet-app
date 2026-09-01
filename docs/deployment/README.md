@@ -16,6 +16,7 @@
 - `HOST`：后端监听地址
 - `LOG_LEVEL`：日志级别
 - `FRONTEND_ORIGIN`：允许跨域访问的前端地址
+- `ADMIN_API_TOKEN`：可选的服务端管理 API 令牌，至少 32 字符；启用管理后台时必填，并与管理后台同名变量保持一致。只能由 Secret 注入，不得加 `NEXT_PUBLIC_` 前缀
 - `AUTH_TOKEN_PEPPER`：至少 32 字符的独立随机密钥，用于会话、验证码和重置 Token 摘要；开发和生产环境都必填且不得随意轮换，否则全部会话与重置挑战会失效
 - `AUTH_SESSION_TTL_DAYS`：会话有效天数，范围 1–90
 - `AUTH_RESET_TTL_MINUTES`：验证码和重置 Token 有效分钟数，范围 5–60
@@ -50,6 +51,21 @@
 - `EXPO_PUBLIC_SUPPORT_EMAIL`：账户页“邮箱联系”展示和复制的公开客服邮箱地址
 
 Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。生产模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地使用 `.env.local`，EAS 构建使用 EAS 对应环境。
+
+## 管理后台环境变量
+
+管理后台模板位于 `admin/.env.example`，复制为被 Git 忽略的 `admin/.env.local` 后配置：
+
+- `APP_ENV`：`development` 使用本地地址，`dev` 使用远端开发服务器地址
+- `API_BASE_URL_DEVELOPMENT`：本地 Fastify 地址，例如 `http://127.0.0.1:4000`
+- `API_BASE_URL_DEV`：远端 Dev API 地址；为避免管理令牌被窃听，代码强制要求 HTTPS
+- `ADMIN_USERNAME`：单一初始管理员邮箱，仅在 Next.js 服务端读取
+- `ADMIN_PASSWORD_HASH`：bcrypt cost 12 哈希；运行 `pnpm --filter @uniclife/admin hash-password` 交互生成，禁止保存明文密码
+- `ADMIN_SESSION_SECRET`：至少 32 字符的独立随机值，用于签名 HttpOnly 管理会话
+- `ADMIN_SESSION_TTL_HOURS`：管理会话时长，范围 1–24 小时，默认 8 小时
+- `ADMIN_API_TOKEN`：Next.js 到 Fastify 的服务端令牌，必须与后端配置一致
+
+浏览器只访问 Next.js 同源路由，API Base URL 与 `ADMIN_API_TOKEN` 都不会进入客户端 bundle。生产部署还应在入口网关增加跨实例登录限流、TLS/HSTS 和可信代理头配置；应用内存限流只作为单实例的基础保护。
 
 ## Render 部署预留
 

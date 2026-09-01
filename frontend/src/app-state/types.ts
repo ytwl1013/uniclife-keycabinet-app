@@ -105,6 +105,11 @@ export type AppActions = {
     input: { joinQrCode: string } & WriteOptions,
   ): Promise<CabinetAccessResult>;
   renameCabinet(input: { cabinetId: string; name: string } & WriteOptions): Promise<Cabinet>;
+  disconnectCabinet(input: { cabinetId: string } & WriteOptions): Promise<void>;
+  deleteCabinet(input: { cabinetId: string } & WriteOptions): Promise<void>;
+  transferCabinetSuperAdmin(
+    input: { cabinetId: string; membershipId: string } & WriteOptions,
+  ): Promise<void>;
   removeMember(
     input: { cabinetId: string; membershipId: string } & WriteOptions,
   ): Promise<void>;

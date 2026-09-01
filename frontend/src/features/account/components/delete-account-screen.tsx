@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useApp } from '@/app-state';
+import { isApiError } from '@/api/client';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import { AuthErrorNotice, AuthSecondaryButton } from '@/features/auth/components/auth-ui';
@@ -44,7 +45,11 @@ export function DeleteAccountScreen() {
       });
       router.replace('/(auth)/sign-in');
     } catch (caught) {
-      setError(t(authErrorKey(caught)));
+      setError(
+        isApiError(caught) && caught.code === 'SUPER_ADMIN_TRANSFER_REQUIRED'
+          ? t('account.deleteAdminMemberships')
+          : t(authErrorKey(caught)),
+      );
       setConfirming(false);
     } finally {
       setBusy(false);
