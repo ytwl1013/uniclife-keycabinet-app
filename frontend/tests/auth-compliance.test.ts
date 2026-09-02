@@ -50,12 +50,22 @@ describe('authentication and consent workflow', () => {
     })).rejects.toMatchObject({ code: 'INVALID_INPUT' });
   });
 
-  it('allows any Admin account to be deleted without ownership transfer', async () => {
+  it('requires a Super Admin to transfer ownership before deleting the account', async () => {
     const app = anonymousService();
     await app.actions.switchAccount({ userId: 'user-owner' });
+
+    await expect(app.actions.deleteAccount()).rejects.toMatchObject({ code: 'SUPER_ADMIN_TRANSFER_REQUIRED' });
+    expect(app.getState().users.find((user) => user.id === 'user-owner')).toMatchObject({ status: 'active' });
+    expect(app.getState().memberships.filter((membership) => membership.userId === 'user-owner').every((membership) => membership.active)).toBe(true);
+  });
+
+  it('allows a regular Admin account to be deleted without ownership transfer', async () => {
+    const app = anonymousService();
+    await app.actions.switchAccount({ userId: 'user-admin' });
+
     await expect(app.actions.deleteAccount()).resolves.toBeUndefined();
-    expect(app.getState().users.find((user) => user.id === 'user-owner')).toMatchObject({ status: 'disabled', displayName: 'Deleted account' });
-    expect(app.getState().memberships.filter((membership) => membership.userId === 'user-owner').every((membership) => !membership.active)).toBe(true);
+    expect(app.getState().users.find((user) => user.id === 'user-admin')).toMatchObject({ status: 'disabled', displayName: 'Deleted account' });
+    expect(app.getState().memberships.filter((membership) => membership.userId === 'user-admin').every((membership) => !membership.active)).toBe(true);
   });
 
   it('updates the signed-in user profile and login email through validated actions', async () => {

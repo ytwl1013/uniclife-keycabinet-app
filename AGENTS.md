@@ -103,12 +103,15 @@ backend/tests/                后端单测、集成测试和契约测试
 - 权限判断必须在后端执行，前端隐藏按钮不能替代后端权限校验。
 - 审计日志必须能支撑关键动作追责，但不得记录不必要的敏感明文。
 
-## CI/CD 与 MR 规则
+## CI/CD 与 PR 规则
 
-- `dev` 是日常集成分支，所有实现改动必须通过 Merge Request 合入 `dev`。
-- 禁止直接推送到 `dev`，也禁止绕过 MR 和 Codex review bot 直接合入 `dev`。
-- 非 draft 的 `dev` 目标 MR 会由 Codex review bot 自动审核；审核通过且 GitLab CI 通过后才允许合并。
-- 初始化阶段的 CI 至少保留仓库规范和敏感信息检查；新增前端、后端、共享契约或集成测试后，必须同步扩展对应 lint、类型检查、测试、构建或契约校验。
+- GitHub 是权威主仓库，本地远端名为 `origin`；自建 GitLab 仅作备份，本地远端名为 `gitlab`。
+- `dev` 是日常集成分支，`main` 是生产发布分支。所有实现改动必须通过 GitHub Pull Request 合入 `dev`，发布必须通过 `dev -> main` Pull Request 完成。
+- 禁止直接推送到 `dev` 或 `main`，也禁止绕过 GitHub 审核与 Actions 检查直接合并。
+- GitHub Actions 必须在 `dev`、`main` 的 Pull Request 和推送上运行仓库规范检查、lint、类型检查和测试；检查失败不得合并。
+- Render 只跟踪 GitHub `main`，并在 GitHub 检查全部通过后部署。不得把日常开发分支直接连接生产服务。
+- GitLab 不接收独立实现改动，不允许形成与 GitHub 不同的提交历史。人工备份使用 `backup/github-main` 和 `backup/github-dev`，或配置从 GitHub 拉取的单向镜像。
+- 原 GitLab Codex review bot 和 GitLab CI 仅保留给历史 GitLab Merge Request 或灾备演练，不能替代 GitHub 主流程的审核与检查。
 - 修改 CI/CD、分支保护、webhook、review bot 或合并策略时，必须同步更新 `docs/ci-cd-review-bot.md`。
 
 ## 文档规则

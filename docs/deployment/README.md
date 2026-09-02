@@ -1,6 +1,6 @@
 # 部署说明
 
-部署模板位于 `deploy/`，仓库根目录的 `render.yaml` 定义 Render 免费 Web Service 与 PostgreSQL Blueprint。模板不包含任何真实密钥；只有在 Render Dashboard 中关联仓库并确认 Blueprint 后才会创建云资源。
+部署模板位于 `deploy/`，仓库根目录的 `render.yaml` 定义 Render 免费 Web Service。PostgreSQL 使用已在 Render 创建的数据库，通过 Secret `DATABASE_URL` 连接；模板不会再创建第二个数据库。仓库不包含任何真实密钥。
 
 ## 后端环境变量
 
@@ -72,10 +72,11 @@ Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不�
 
 ## Render 后端与数据库
 
-根目录的 `render.yaml` 创建以下同区资源：
+根目录的 `render.yaml` 创建以下资源：
 
-- `uniclife-keycabinet-api`：Virginia 区域的免费 Node.js Web Service，跟踪 `dev` 分支。
-- `uniclife-keycabinet-db`：Virginia 区域的免费 PostgreSQL 17，外部 IP 白名单为空，只允许 Render 内部连接。
+- `uniclife-keycabinet-api`：Virginia 区域的免费 Node.js Web Service，跟踪 GitHub `main` 分支，并等待 GitHub Actions 检查通过后自动部署。
+
+数据库继续使用已经在 Render 创建的 PostgreSQL。建议数据库与 Web Service 位于同一区域，并使用 Render 提供的 Internal Database URL，避免公网连接和跨区延迟。
 
 仓库保持根目录作为构建目录，以便使用 workspace lockfile。免费 Web Service 不支持 Pre-Deploy Command，因此数据库迁移包含在 Build Command 的最后一步；迁移失败会使整个部署失败：
 
@@ -89,14 +90,15 @@ Health Check Path:  /api/v1/health
 
 ### 首次部署步骤
 
-1. 先把 `dev` 分支镜像到 Render 支持的 GitHub、`gitlab.com` 或 Bitbucket。当前 `origin` 是自建 `gitlab.uniclife.cn`；Render 的 GitLab OAuth 集成不能直接读取该私有仓库。另一条可选路线是在 GitLab CI 构建镜像并让 Render 从 GitLab Container Registry 拉取，但该路线不能直接使用本 Blueprint 的 Git 构建定义。
-2. 将本次部署改动通过 Merge Request 合入 `dev`，确认 GitLab CI 和 Codex review 通过，禁止直接推送 `dev`。
-3. 在 Render Dashboard 选择 **New > Blueprint**，关联镜像仓库和根目录 `render.yaml`。
-4. Blueprint 首次创建时填写 `FRONTEND_ORIGIN`。这里只填写允许使用浏览器访问 API 的 HTTPS Origin；不要填写 Token、Cookie 或数据库地址。
-5. 确认 Blueprint 后等待数据库、迁移和 API 部署完成，再访问 `https://<service>.onrender.com/api/v1/health`。成功响应必须为 `code: "OK"`。
-6. 将最终 API 地址加上 `/api/v1`，写入 EAS production 环境的 `EXPO_PUBLIC_API_BASE_URL` 后重新构建移动端。
+1. 在 Render 中确认已创建的 PostgreSQL 可用，并复制它的 **Internal Database URL**。不要把连接串写入仓库、Issue、Pull Request 或日志。
+2. 将部署改动通过 GitHub Pull Request 依次合入 `dev` 和 `main`，确认 `CI / check` 通过，禁止直接推送这两个分支。
+3. 在 Render Dashboard 选择 **New > Blueprint**，关联 GitHub 仓库 `nimo07126/uniclife-keycabinet-app` 和根目录 `render.yaml`。若已有同名 Web Service，应更新现有服务而不是再创建一个重复服务。
+4. Blueprint 首次创建时填写 `DATABASE_URL` 和 `FRONTEND_ORIGIN`。`DATABASE_URL` 使用第 1 步的内部连接串；`FRONTEND_ORIGIN` 只填写允许使用浏览器访问 API 的 HTTPS Origin。
+5. 确认服务的 Repository Branch 为 `main`，Auto-Deploy 为 **After CI Checks Pass**。
+6. 等待迁移和 API 部署完成，再访问 `https://<service>.onrender.com/api/v1/health`。成功响应必须为 `code: "OK"`。
+7. 将最终 API 地址加上 `/api/v1`，写入 EAS production 环境的 `EXPO_PUBLIC_API_BASE_URL` 后重新构建移动端。
 
-`AUTH_TOKEN_PEPPER` 和 `ADMIN_API_TOKEN` 由 Render 首次创建时生成。`DATABASE_URL` 自动引用同区数据库内部连接串。生产数据库不运行开发 seed。
+`AUTH_TOKEN_PEPPER` 和 `ADMIN_API_TOKEN` 由 Render 首次创建时生成。`DATABASE_URL` 作为 Render Secret 手动注入，不会同步回仓库。生产数据库不运行开发 seed。
 
 ### 免费层限制与用途
 

@@ -26,6 +26,55 @@ tests/            跨端契约测试和集成测试预留
 
 前端页面实现和布局直接放在 `src/app`，较大的业务组件放在 `src/features/<domain>/components`，共享 UI 放在 `src/components/ui`。Stack 和 Tab 的路由选项由最近的 `_layout.tsx` 统一声明；国际化文案和设计令牌分别集中在 `src/i18n` 与 `design-tokens.json`。
 
+## 仓库与日常流程
+
+GitHub 是日常开发和发布的主仓库，GitLab 只保留为备份仓库。本地远端固定为：
+
+```text
+origin  -> git@github.com:nimo07126/uniclife-keycabinet-app.git
+gitlab  -> https://gitlab.uniclife.cn/ai-strategy-department/uniclife-keycabinet-app.git
+```
+
+`dev` 是日常集成分支，`main` 是生产发布分支。禁止直接向这两个分支推送；实现改动通过 GitHub Pull Request 合入 `dev`，准备发布时再通过 GitHub Pull Request 将 `dev` 合入 `main`。GitHub Actions 通过后，Render 才会从 `main` 自动部署后端。
+
+### 开始一项工作
+
+```bash
+git fetch origin --prune
+git switch dev
+git pull --ff-only origin dev
+git switch -c feat/short-description
+
+# 修改、检查并提交
+pnpm check
+git add <files>
+git commit -m "feat: describe the change"
+git push -u origin feat/short-description
+```
+
+随后在 GitHub 创建 `feat/short-description -> dev` 的 Pull Request，等待 `CI / check` 通过并完成审核后合并。当前长期使用的 `ltdev` 也可以按同样方式向 `dev` 提交 Pull Request；不要使用 `git checkout origin dev`，它会被解释为文件名。需要创建远端跟踪分支时使用 `git switch -c <branch> --track origin/<branch>`。
+
+### 发布到 Render
+
+1. 确认 `dev` 的功能、迁移和测试已经完成。
+2. 在 GitHub 创建 `dev -> main` 的 Pull Request。
+3. `CI / check` 通过并审核后合并；不要直接推送 `main`。
+4. 若本次提交涉及 `backend/`、`shared/` 或 `render.yaml`，Render 会在 GitHub 检查通过后自动部署。
+5. 部署结束后访问 `https://<service>.onrender.com/api/v1/health`，确认响应中的 `code` 为 `OK`。
+
+### 偶尔备份到 GitLab
+
+GitLab 不再接收独立开发提交，避免两边产生不同历史。需要备份时，把 GitHub 的 `main` 和 `dev` 快照推到 GitLab 专用备份分支：
+
+```bash
+git fetch origin --prune
+git push gitlab \
+  origin/main:refs/heads/backup/github-main \
+  origin/dev:refs/heads/backup/github-dev
+```
+
+这不会删除 GitLab 原有的 `main`、`dev` 或其他分支，也不使用强制推送。若以后启用 GitLab Pull Mirror，可用自动镜像替代这一步；仍应保持 GitHub 为唯一写入源。
+
 ## 本地开发
 
 ```bash

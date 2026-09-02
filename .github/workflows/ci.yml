@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check repository policy
+        shell: bash
+        run: |
+          test -f AGENTS.md
+          test -f README.md
+
+          forbidden_files="$(
+            find . -path './.git' -prune -o -type f \
+              \( -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o -name '*.p12' -o -name '*.pfx' \) \
+              ! -name '.env.example' \
+              ! -name '.env.*.example' \
+              -print
+          )"
+          if [ -n "$forbidden_files" ]; then
+            echo "Forbidden secret-like files are present:"
+            echo "$forbidden_files"
+            exit 1
+          fi
+
+          if grep -RInE 'BEGIN ((RSA|OPENSSH|EC|DSA) )?PRIVATE KEY' . --exclude-dir=.git; then
+            echo "Private key material must not be committed."
+            exit 1
+          fi
+
+          if grep -RInE '^[[:space:]]*[A-Z0-9_]*(TOKEN|SECRET|PASSWORD|PRIVATE_KEY|API_KEY)[[:space:]]*=[[:space:]]*['"'"'"]?[A-Za-z0-9_./+=-]{12,}' . --exclude-dir=.git --exclude=.gitlab-ci.yml; then
+            echo "Secret-like environment assignments must not be committed."
+            exit 1
+          fi
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+
+      - name: Run project checks
+        run: pnpm check
