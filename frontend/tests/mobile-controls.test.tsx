@@ -72,9 +72,11 @@ describe('mobile selection and confirmations', () => {
     expect(source).toContain('size="fixed"');
     expect(source).not.toContain('<ScrollView');
     expect(source).toContain('accessibilityRole="radiogroup"');
-    expect(nativeSheet).toContain('enableContentPanningGesture={!fixed}');
-    expect(nativeSheet).toContain('enableHandlePanningGesture={!fixed}');
-    expect(nativeSheet).toContain('handleComponent={fixed ? null : undefined}');
+    expect(nativeSheet).toContain(
+      "import { BottomSheet as OverlayBottomSheet } from './bottom-sheet-overlay'",
+    );
+    expect(nativeSheet).toContain("if (props.size === 'fixed')");
+    expect(nativeSheet).toContain('<OverlayBottomSheet {...props} />');
   });
 
   it('uses icon-only tabs with translated accessibility names', () => {

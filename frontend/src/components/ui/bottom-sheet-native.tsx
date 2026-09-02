@@ -1,17 +1,26 @@
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native/bottom-sheet';
 import { useCallback } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { View } from 'react-native';
 
-import { getFixedBottomSheetHeight, useAppTheme } from '@/styles/theme';
+import { useAppTheme } from '@/styles/theme';
 
 import { BottomSheetContent } from './bottom-sheet-content';
+import { BottomSheet as OverlayBottomSheet } from './bottom-sheet-overlay';
 import type { BottomSheetProps } from './bottom-sheet-types';
 
 const NATIVE_SHEET_SNAP_POINTS = ['55%', '82%'];
 const LARGE_SHEET_SNAP_POINTS = ['82%'];
 
-export function BottomSheet({
+export function BottomSheet(props: BottomSheetProps) {
+  if (props.size === 'fixed') {
+    return <OverlayBottomSheet {...props} />;
+  }
+
+  return <DraggableBottomSheet {...props} />;
+}
+
+function DraggableBottomSheet({
   children,
   closeLabel,
   footer,
@@ -20,16 +29,8 @@ export function BottomSheet({
   title,
   visible,
 }: BottomSheetProps) {
-  const { height } = useWindowDimensions();
   const { palette } = useAppTheme();
-  const fixed = size === 'fixed';
-  const fixedSheetHeight = getFixedBottomSheetHeight(height);
-  const snapPoints =
-    fixed
-      ? [fixedSheetHeight]
-      : size === 'large'
-        ? LARGE_SHEET_SNAP_POINTS
-        : NATIVE_SHEET_SNAP_POINTS;
+  const snapPoints = size === 'large' ? LARGE_SHEET_SNAP_POINTS : NATIVE_SHEET_SNAP_POINTS;
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
       if (!isOpen) {
@@ -54,11 +55,7 @@ export function BottomSheet({
             borderTopRightRadius: 28,
           }}
           contentContainerProps={{ style: { flex: 1, padding: 0 } }}
-          enableContentPanningGesture={!fixed}
           enableDynamicSizing={false}
-          enableHandlePanningGesture={!fixed}
-          enableOverDrag={!fixed}
-          handleComponent={fixed ? null : undefined}
           handleIndicatorStyle={{ backgroundColor: palette.line }}
           index={0}
           snapPoints={snapPoints}>
