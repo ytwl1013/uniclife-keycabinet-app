@@ -9,7 +9,8 @@ import type {
   CheckoutKeyRequest,
   CurrentUserAccount,
   FeedbackRequest,
-  FeedbackRecord,
+  FeedbackThread,
+  FeedbackThreadSummary,
   InitializeCabinetRequest,
   JoinCabinetRequest,
   Key,
@@ -77,12 +78,24 @@ export const backendApi = {
   deleteAccount: (token: string, input: WriteOptions = {}) =>
     callApi<{ deleted: boolean }>('/users/me', { ...json('DELETE', input), token }),
   submitFeedback: (token: string, input: FeedbackRequest) =>
-    callApi<{ submissionId: string; submittedAt: string }>(
+    callApi<{ submissionId: string; submittedAt: string; thread: FeedbackThread }>(
       '/support/feedback',
       { ...json('POST', input), token },
     ),
   listFeedbackHistory: (token: string) =>
-    callApi<{ items: FeedbackRecord[] }>('/support/feedback?limit=100', { token }),
+    callApi<{ items: FeedbackThreadSummary[] }>('/support/feedback?limit=100', { token }),
+  getFeedbackThread: (token: string, feedbackId: string) =>
+    callApi<FeedbackThread>(`/support/feedback/${encodeURIComponent(feedbackId)}`, { token }),
+  replyToFeedback: (token: string, feedbackId: string, content: string) =>
+    callApi<{ thread: FeedbackThread }>(
+      `/support/feedback/${encodeURIComponent(feedbackId)}/messages`,
+      { ...json('POST', { content }), token },
+    ),
+  markFeedbackThreadRead: (token: string, feedbackId: string) =>
+    callApi<{ markedReadCount: number }>(
+      `/support/feedback/${encodeURIComponent(feedbackId)}/read`,
+      { ...json('POST'), token },
+    ),
   listCabinets: (token: string) => callApi<CabinetSummary[]>('/cabinets', { token }),
   getCabinet: (token: string, cabinetId: string) =>
     callApi<CabinetDetail>(`/cabinets/${encodeURIComponent(cabinetId)}`, { token }),

@@ -13,6 +13,7 @@ import {
   gt,
   gte,
   ilike,
+  inArray,
   isNull,
   or,
   sql,
@@ -29,13 +30,18 @@ import {
   auditLogs,
   cabinetMemberships,
   cabinets,
+  keys,
+  productSkus,
   sessions,
   users,
 } from '../../db/schema.js';
 import { appendAudit } from '../audit/service.js';
 import type { RealtimeHub } from '../realtime/hub.js';
+import type { FeedbackNotifier } from '../../integrations/notifications/feedback-notifier.js';
+import { registerAdminSupportRoutes } from './support-routes.js';
 
 type AdminRouteOptions = {
+  notifier?: FeedbackNotifier;
   realtime: RealtimeHub;
 };
 
@@ -92,6 +98,8 @@ export async function registerAdminRoutes(
   app.addHook('preHandler', async (request) => {
     requireAdminApi(request);
   });
+
+  await registerAdminSupportRoutes(app, options);
 
   app.get('/overview', async () => {
     const database = requireDatabase();
@@ -206,6 +214,138 @@ export async function registerAdminRoutes(
       total: totalRow?.value ?? 0,
       limit: query.limit,
       offset: query.offset,
+    });
+  });
+
+  app.get<{ Params: { userId: string } }>('/users/:userId', async (request) => {
+    const userId = entityIdSchema.parse(request.params.userId);
+    const database = requireDatabase();
+    const now = new Date().toISOString();
+    const [user] = await database
+      .select({
+        id: users.id,
+        email: users.email,
+        displayName: users.displayName,
+        locale: users.locale,
+        status: users.status,
+        loginCount: users.loginCount,
+        lastLoginAt: users.lastLoginAt,
+        createdAt: users.createdAt,
+        cabinetCount:
+          sql<number>`(select count(*)::int from ${cabinetMemberships} where ${cabinetMemberships.userId} = ${users.id} and ${cabinetMemberships.active} = true)`.mapWith(
+            Number,
+          ),
+        activeSessionCount:
+          sql<number>`(select count(*)::int from ${sessions} where ${sessions.userId} = ${users.id} and ${sessions.revokedAt} is null and ${sessions.expiresAt} > ${now})`.mapWith(
+            Number,
+          ),
+      })
+      .from(users)
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+      .limit(1);
+
+    assertApp(user, 404, 'USER_NOT_FOUND', '用户不存在');
+
+    const cabinetRows = await database
+      .select({
+        id: cabinets.id,
+        name: cabinets.name,
+        location: cabinets.location,
+        timeZone: cabinets.timeZone,
+        status: cabinets.status,
+        lastSyncedAt: cabinets.lastSyncedAt,
+        createdAt: cabinets.createdAt,
+        version: cabinets.version,
+        membershipRole: cabinetMemberships.role,
+        membershipJoinedAt: cabinetMemberships.joinedAt,
+        productSku: productSkus.sku,
+        productModel: productSkus.model,
+        productName: productSkus.name,
+        productColor: productSkus.color,
+        productCapacity: productSkus.capacity,
+        keyCount:
+          sql<number>`(select count(*)::int from ${keys} where ${keys.cabinetId} = ${cabinets.id})`.mapWith(
+            Number,
+          ),
+        borrowedKeyCount:
+          sql<number>`(select count(*)::int from ${keys} where ${keys.cabinetId} = ${cabinets.id} and ${keys.status} = 'borrowed')`.mapWith(
+            Number,
+          ),
+      })
+      .from(cabinetMemberships)
+      .innerJoin(cabinets, eq(cabinetMemberships.cabinetId, cabinets.id))
+      .innerJoin(productSkus, eq(cabinets.skuId, productSkus.id))
+      .where(and(eq(cabinetMemberships.userId, userId), eq(cabinetMemberships.active, true)))
+      .orderBy(desc(cabinetMemberships.joinedAt), desc(cabinets.id));
+
+    const cabinetIds = cabinetRows.map((cabinet) => cabinet.id);
+    const administratorRows = cabinetIds.length
+      ? await database
+          .select({
+            cabinetId: cabinetMemberships.cabinetId,
+            id: users.id,
+            displayName: users.displayName,
+            email: users.email,
+            status: users.status,
+            role: cabinetMemberships.role,
+            joinedAt: cabinetMemberships.joinedAt,
+          })
+          .from(cabinetMemberships)
+          .innerJoin(users, eq(cabinetMemberships.userId, users.id))
+          .where(
+            and(
+              inArray(cabinetMemberships.cabinetId, cabinetIds),
+              eq(cabinetMemberships.active, true),
+              isNull(users.deletedAt),
+            ),
+          )
+          .orderBy(cabinetMemberships.cabinetId, cabinetMemberships.role, users.displayName)
+      : [];
+    const administratorsByCabinet = new Map<string, typeof administratorRows>();
+    for (const administrator of administratorRows) {
+      const current = administratorsByCabinet.get(administrator.cabinetId) ?? [];
+      current.push(administrator);
+      administratorsByCabinet.set(administrator.cabinetId, current);
+    }
+
+    return ok({
+      user: {
+        ...user,
+        locale: user.locale as (typeof import('@uniclife/shared').supportedLocales)[number],
+        lastLoginAt: user.lastLoginAt ? toIsoDate(user.lastLoginAt) : null,
+        createdAt: toIsoDate(user.createdAt),
+      },
+      cabinets: cabinetRows.map((cabinet) => ({
+        id: cabinet.id,
+        name: cabinet.name,
+        location: cabinet.location,
+        timeZone: cabinet.timeZone,
+        status: cabinet.status,
+        lastSyncedAt: toIsoDate(cabinet.lastSyncedAt),
+        createdAt: toIsoDate(cabinet.createdAt),
+        version: cabinet.version,
+        membership: {
+          role: cabinet.membershipRole,
+          joinedAt: toIsoDate(cabinet.membershipJoinedAt),
+        },
+        product: {
+          sku: cabinet.productSku,
+          model: cabinet.productModel,
+          name: cabinet.productName,
+          color: cabinet.productColor,
+          capacity: cabinet.productCapacity,
+        },
+        keyCount: cabinet.keyCount,
+        borrowedKeyCount: cabinet.borrowedKeyCount,
+        administrators: (administratorsByCabinet.get(cabinet.id) ?? []).map((administrator) => ({
+          id: administrator.id,
+          displayName: administrator.displayName,
+          email: administrator.email,
+          status: administrator.status,
+          role: administrator.role,
+          joinedAt: toIsoDate(administrator.joinedAt),
+        })),
+      })),
     });
   });
 

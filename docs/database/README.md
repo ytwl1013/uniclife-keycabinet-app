@@ -20,7 +20,8 @@
 | `keys` | 当前钥匙资料和槽位 | slot 唯一，保证一个槽位最多一把钥匙 |
 | `loans` | 领取与归还记录 | 每把钥匙最多一条 active 记录；预计归还晚于领取 |
 | `cabinet_events` | 页面活动时间线的不可变业务事件 | 按柜体/钥匙和发生时间索引 |
-| `feedback_records` | 反馈文字、用户身份快照和邮件投递状态 | 按用户/状态和提交时间索引；图片数量限制 0–5 |
+| `feedback_records` | 反馈主题、用户身份快照、初始邮件状态和会话状态 | 按用户/投递状态/会话状态和消息时间索引；图片数量限制 0–5 |
+| `feedback_messages` | 用户与客服的双向消息、已读和邮件投递状态 | 按反馈与时间索引；客服未读部分索引；正文 1–5000 字；发送方与用户外键一致性约束 |
 | `idempotency_records` | 写请求幂等响应 | 操作者 + 操作 + requestId 复合主键 |
 | `audit_logs` | 成功和失败操作审计 | 按操作者、目标和时间索引 |
 
@@ -28,7 +29,7 @@
 
 `users.login_count` 和 `users.last_login_at` 只统计迁移上线后的成功认证；注册并自动创建会话计为第一次登录。`users.home_guide_prompted_at` 独立记录用户是否已经处理过首页的“进入使用导航？”选择，不能使用登录次数代替该 UI 状态。上述登录元数据只通过当前账户接口返回，不进入成员或活动参与者视图。
 
-`feedback_records` 在 SMTP 调用前写入 `sending`，投递完成后更新为 `sent` 或 `failed`。表中保留提交时的用户名和邮箱快照，保证后续查询与回复可追溯；保存称呼、类型、标题、正文和图片数量，但不保存图片 Base64 或附件文件。本人历史查询使用 `user_id` 索引过滤，不能仅依赖客户端传参。
+`feedback_records` 在 SMTP 调用前与首条 `feedback_messages` 消息原子写入，投递完成后两处状态更新为 `sent` 或 `failed`。表中保留提交时的用户名和邮箱快照，保证后续查询与回复可追溯；保存称呼、类型、标题、正文和图片数量，但不保存图片 Base64 或附件文件。后续回复只写 `feedback_messages`，并更新根记录的会话状态与最后消息时间。本人查询、已读和回复都使用 `user_id` 在 SQL 层校验归属，不能仅依赖客户端传参。
 
 ## 迁移、兼容与回滚
 
@@ -50,6 +51,7 @@ pnpm db:seed:dev
 - `0002_funny_stellaris.sql` 新增 `feedback_delivery_status` 与 `feedback_records`。迁移不回填此前只存在于邮箱或审计日志中的反馈；上线后记录从空列表开始。回滚应先部署不再调用反馈历史接口、且提交不再写记录的版本，再备份并删除表和枚举；直接回滚会永久丢失发送历史文字和状态。
 - `0003_glamorous_skin.sql` 新增按 SKU 复用的 `product_qrs`、一次性 `cabinet_join_invitations`，以及 `cabinet_initialized`、`member_joined` 事件类型。迁移保留旧柜体、成员和 `cabinet_qrs` 数据，不允许旧设备二维码继续新增成员。回滚前必须先部署仍支持旧绑定接口的应用版本；PostgreSQL 枚举值不能安全原位删除，因此回滚优先停止写入新类型并保留表结构，确需移除时应新建枚举并迁移现有事件。
 - `0004_plain_slipstream.sql` 以新枚举替换成员角色枚举并加入 `super_admin`，同时新增 `super_admin_transferred` 事件类型。`0005_futuristic_bruce_banner.sql` 按 `joined_at, id` 把每个箱子最早的有效成员提升为超级管理员，再创建有效超级管理员部分唯一索引；没有有效成员的历史箱子不会自动创建绑定。角色枚举采用替换方式，是为了让同一次 PostgreSQL 迁移事务可以立即使用新值。回滚应先部署不再写入或判断超级管理员的版本，再移除部分唯一索引，并把所有 `super_admin` 降为 `admin`；PostgreSQL 枚举值不能安全原位删除，需新建旧枚举并迁移列和事件，不能直接改写已执行迁移。
+- `0006_rare_wither.sql` 新增客服会话枚举、`feedback_messages`、根记录会话状态与最后消息时间，并把每条既有反馈回填为一条用户首消息。回滚前必须先部署只读取旧发送记录的版本并备份客服消息；随后才能删除消息表和新列。直接回滚会永久丢失所有后续客服/用户回复，PostgreSQL 枚举应在确认无列依赖后再删除。
 
 ## 开发种子
 

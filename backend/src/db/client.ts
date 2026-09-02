@@ -8,7 +8,7 @@ const databaseUrl = env.DATABASE_URL;
 
 export const sql = databaseUrl
   ? postgres(databaseUrl, {
-      max: 20,
+      max: env.DB_POOL_MAX,
       idle_timeout: 20,
       connect_timeout: 10,
       prepare: false,

@@ -48,6 +48,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   registerErrorHandler(app);
 
   const realtime = options.realtime ?? new RealtimeHub();
+  const feedbackNotifier = options.feedbackNotifier ?? createSmtpFeedbackNotifier();
   realtime.start();
 
   await app.register(sensible);
@@ -69,6 +70,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
 
   await app.register(registerHealthRoutes, { prefix: '/api/v1/health' });
   await app.register(registerAdminRoutes, {
+    notifier: feedbackNotifier,
     prefix: '/api/v1/admin',
     realtime,
   });
@@ -83,7 +85,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   await app.register(registerRecordRoutes, { prefix: '/api/v1/records' });
   await app.register(registerSupportRoutes, {
     prefix: '/api/v1/support',
-    notifier: options.feedbackNotifier ?? createSmtpFeedbackNotifier(),
+    notifier: feedbackNotifier,
   });
   await app.register(registerRealtimeRoutes, { prefix: '/api/v1/realtime', realtime });
 

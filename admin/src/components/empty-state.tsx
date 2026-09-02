@@ -2,7 +2,7 @@ import { Card } from '@heroui/react';
 import { RefreshCw, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 
-export function ErrorState({ message }: { message: string }) {
+export function ErrorState({ message, retryHref = '/' }: { message: string; retryHref?: string }) {
   return (
     <Card className="admin-card border-amber-200 bg-amber-50/70">
       <Card.Content className="flex items-center gap-4 p-5 max-sm:items-start">
@@ -13,7 +13,7 @@ export function ErrorState({ message }: { message: string }) {
           <p className="text-sm font-semibold text-amber-950">数据暂时不可用</p>
           <p className="mt-1 text-xs leading-5 text-amber-800/75">{message}。请确认后台环境变量与后端服务状态。</p>
         </div>
-        <Link className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 text-xs font-medium text-amber-800 hover:bg-amber-100" href="/">
+        <Link className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 text-xs font-medium text-amber-800 hover:bg-amber-100" href={retryHref}>
           <RefreshCw aria-hidden="true" size={14} />
           重试
         </Link>

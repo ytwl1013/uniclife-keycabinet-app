@@ -182,6 +182,7 @@ describe('simplified mobile navigation architecture', () => {
     expect(layout).toContain('<Stack.Screen name="notifications"');
     expect(layout).toContain('<Stack.Screen name="account/contact-support"');
     expect(layout).toContain('<Stack.Screen name="account/feedback-history"');
+    expect(layout).toContain('<Stack.Screen name="account/feedback/[feedbackId]"');
     expect(layout).toContain('<Stack.Screen name="account/profile"');
     expect(layout).toContain('<Stack.Screen name="account/security"');
     expect(layout).toContain('<Stack.Screen name="account/change-email"');
@@ -213,6 +214,8 @@ describe('simplified mobile navigation architecture', () => {
     expect(support).toContain("router.push('/(details)/account/feedback-history' as Href)");
     expect(feedbackHistory).toContain('actions.listFeedbackHistory()');
     expect(feedbackHistory).toContain('historyStatusSent');
+    expect(feedbackHistory).toContain("router.push(`/(details)/account/feedback/${item.id}` as Href)");
+    expect(notifications).toContain('if (item.href) router.push(item.href)');
   });
 
   it('provides menu and calendar filters with cabinet-grouped return cards', () => {

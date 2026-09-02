@@ -35,6 +35,12 @@ describe('realtime client policy', () => {
     }))).toMatchObject({ type: 'workspace.changed', cabinetVersion: 3 });
     expect(parseRealtimeEvent('{not-json')).toBeNull();
     expect(parseRealtimeEvent(JSON.stringify({ type: 'workspace.changed' }))).toBeNull();
+    expect(parseRealtimeEvent(JSON.stringify({
+      type: 'support.message_created',
+      eventId: 'realtime-support-1',
+      occurredAt: '2026-08-24T08:01:00.000Z',
+      feedbackId: 'feedback-1',
+    }))).toMatchObject({ type: 'support.message_created', feedbackId: 'feedback-1' });
   });
 
   it('uses bounded exponential reconnect delays with jitter', () => {

@@ -43,6 +43,13 @@
       "when": 1788246155784,
       "tag": "0005_futuristic_bruce_banner",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788333410239,
+      "tag": "0006_rare_wither",
+      "breakpoints": true
     }
   ]
 }

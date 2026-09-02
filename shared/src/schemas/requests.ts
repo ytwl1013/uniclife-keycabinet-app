@@ -87,6 +87,41 @@ export const feedbackRecordSchema = z.object({
   submittedAt: isoDateSchema,
   deliveredAt: isoDateSchema.nullable(),
 });
+export const feedbackConversationStatusSchema = z.enum([
+  'waiting_for_support',
+  'waiting_for_user',
+  'resolved',
+]);
+export const feedbackMessageSenderSchema = z.enum(['user', 'support']);
+export const feedbackMessageSchema = z.object({
+  id: entityIdSchema,
+  feedbackId: entityIdSchema,
+  sender: feedbackMessageSenderSchema,
+  senderDisplayName: z.string().trim().min(1).max(128),
+  content: z.string().min(1).max(5000),
+  imageCount: z.number().int().min(0).max(feedbackMaxImages),
+  status: feedbackDeliveryStatusSchema,
+  failureCode: z.string().min(1).max(128).nullable(),
+  createdAt: isoDateSchema,
+  readAt: isoDateSchema.nullable(),
+});
+export const feedbackThreadSummarySchema = feedbackRecordSchema.extend({
+  conversationStatus: feedbackConversationStatusSchema,
+  lastMessageAt: isoDateSchema,
+  lastMessagePreview: z.string().min(1).max(240),
+  lastMessageSender: feedbackMessageSenderSchema,
+  latestSupportMessageAt: isoDateSchema.nullable(),
+  latestSupportMessagePreview: z.string().min(1).max(240).nullable(),
+  messageCount: z.number().int().positive(),
+  supportMessageCount: z.number().int().nonnegative(),
+  unreadMessageCount: z.number().int().nonnegative(),
+});
+export const feedbackThreadSchema = feedbackThreadSummarySchema.extend({
+  messages: z.array(feedbackMessageSchema).min(1),
+});
+export const feedbackReplyRequestSchema = z.object({
+  content: z.string().trim().min(1).max(5000),
+});
 export const feedbackHistoryQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
@@ -174,3 +209,9 @@ export type FeedbackImage = z.infer<typeof feedbackImageSchema>;
 export type FeedbackRequest = z.infer<typeof feedbackRequestSchema>;
 export type FeedbackDeliveryStatus = z.infer<typeof feedbackDeliveryStatusSchema>;
 export type FeedbackRecord = z.infer<typeof feedbackRecordSchema>;
+export type FeedbackConversationStatus = z.infer<typeof feedbackConversationStatusSchema>;
+export type FeedbackMessageSender = z.infer<typeof feedbackMessageSenderSchema>;
+export type FeedbackMessage = z.infer<typeof feedbackMessageSchema>;
+export type FeedbackThreadSummary = z.infer<typeof feedbackThreadSummarySchema>;
+export type FeedbackThread = z.infer<typeof feedbackThreadSchema>;
+export type FeedbackReplyRequest = z.infer<typeof feedbackReplyRequestSchema>;

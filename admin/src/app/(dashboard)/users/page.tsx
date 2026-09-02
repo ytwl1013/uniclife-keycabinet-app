@@ -1,16 +1,14 @@
 import { adminUserListSchema, adminUserQuerySchema } from '@uniclife/shared';
-import { Avatar, Button, Card, Input } from '@heroui/react';
-import { Search, UsersRound } from 'lucide-react';
+import { Button, Card, Input } from '@heroui/react';
+import { Search } from 'lucide-react';
 import type { Metadata } from 'next';
 
 import { ErrorState, TableEmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
-import { UserStatusChip } from '@/components/status-chip';
-import { UserStatusButton } from '@/components/user-status-button';
+import { UserTableRow } from '@/components/user-table-row';
 import { safeAdminApi } from '@/lib/admin-api';
 import { getAdminEnvironmentName } from '@/lib/env';
-import { formatDateTime } from '@/lib/format';
 
 export const metadata: Metadata = { title: '用户管理' };
 
@@ -99,31 +97,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 </thead>
                 <tbody>
                   {data.items.map((user) => (
-                    <tr key={user.id}>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <Avatar color="accent" size="sm" variant="soft">
-                            <Avatar.Fallback>{user.displayName.slice(0, 1).toUpperCase()}</Avatar.Fallback>
-                          </Avatar>
-                          <span className="min-w-0">
-                            <span className="block max-w-56 truncate text-xs font-semibold text-zinc-800">{user.displayName}</span>
-                            <span className="block max-w-56 truncate text-[11px] text-zinc-400">{user.email}</span>
-                          </span>
-                        </div>
-                      </td>
-                      <td><UserStatusChip status={user.status} /></td>
-                      <td>
-                        <span className="block text-xs font-medium text-zinc-700">{user.loginCount} 次</span>
-                        <span className="mt-0.5 block text-[10px] text-zinc-400">最近：{formatDateTime(user.lastLoginAt)}</span>
-                      </td>
-                      <td>
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700">
-                          <UsersRound aria-hidden="true" className="text-zinc-400" size={14} /> {user.cabinetCount}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap text-zinc-400">{formatDateTime(user.createdAt)}</td>
-                      <td><UserStatusButton displayName={user.displayName} status={user.status} userId={user.id} /></td>
-                    </tr>
+                    <UserTableRow key={user.id} user={user} />
                   ))}
                 </tbody>
               </table>

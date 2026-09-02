@@ -6,6 +6,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   LogOut,
+  MessagesSquare,
   Settings,
   ShieldCheck,
   Users,
@@ -19,6 +20,7 @@ import { BrandMark } from './brand-mark';
 const navigation = [
   { href: '/', label: '概览', icon: LayoutDashboard },
   { href: '/users', label: '用户管理', icon: Users },
+  { href: '/support', label: '客服反馈', icon: MessagesSquare },
   { href: '/activity', label: '活动记录', icon: Activity },
   { href: '/settings', label: '系统设置', icon: Settings },
 ];

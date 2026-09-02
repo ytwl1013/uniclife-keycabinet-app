@@ -6,7 +6,8 @@ import type {
   CabinetQrResolution,
   CurrentUserAccount,
   FeedbackRequest,
-  FeedbackRecord,
+  FeedbackThread,
+  FeedbackThreadSummary,
   Key,
   KeySlot,
   Loan,
@@ -52,6 +53,7 @@ export type AppState = {
   keys: Key[];
   loans: Loan[];
   events: CabinetEvent[];
+  feedbackThreads: FeedbackThreadSummary[];
 };
 
 export type EventFilter = {
@@ -91,7 +93,10 @@ export type AppActions = {
   ): Promise<void>;
   deleteAccount(input?: WriteOptions): Promise<void>;
   submitFeedback(input: FeedbackRequest): Promise<{ submissionId: string; submittedAt: string }>;
-  listFeedbackHistory(): Promise<FeedbackRecord[]>;
+  listFeedbackHistory(): Promise<FeedbackThreadSummary[]>;
+  getFeedbackThread(input: { feedbackId: string }): Promise<FeedbackThread>;
+  replyToFeedback(input: { feedbackId: string; content: string }): Promise<FeedbackThread>;
+  markFeedbackThreadRead(input: { feedbackId: string }): Promise<void>;
   resolveQr(input: { code: string } | string): Promise<QrResolution>;
   initializeCabinet(
     input: { productQrCode: string; name: string; timeZone?: string } & WriteOptions,

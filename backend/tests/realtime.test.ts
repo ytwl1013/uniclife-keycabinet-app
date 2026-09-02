@@ -86,6 +86,23 @@ describe('realtime hub', () => {
     hub.stop();
   });
 
+  it('sends support-message events only to the feedback owner', () => {
+    const hub = new RealtimeHub({ heartbeatIntervalMs: 45_000 });
+    const owner = new TestSocket();
+    const unrelated = new TestSocket();
+    hub.connect({ sessionId: 'session-owner', userId: 'user-owner' }, owner as WebSocket);
+    hub.connect({ sessionId: 'session-other', userId: 'user-other' }, unrelated as WebSocket);
+
+    hub.publishSupportMessage({ feedbackId: 'feedback-1', userId: 'user-owner' });
+
+    expect(socketEvents(owner).at(-1)).toMatchObject({
+      type: 'support.message_created',
+      feedbackId: 'feedback-1',
+    });
+    expect(socketEvents(unrelated)).toHaveLength(1);
+    hub.stop();
+  });
+
   it('terminates a connection that misses two heartbeat checks', () => {
     vi.useFakeTimers();
     const hub = new RealtimeHub({ heartbeatIntervalMs: 1_000 });

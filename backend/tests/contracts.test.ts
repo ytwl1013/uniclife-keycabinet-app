@@ -1,10 +1,13 @@
 import {
+  adminUserDetailSchema,
   checkoutKeyRequestSchema,
   cabinetMembershipSchema,
   currentUserAccountSchema,
   feedbackHistoryQuerySchema,
   feedbackRecordSchema,
+  feedbackReplyRequestSchema,
   feedbackRequestSchema,
+  feedbackThreadSchema,
   markHomeGuidePromptedRequestSchema,
   realtimeEventSchema,
   registerRequestSchema,
@@ -106,6 +109,66 @@ describe('backend request contracts', () => {
     }).membershipId).toBe('membership-next');
   });
 
+  it('validates admin user details with cabinet state and administrator relationships', () => {
+    const detail = adminUserDetailSchema.parse({
+      user: {
+        id: 'user-test',
+        email: 'person@example.com',
+        displayName: 'Test Person',
+        locale: 'zh-CN',
+        status: 'active',
+        loginCount: 4,
+        lastLoginAt: '2026-09-02T08:00:00.000Z',
+        createdAt: '2026-08-20T08:00:00.000Z',
+        cabinetCount: 1,
+        activeSessionCount: 2,
+      },
+      cabinets: [
+        {
+          id: 'cabinet-test',
+          name: 'Test Cabinet',
+          location: 'Reception',
+          timeZone: 'Asia/Shanghai',
+          status: 'online',
+          lastSyncedAt: '2026-09-02T08:00:00.000Z',
+          createdAt: '2026-08-20T08:00:00.000Z',
+          version: 3,
+          membership: {
+            role: 'admin',
+            joinedAt: '2026-08-21T08:00:00.000Z',
+          },
+          product: {
+            sku: 'BG5163-BK',
+            model: 'BG5163',
+            name: 'Key Cabinet',
+            color: 'black',
+            capacity: 16,
+          },
+          keyCount: 8,
+          borrowedKeyCount: 2,
+          administrators: [
+            {
+              id: 'user-owner',
+              displayName: 'Owner',
+              email: 'owner@example.com',
+              status: 'active',
+              role: 'super_admin',
+              joinedAt: '2026-08-20T08:00:00.000Z',
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(detail.cabinets[0]?.administrators[0]?.role).toBe('super_admin');
+    expect(() =>
+      adminUserDetailSchema.parse({
+        ...detail,
+        cabinets: [{ ...detail.cabinets[0], borrowedKeyCount: -1 }],
+      }),
+    ).toThrow();
+  });
+
   it('validates feedback content and compressed image boundaries', () => {
     const valid = feedbackRequestSchema.parse({
       content: 'The return action failed after confirmation.',
@@ -152,5 +215,53 @@ describe('backend request contracts', () => {
     expect(record.userEmail).toBe('person@example.com');
     expect(feedbackHistoryQuerySchema.parse({}).limit).toBe(50);
     expect(() => feedbackHistoryQuerySchema.parse({ limit: 101 })).toThrow();
+  });
+
+  it('validates support conversations, replies, and realtime user notifications', () => {
+    const message = {
+      id: 'feedback-message-test',
+      feedbackId: 'feedback-test',
+      sender: 'support',
+      senderDisplayName: 'UnicLife Support',
+      content: 'Please send the cabinet status shown in Settings.',
+      imageCount: 0,
+      status: 'sent',
+      failureCode: null,
+      createdAt: '2026-08-24T09:00:00.000Z',
+      readAt: null,
+    } as const;
+    const thread = feedbackThreadSchema.parse({
+      id: 'feedback-test',
+      userId: 'user-test',
+      userDisplayName: 'Test Person',
+      userEmail: 'person@example.com',
+      salutation: 'Test',
+      type: 'application',
+      title: 'Cabinet status',
+      content: 'The cabinet appears offline.',
+      imageCount: 0,
+      status: 'sent',
+      failureCode: null,
+      submittedAt: '2026-08-24T08:00:00.000Z',
+      deliveredAt: '2026-08-24T08:00:01.000Z',
+      conversationStatus: 'waiting_for_user',
+      lastMessageAt: message.createdAt,
+      lastMessagePreview: message.content,
+      lastMessageSender: 'support',
+      latestSupportMessageAt: message.createdAt,
+      latestSupportMessagePreview: message.content,
+      messageCount: 1,
+      supportMessageCount: 1,
+      unreadMessageCount: 1,
+      messages: [message],
+    });
+    expect(thread.unreadMessageCount).toBe(1);
+    expect(feedbackReplyRequestSchema.parse({ content: '  Thanks  ' }).content).toBe('Thanks');
+    expect(realtimeEventSchema.parse({
+      type: 'support.message_created',
+      eventId: 'realtime-support-test',
+      occurredAt: message.createdAt,
+      feedbackId: thread.id,
+    })).toMatchObject({ type: 'support.message_created', feedbackId: thread.id });
   });
 });

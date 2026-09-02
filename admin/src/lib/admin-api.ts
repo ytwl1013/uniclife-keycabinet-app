@@ -17,7 +17,7 @@ export class AdminApiError extends Error {
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'PATCH';
+  method?: 'GET' | 'PATCH' | 'POST';
   body?: unknown;
 };
 

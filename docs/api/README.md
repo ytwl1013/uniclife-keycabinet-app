@@ -52,7 +52,10 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | PATCH | `/users/me/password` | 校验当前密码后修改密码 | 本人 |
 | DELETE | `/users/me` | 匿名化并停用账户；若仍是任意箱子的超级管理员则返回 409，需先转让或删除箱子 | 本人 |
 | POST | `/support/feedback` | 提交产品/应用反馈并通过后端 SMTP 发送邮件 | 登录 |
-| GET | `/support/feedback` | 查询当前用户最近的反馈发送记录；支持 `limit=1..100` | 本人 |
+| GET | `/support/feedback` | 查询当前用户最近的反馈会话摘要；支持 `limit=1..100` | 本人 |
+| GET | `/support/feedback/:feedbackId` | 查询本人反馈的完整双向消息时间线 | 本人 |
+| POST | `/support/feedback/:feedbackId/messages` | 在本人反馈会话中回复客服 | 本人 |
+| POST | `/support/feedback/:feedbackId/read` | 把本人会话中的客服回复标为已读 | 本人 |
 
 注册请求示例：
 
@@ -86,14 +89,77 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | --- | --- | --- |
 | GET | `/admin/overview` | 用户、有效会话、柜体指标，近 7 日活动趋势与最近审计事件 |
 | GET | `/admin/users` | 全局用户列表；支持 `query`、`status=all\|active\|disabled`、`limit`、`offset` |
+| GET | `/admin/users/:userId` | 用户详情、有效会话数、绑定柜体状态、产品与钥匙统计，以及柜体的全部有效管理员 |
+| GET | `/admin/feedback` | 全局客服反馈；支持 `query`、会话 `status`、`limit`、`offset` |
+| GET | `/admin/feedback/:feedbackId` | 反馈身份快照与完整双向消息时间线 |
+| POST | `/admin/feedback/:feedbackId/messages` | 代表客服回复用户；写入 App 会话并尝试发送邮件 |
+| POST | `/admin/feedback/:feedbackId/read` | 把会话中的用户消息标为客服已读 |
 | GET | `/admin/activities` | 全局审计列表；支持 `query`、`result=all\|success\|failure`、`limit`、`offset` |
 | PATCH | `/admin/users/:userId/status` | 启用或停用用户；停用会撤销该用户全部有效会话 |
 
 用户状态写操作限制为每分钟 20 次，并写入 `admin.user_status_updated` 审计事件，记录目标用户、变更前后状态和环境管理员标识。返回数据不包含密码哈希、会话 Token、审计 metadata 或其他管理密钥。
 
-反馈请求由后端从会话读取用户 ID、用户名和登录邮箱，客户端不能覆盖这些身份字段。邮件主题包含唯一反馈编号，正文包含身份信息与提交时间，`Reply-To` 使用登录邮箱。反馈类型为 `product` 或 `application`（默认）；称呼与标题可选，内容必填且最多 5000 字符。最多附带 5 张 JPEG 图片，每张 Base64 数据最多 2,000,000 字符；前端会先缩放和压缩。接口单独限制为每个客户端每小时 5 次，成功或失败均写入通用审计日志；邮件未配置返回 `FEEDBACK_UNAVAILABLE`，SMTP 发送失败返回 `FEEDBACK_SEND_FAILED`。
+`GET /admin/users/:userId` 仅接受管理服务端令牌，不接受普通用户会话。路径中的 `userId` 必须是 1–128 字符的有效实体 ID；用户不存在或已删除时返回 HTTP 404 / `USER_NOT_FOUND`。响应中的 `cabinets` 只包含目标用户当前有效绑定的柜体，`administrators` 只包含该柜体当前有效且未删除的管理员账户。
 
-每次提交会持久化一条发送记录：反馈编号、用户 ID/用户名/邮箱快照、称呼、类型、标题、内容、图片数量、`sending|sent|failed` 状态、失败码及时间。图片 Base64 和附件文件不写入数据库。历史查询按当前会话的用户 ID 在 SQL 层过滤，不能查看其他账户的反馈，默认返回最近 50 条、最多 100 条。
+```json
+{
+  "code": "OK",
+  "message": "ok",
+  "data": {
+    "user": {
+      "id": "user-example",
+      "email": "person@example.com",
+      "displayName": "Example Person",
+      "locale": "zh-CN",
+      "status": "active",
+      "loginCount": 8,
+      "lastLoginAt": "2026-09-02T03:20:00.000Z",
+      "createdAt": "2026-08-20T08:00:00.000Z",
+      "cabinetCount": 1,
+      "activeSessionCount": 2
+    },
+    "cabinets": [
+      {
+        "id": "cabinet-example",
+        "name": "前台钥匙柜",
+        "location": "一楼前台",
+        "timeZone": "Asia/Shanghai",
+        "status": "online",
+        "lastSyncedAt": "2026-09-02T03:19:30.000Z",
+        "createdAt": "2026-08-21T08:00:00.000Z",
+        "version": 12,
+        "membership": {
+          "role": "admin",
+          "joinedAt": "2026-08-22T08:00:00.000Z"
+        },
+        "product": {
+          "sku": "BG5163-BK",
+          "model": "BG5163",
+          "name": "智能钥匙柜",
+          "color": "black",
+          "capacity": 16
+        },
+        "keyCount": 9,
+        "borrowedKeyCount": 2,
+        "administrators": [
+          {
+            "id": "user-owner",
+            "displayName": "Owner",
+            "email": "owner@example.com",
+            "status": "active",
+            "role": "super_admin",
+            "joinedAt": "2026-08-21T08:00:00.000Z"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+反馈请求由后端从会话读取用户 ID、用户名和登录邮箱，客户端不能覆盖这些身份字段。邮件主题包含唯一反馈编号，正文包含身份信息与提交时间，`Reply-To` 使用登录邮箱。反馈类型为 `product` 或 `application`（默认）；称呼与标题可选，内容必填且最多 5000 字符。最多附带 5 张 JPEG 图片，每张 Base64 数据最多 2,000,000 字符；前端会先缩放和压缩。初次提交限制为每个客户端每小时 5 次，成功或失败均写入审计；邮件未配置返回 `FEEDBACK_UNAVAILABLE`，SMTP 发送失败返回 `FEEDBACK_SEND_FAILED`。
+
+每次提交会原子创建根反馈和首条用户消息。根反馈保存身份快照、初始邮件状态、`waiting_for_support|waiting_for_user|resolved` 会话状态和最后消息时间；消息保存发送方、正文、图片数量、`sending|sent|failed` 邮件状态、失败码及已读时间。图片 Base64 和附件文件不写入数据库。用户列表、详情、回复和已读均按当前会话用户 ID 在 SQL 层过滤。客服管理接口只能通过 `ADMIN_API_TOKEN` 调用，回复成功后记录 `admin.feedback_replied` 审计，并向反馈所属用户发送仅含反馈 ID 的实时事件。
 
 ```json
 {
@@ -129,11 +195,30 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
       "status": "sent",
       "failureCode": null,
       "submittedAt": "2026-08-24T08:00:00.000Z",
-      "deliveredAt": "2026-08-24T08:00:01.000Z"
+      "deliveredAt": "2026-08-24T08:00:01.000Z",
+      "conversationStatus": "waiting_for_support",
+      "lastMessageAt": "2026-08-24T08:00:00.000Z",
+      "lastMessagePreview": "点击确认归还后显示网络错误。",
+      "lastMessageSender": "user",
+      "latestSupportMessageAt": null,
+      "latestSupportMessagePreview": null,
+      "messageCount": 1,
+      "supportMessageCount": 0,
+      "unreadMessageCount": 0
     }
   ]
 }
 ```
+
+用户和客服回复请求都只接受正文：
+
+```json
+{
+  "content": "我已经按建议重启，当前状态仍显示离线。"
+}
+```
+
+用户回复会先写入会话并将状态切为 `waiting_for_support`；客服回复将状态切为 `waiting_for_user`，写入后尝试向用户邮箱投递。后续邮件投递失败只把该消息标记为 `failed`，App 内消息仍可读取和回复。
 
 ## 柜体、钥匙和借还
 
@@ -216,7 +301,18 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 }
 ```
 
-通知不是数据源；客户端根据版本判断后通过 REST 重新验证数据。服务端每 45 秒发送协议级 Ping，连续一个检查周期未收到 Pong 时终止连接。退出、改密、重置密码或删号会立即关闭已撤销会话的连接。
+客服回复落库后，只向反馈所属用户发送：
+
+```json
+{
+  "type": "support.message_created",
+  "eventId": "realtime-uuid",
+  "occurredAt": "2026-09-02T08:00:00.000Z",
+  "feedbackId": "feedback-uuid"
+}
+```
+
+通知不是数据源；客户端通过 REST 重新验证数据，客服事件不包含正文或用户身份。服务端每 45 秒发送协议级 Ping，连续一个检查周期未收到 Pong 时终止连接。退出、改密、重置密码或删号会立即关闭已撤销会话的连接。
 
 ## 主要业务错误码
 

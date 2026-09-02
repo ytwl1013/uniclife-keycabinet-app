@@ -26,6 +26,7 @@ const envSchema = z.object({
   AUTH_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
   AUTH_TOKEN_PEPPER: z.string().min(32).optional(),
   DATABASE_URL: z.string().url().optional(),
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
   FRONTEND_ORIGIN: z.string().default('http://localhost:8081'),
   HOST: z.string().default('0.0.0.0'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

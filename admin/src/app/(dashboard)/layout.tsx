@@ -11,10 +11,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (!session) redirect('/login');
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <Sidebar username={session.username} />
-      <main className="ml-[238px] min-h-screen px-7 py-7 max-md:ml-0 max-md:px-4 max-md:py-5">
-        <div className="mx-auto w-full max-w-[1380px]">{children}</div>
+      <main className="ml-[238px] min-h-dvh px-[clamp(1rem,2vw,3rem)] py-[clamp(1.25rem,2vw,2.25rem)] max-md:ml-0">
+        <div className="flex min-h-[calc(100dvh-clamp(2.5rem,4vw,4.5rem))] w-full flex-col">{children}</div>
       </main>
     </div>
   );
