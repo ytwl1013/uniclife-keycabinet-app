@@ -20,6 +20,7 @@
 
 ```text
 frontend/         前端应用代码
+admin/            Next.js 管理后台、服务端管理会话和后端管理 API 代理
 backend/          后端 API、业务服务、数据访问和集成代码
 shared/           前后端共享类型、接口契约、校验 schema 和常量
 docs/             产品、接口、数据库、权限、部署和运维文档
@@ -70,6 +71,12 @@ backend/src/common/           通用错误、日志、校验、工具
 backend/src/db/               数据模型、迁移、种子数据
 backend/tests/                后端单测、集成测试和契约测试
 ```
+
+### Admin 规划
+
+`admin/` 是独立 Next.js workspace，只负责管理界面、管理员 Web 会话和服务端 API 转发。浏览器端不得持有 `ADMIN_API_TOKEN`、数据库连接或其他后端管理凭据；全局用户、审计数据和状态写操作必须由 `backend/src/modules/admin` 提供并在后端执行权限校验与审计。
+
+管理员初始账号只允许通过被 Git 忽略的环境文件或部署平台 Secret 注入。仓库只能提交 `.env.example` 中的变量名与占位格式，不得提供可直接用于部署的默认密码、哈希或会话密钥。
 
 后端规则：
 

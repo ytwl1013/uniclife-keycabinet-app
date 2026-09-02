@@ -1,6 +1,7 @@
 import type {
   RealtimeEvent,
   RealtimeResource,
+  RealtimeSupportMessageCreatedEvent,
   RealtimeWorkspaceChangedEvent,
 } from '@uniclife/shared';
 import { and, eq } from 'drizzle-orm';
@@ -32,6 +33,7 @@ export interface RealtimePublisher {
   disconnectSession(sessionId: string): void;
   disconnectUser(userId: string): void;
   publishCabinetChange(change: CabinetRealtimeChange): Promise<void>;
+  publishSupportMessage(input: { feedbackId: string; userId: string }): void;
 }
 
 export type RealtimeHubOptions = {
@@ -114,6 +116,18 @@ export class RealtimeHub implements RealtimePublisher {
     };
     for (const connection of this.connections) {
       if (audience.has(connection.userId)) this.send(connection, event);
+    }
+  }
+
+  publishSupportMessage(input: { feedbackId: string; userId: string }): void {
+    const event: RealtimeSupportMessageCreatedEvent = {
+      type: 'support.message_created',
+      eventId: createEntityId('realtime'),
+      occurredAt: new Date().toISOString(),
+      feedbackId: input.feedbackId,
+    };
+    for (const connection of this.connections) {
+      if (connection.userId === input.userId) this.send(connection, event);
     }
   }
 

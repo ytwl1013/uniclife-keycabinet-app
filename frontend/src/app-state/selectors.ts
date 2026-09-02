@@ -82,7 +82,9 @@ export function createAppSelectors(state: AppState) {
   const cabinetsForCurrentUser = (): Cabinet[] =>
     state.cabinets.filter((cabinet) => currentCabinetIds.has(cabinet.id));
   const canManageCabinet = (cabinetId: string): boolean =>
-    membershipForUser(cabinetId)?.role === 'admin';
+    Boolean(membershipForUser(cabinetId));
+  const isCabinetSuperAdmin = (cabinetId: string): boolean =>
+    membershipForUser(cabinetId)?.role === 'super_admin';
   const borrowedKeys = (cabinetId?: string): Key[] => state.keys.filter(
     (key) =>
       key.status === 'borrowed' &&
@@ -122,6 +124,7 @@ export function createAppSelectors(state: AppState) {
     cabinetsForCurrentUser,
     membershipForCurrentUser: (cabinetId: string) => membershipForUser(cabinetId),
     canManageCabinet,
+    isCabinetSuperAdmin,
     borrowedKeys,
     cabinetMetrics,
   };

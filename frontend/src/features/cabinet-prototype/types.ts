@@ -1,6 +1,7 @@
 import type { CabinetJoinInvitation } from '@uniclife/shared';
+import type { ActivityEvent, ActivityEventKind } from '@/features/activity/types';
 
-export type CabinetRole = 'admin';
+export type CabinetRole = 'superAdmin' | 'admin';
 
 export type CabinetStatus = 'online' | 'offline' | 'maintenance';
 
@@ -69,32 +70,9 @@ export type MemberView = {
   boundAt: string;
 };
 
-export type CabinetEventKind =
-  | 'checkOut'
-  | 'return'
-  | 'keyAdded'
-  | 'keyUpdated'
-  | 'undo'
-  | 'memberAdded'
-  | 'memberRemoved'
-  | 'roleChanged'
-  | 'keysCleared'
-  | 'keysRestored'
-  | 'admin';
+export type CabinetEventKind = ActivityEventKind;
 
-export type EventView = {
-  id: string;
-  cabinetId: string;
-  keyId?: string;
-  keyName?: string;
-  actorUserId: string;
-  actorName: string;
-  kind: CabinetEventKind;
-  createdAt: string;
-  title: string;
-  detail?: string;
-  borrowerContact?: string;
-};
+export type EventView = ActivityEvent;
 
 export type ActivityFilters = {
   cabinetId?: string;
@@ -136,7 +114,10 @@ export type PrototypeActions = {
   checkoutKey(input: CheckoutInput): Promise<void>;
   returnKey(input: { cabinetId: string; keyId: string; returnedAt?: string }): Promise<void>;
   removeMember(input: { cabinetId: string; membershipId: string }): Promise<void>;
+  transferSuperAdmin(input: { cabinetId: string; membershipId: string }): Promise<void>;
   deleteAllKeys(input: { cabinetId: string }): Promise<void>;
+  disconnectCabinet(input: { cabinetId: string }): Promise<void>;
+  deleteCabinet(input: { cabinetId: string }): Promise<void>;
   createJoinInvitation(input: { cabinetId: string }): Promise<CabinetJoinInvitation>;
   revokeJoinInvitation(input: {
     cabinetId: string;

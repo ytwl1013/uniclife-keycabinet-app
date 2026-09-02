@@ -20,18 +20,28 @@ export const qrStatus = pgEnum('qr_status', ['active', 'disabled']);
 export const keyStatus = pgEnum('key_status', ['available', 'borrowed']);
 export const loanStatus = pgEnum('loan_status', ['active', 'returned', 'cancelled']);
 export const consentKind = pgEnum('consent_kind', ['terms', 'privacy']);
-export const membershipRole = pgEnum('membership_role', ['admin']);
+export const membershipRole = pgEnum('membership_role', ['super_admin', 'admin']);
 export const auditResult = pgEnum('audit_result', ['success', 'failure']);
 export const feedbackDeliveryStatus = pgEnum('feedback_delivery_status', [
   'sending',
   'sent',
   'failed',
 ]);
+export const feedbackConversationStatus = pgEnum('feedback_conversation_status', [
+  'waiting_for_support',
+  'waiting_for_user',
+  'resolved',
+]);
+export const feedbackMessageSender = pgEnum('feedback_message_sender', [
+  'user',
+  'support',
+]);
 export const cabinetEventType = pgEnum('cabinet_event_type', [
   'cabinet_bound',
   'cabinet_initialized',
   'member_joined',
   'cabinet_renamed',
+  'super_admin_transferred',
   'member_removed',
   'key_added',
   'key_updated',
@@ -201,6 +211,9 @@ export const cabinetMemberships = pgTable(
   },
   (table) => [
     uniqueIndex('cabinet_memberships_cabinet_user_unique').on(table.cabinetId, table.userId),
+    uniqueIndex('cabinet_memberships_active_super_admin_unique')
+      .on(table.cabinetId)
+      .where(sql`${table.active} = true AND ${table.role} = 'super_admin'`),
     index('cabinet_memberships_user_active_idx').on(table.userId, table.active),
   ],
 );
@@ -371,6 +384,12 @@ export const feedbackRecords = pgTable(
       .notNull()
       .defaultNow(),
     deliveredAt: timestamp('delivered_at', { withTimezone: true, mode: 'string' }),
+    conversationStatus: feedbackConversationStatus('conversation_status')
+      .notNull()
+      .default('waiting_for_support'),
+    lastMessageAt: timestamp('last_message_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
       .notNull()
       .defaultNow(),
@@ -378,6 +397,10 @@ export const feedbackRecords = pgTable(
   (table) => [
     index('feedback_records_user_submitted_idx').on(table.userId, table.submittedAt),
     index('feedback_records_status_submitted_idx').on(table.status, table.submittedAt),
+    index('feedback_records_conversation_last_message_idx').on(
+      table.conversationStatus,
+      table.lastMessageAt,
+    ),
     check(
       'feedback_records_image_count_range',
       sql`${table.imageCount} >= 0 AND ${table.imageCount} <= 5`,
@@ -385,6 +408,48 @@ export const feedbackRecords = pgTable(
     check(
       'feedback_records_type_valid',
       sql`${table.type} IN ('product', 'application')`,
+    ),
+  ],
+);
+
+export const feedbackMessages = pgTable(
+  'feedback_messages',
+  {
+    id: id('id').primaryKey(),
+    feedbackId: id('feedback_id')
+      .notNull()
+      .references(() => feedbackRecords.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    sender: feedbackMessageSender('sender').notNull(),
+    senderUserId: id('sender_user_id').references(() => users.id, {
+      onDelete: 'restrict',
+      onUpdate: 'cascade',
+    }),
+    senderDisplayName: varchar('sender_display_name', { length: 128 }).notNull(),
+    content: text('content').notNull(),
+    imageCount: integer('image_count').notNull().default(0),
+    status: feedbackDeliveryStatus('status').notNull().default('sending'),
+    failureCode: varchar('failure_code', { length: 128 }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+    readAt: timestamp('read_at', { withTimezone: true, mode: 'string' }),
+  },
+  (table) => [
+    index('feedback_messages_feedback_created_idx').on(table.feedbackId, table.createdAt),
+    index('feedback_messages_unread_support_idx')
+      .on(table.feedbackId, table.createdAt)
+      .where(sql`${table.sender} = 'support' AND ${table.readAt} IS NULL`),
+    check(
+      'feedback_messages_content_length',
+      sql`char_length(${table.content}) BETWEEN 1 AND 5000`,
+    ),
+    check(
+      'feedback_messages_image_count_range',
+      sql`${table.imageCount} >= 0 AND ${table.imageCount} <= 5`,
+    ),
+    check(
+      'feedback_messages_sender_user_valid',
+      sql`(${table.sender} = 'user' AND ${table.senderUserId} IS NOT NULL) OR (${table.sender} = 'support' AND ${table.senderUserId} IS NULL)`,
     ),
   ],
 );

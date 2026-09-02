@@ -4,12 +4,14 @@
   "version": "0.1.0",
   "packageManager": "pnpm@11.5.2",
   "workspaces": [
+    "admin",
     "frontend",
     "backend",
     "shared"
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter @uniclife/backend --filter @uniclife/frontend dev",
+    "dev:admin": "pnpm --filter @uniclife/admin dev",
     "dev:db": "docker compose -f deploy/docker/compose.dev.yml up -d --wait",
     "dev:db:down": "docker compose -f deploy/docker/compose.dev.yml down",
     "dev:db:logs": "docker compose -f deploy/docker/compose.dev.yml logs -f postgres",

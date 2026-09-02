@@ -6,7 +6,15 @@ import tokens from '../../design-tokens.json';
 export type ThemeMode = 'light' | 'dark';
 export type ThemePalette = { [K in keyof typeof tokens.colors.light]: string };
 
+export const bottomSheetMetrics = tokens.bottomSheet;
 export const navigationMetrics = tokens.navigation;
+
+export function getFixedBottomSheetHeight(viewportHeight: number): number {
+  return Math.min(
+    bottomSheetMetrics.fixedHeight,
+    viewportHeight * bottomSheetMetrics.maxHeightRatio,
+  );
+}
 
 export function getNavigationTheme(mode: ThemeMode): Theme {
   const palette = tokens.colors[mode];

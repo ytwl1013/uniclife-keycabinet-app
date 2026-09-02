@@ -79,7 +79,10 @@ export function NotificationsScreen() {
           renderItem={({ item }) => (
             <NotificationRow
               item={item}
-              onPress={() => markRead(item.id)}
+              onPress={() => {
+                markRead(item.id);
+                if (item.href) router.push(item.href);
+              }}
               timestamp={formatDateTime(item.createdAt)}
             />
           )}

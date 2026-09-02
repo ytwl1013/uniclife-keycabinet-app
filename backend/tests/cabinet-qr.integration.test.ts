@@ -40,6 +40,7 @@ databaseTest('cabinet QR workflow', () => {
 
     const first = await initialize(`initialize-first-${runId}`, 'First Cabinet');
     expect(first.statusCode).toBe(200);
+    expect(first.json().data.membership.role).toBe('super_admin');
     const replay = await initialize(`initialize-first-${runId}`, 'First Cabinet');
     expect(replay.json()).toEqual(first.json());
     const second = await initialize(`initialize-second-${runId}`, 'Second Cabinet');
@@ -85,6 +86,7 @@ databaseTest('cabinet QR workflow', () => {
     });
     expect(joined.statusCode).toBe(200);
     expect(joined.json().data.cabinet.id).toBe(cabinetId);
+    expect(joined.json().data.membership.role).toBe('admin');
 
     const reused = await app.inject({
       method: 'POST',
@@ -94,6 +96,63 @@ databaseTest('cabinet QR workflow', () => {
     });
     expect(reused.statusCode).toBe(409);
     expect(reused.json().code).toBe('JOIN_INVITATION_INVALID');
+
+    const joinedCabinetVersion = joined.json().data.cabinet.version as number;
+    const disconnected = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/cabinets/${cabinetId}/membership`,
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: {
+        expectedVersion: joinedCabinetVersion,
+        requestId: `disconnect-b-${runId}`,
+      },
+    });
+    expect(disconnected.statusCode).toBe(200);
+    expect(disconnected.json().data).toMatchObject({
+      removed: true,
+      cabinetVersion: joinedCabinetVersion + 1,
+    });
+
+    const disconnectedList = await app.inject({
+      method: 'GET',
+      url: '/api/v1/cabinets',
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    expect(disconnectedList.statusCode).toBe(200);
+    expect(disconnectedList.json().data).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ cabinet: expect.objectContaining({ id: cabinetId }) }),
+      ]),
+    );
+
+    const disconnectedDetail = await app.inject({
+      method: 'GET',
+      url: `/api/v1/cabinets/${cabinetId}`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    expect(disconnectedDetail.statusCode).toBe(403);
+
+    const remainingAdminDetail = await app.inject({
+      method: 'GET',
+      url: `/api/v1/cabinets/${cabinetId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    expect(remainingAdminDetail.statusCode).toBe(200);
+
+    const remainingAdminEvents = await app.inject({
+      method: 'GET',
+      url: `/api/v1/records/events?cabinetId=${cabinetId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    expect(remainingAdminEvents.statusCode).toBe(200);
+    expect(remainingAdminEvents.json().data.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'member_removed',
+          summaryData: expect.objectContaining({ reason: 'self_disconnected' }),
+        }),
+      ]),
+    );
 
     await app.close();
   });

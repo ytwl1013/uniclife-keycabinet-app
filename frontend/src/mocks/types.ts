@@ -57,7 +57,7 @@ export type Cabinet = {
   version: number;
 };
 
-export type CabinetRole = 'admin';
+export type CabinetRole = 'super_admin' | 'admin';
 
 export type CabinetMembership = {
   id: string;
@@ -108,6 +108,7 @@ export const cabinetEventTypes = [
   'cabinet_initialized',
   'member_joined',
   'cabinet_renamed',
+  'super_admin_transferred',
   'member_removed',
   'member_role_changed',
   'ownership_transferred',

@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AuthenticatedUser } from '../src/common/auth/session.js';
 import {
   buildFeedbackMail,
+  buildSupportReplyMail,
+  buildUserReplyMail,
   type FeedbackNotification,
   type FeedbackNotifier,
 } from '../src/integrations/notifications/feedback-notifier.js';
@@ -90,5 +92,38 @@ describe('feedback delivery', () => {
     expect(mail.text).toContain(`用户 ID：${user.id}`);
     expect(mail.text).toContain(`登录邮箱：${user.email}`);
     expect(mail.attachments).toHaveLength(1);
+  });
+
+  it('builds follow-up emails for both sides without exposing admin credentials', () => {
+    const baseReply = {
+      content: 'Please restart the cabinet and send the new status.',
+      createdAt: '2026-08-24T10:00:00.000Z',
+      feedbackId: 'feedback-test',
+      title: feedback.title,
+      type: feedback.type,
+      user: {
+        displayName: user.displayName,
+        email: user.email,
+        id: user.id,
+      },
+    };
+    const mailOptions = {
+      envelopeFrom: 'feedback@example.com',
+      from: { address: 'feedback@example.com', name: 'keycabinet_app' },
+      to: 'feedback@example.com',
+    };
+
+    const userReply = buildUserReplyMail(baseReply, mailOptions);
+    expect(userReply.to).toBe('feedback@example.com');
+    expect(userReply.replyTo).toBe(user.email);
+    expect(userReply.text).toContain('管理后台');
+
+    const supportReply = buildSupportReplyMail(
+      { ...baseReply, supportDisplayName: 'UnicLife 客服' },
+      mailOptions,
+    );
+    expect(supportReply.to).toBe(user.email);
+    expect(supportReply.text).toContain('应用的“通知”');
+    expect(supportReply).not.toHaveProperty('replyTo');
   });
 });

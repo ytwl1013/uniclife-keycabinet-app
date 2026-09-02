@@ -1,7 +1,7 @@
-import type { FeedbackDeliveryStatus, FeedbackRecord, FeedbackType } from '@uniclife/shared';
-import { useFocusEffect, useRouter } from 'expo-router';
+import type { FeedbackDeliveryStatus, FeedbackThreadSummary, FeedbackType } from '@uniclife/shared';
+import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { useApp } from '@/app-state';
 import { AppIcon } from '@/components/ui/app-icon';
@@ -47,7 +47,7 @@ export function FeedbackHistoryScreen() {
   const { locale, t } = useTranslation();
   const { palette } = useAppTheme();
   const { actions, currentUser, state } = useApp();
-  const [items, setItems] = useState<FeedbackRecord[]>([]);
+  const [items, setItems] = useState<FeedbackThreadSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -140,9 +140,11 @@ export function FeedbackHistoryScreen() {
 
       {!loading && !error
         ? items.map((item) => (
-            <View
+            <Pressable
+              accessibilityRole="button"
               className="gap-4 rounded-card border border-line bg-surface p-card shadow-card"
-              key={item.id}>
+              key={item.id}
+              onPress={() => router.push(`/(details)/account/feedback/${item.id}` as Href)}>
               <View className="flex-row items-start justify-between gap-3">
                 <View className="min-w-0 flex-1 gap-1">
                   <AppText variant="caption" tone="brand">
@@ -160,8 +162,25 @@ export function FeedbackHistoryScreen() {
               </View>
 
               <AppText selectable tone="content">
-                {item.content}
+                {item.lastMessagePreview}
               </AppText>
+
+              <View className="flex-row items-center justify-between gap-3 rounded-control bg-background px-3 py-2.5">
+                <View className="min-w-0 flex-1 flex-row items-center gap-2">
+                  <AppIcon name="support" size={17} tone="brand" />
+                  <AppText numberOfLines={1} variant="caption" tone="brand">
+                    {t('support.historyOpen')}
+                  </AppText>
+                  {item.unreadMessageCount > 0 ? (
+                    <View className="rounded-pill bg-danger-soft px-2 py-0.5">
+                      <AppText variant="caption" tone="danger">
+                        {t('support.historyUnread', { count: item.unreadMessageCount })}
+                      </AppText>
+                    </View>
+                  ) : null}
+                </View>
+                <AppIcon name="chevronRight" size={17} tone="muted" />
+              </View>
 
               <View className="gap-1 border-t border-line pt-3">
                 <AppText selectable variant="caption" tone="muted">
@@ -182,7 +201,7 @@ export function FeedbackHistoryScreen() {
                   })}
                 </AppText>
               </View>
-            </View>
+            </Pressable>
           ))
         : null}
     </AccountPage>

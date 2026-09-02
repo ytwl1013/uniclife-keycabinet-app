@@ -6,10 +6,9 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useApp } from '@/app-state';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
-import { developerToolsEnabled } from '@/config/developer';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { AuthErrorNotice, AuthSecondaryButton } from '@/features/auth/components/auth-ui';
 import { authErrorKey } from '@/features/auth/use-auth-actions';
@@ -37,7 +36,6 @@ type PendingAction = 'language' | 'sign-out' | null;
 const accountRoutes = {
   contactSupport: '/(details)/account/contact-support' as Href,
   data: '/(details)/account/data' as Href,
-  developer: '/(details)/account/developer-settings' as Href,
   profile: '/(details)/account/profile' as Href,
   privacy: '/(details)/account/privacy' as Href,
   security: '/(details)/account/security' as Href,
@@ -177,13 +175,6 @@ export function AccountScreen() {
           label={t('account.languageTitle')}
           onPress={() => setLanguageOpen(true)}
         />
-        {developerToolsEnabled ? (
-          <SettingsAction
-            icon="settings"
-            label={t('account.developerSettings')}
-            onPress={() => router.push(accountRoutes.developer)}
-          />
-        ) : null}
       </AccountSection>
 
       <AccountSection icon="support" title={t('account.serviceSupportTitle')}>
@@ -242,7 +233,7 @@ export function AccountScreen() {
       <BottomSheet
         closeLabel={t('common.done')}
         onClose={() => setLanguageOpen(false)}
-        size="large"
+        size="fixed"
         title={t('account.languageTitle')}
         visible={languageOpen}>
         <View accessibilityRole="radiogroup" className="gap-2 pb-2">

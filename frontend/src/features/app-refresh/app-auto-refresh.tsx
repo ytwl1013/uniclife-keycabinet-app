@@ -84,7 +84,12 @@ export function AppAutoRefresh() {
       };
       nextSocket.onmessage = (message) => {
         const event = parseRealtimeEvent(message.data);
-        if (!event || event.type !== 'workspace.changed') return;
+        if (!event) return;
+        if (event.type === 'support.message_created') {
+          refreshQuietly();
+          return;
+        }
+        if (event.type !== 'workspace.changed') return;
         const currentVersion = cabinetVersions.current.get(event.cabinetId);
         if (currentVersion !== undefined && currentVersion >= event.cabinetVersion) return;
         if (changeRefreshTimer) clearTimeout(changeRefreshTimer);

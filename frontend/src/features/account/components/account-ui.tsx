@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { PropsWithChildren, ReactNode, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
@@ -61,10 +61,12 @@ type AccountPageProps = PropsWithChildren<{
   title: string;
   description: string;
   backLabel?: string;
+  footer?: ReactNode;
   headerShown?: boolean;
   onBack?: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  scrollToEndOnContentChange?: boolean;
   trailing?: ReactNode;
 }>;
 
@@ -72,13 +74,17 @@ export function AccountPage({
   backLabel,
   children,
   description,
+  footer,
   headerShown = true,
   onBack,
   onRefresh,
   refreshing = false,
+  scrollToEndOnContentChange = false,
   title,
   trailing,
 }: AccountPageProps) {
+  const scrollViewRef = useRef<ScrollView>(null);
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       {headerShown ? (
@@ -121,6 +127,12 @@ export function AccountPage({
         }`}
         contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => {
+          if (scrollToEndOnContentChange) {
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }
+        }}
+        ref={scrollViewRef}
         refreshControl={onRefresh ? (
           <AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />
         ) : undefined}
@@ -129,6 +141,16 @@ export function AccountPage({
           {children}
         </View>
       </ScrollView>
+
+      {footer ? (
+        <SafeAreaView
+          className="border-t border-line bg-surface"
+          edges={['bottom', 'left', 'right']}>
+          <View className="mx-auto w-full max-w-content px-screen py-2">
+            {footer}
+          </View>
+        </SafeAreaView>
+      ) : null}
     </SafeAreaView>
   );
 }

@@ -8,6 +8,8 @@ import Animated, {
   SlideOutDown,
 } from 'react-native-reanimated';
 
+import { bottomSheetMetrics, getFixedBottomSheetHeight } from '@/styles/theme';
+
 import { BottomSheetContent } from './bottom-sheet-content';
 import type { BottomSheetProps } from './bottom-sheet-types';
 
@@ -24,6 +26,7 @@ export function BottomSheet({
   visible,
 }: BottomSheetProps) {
   const { height } = useWindowDimensions();
+  const fixedSheetHeight = getFixedBottomSheetHeight(height);
   const [mounted, setMounted] = useState(visible);
   const [contentVisible, setContentVisible] = useState(visible);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,10 +95,16 @@ export function BottomSheet({
               exiting={SlideOutDown.duration(SHEET_EXIT_DURATION).easing(
                 Easing.in(Easing.cubic),
               )}
-              style={size === 'large' ? { height: height * 0.82 } : undefined}>
+              style={
+                size === 'fixed'
+                  ? { height: fixedSheetHeight }
+                  : size === 'large'
+                    ? { height: height * bottomSheetMetrics.maxHeightRatio }
+                    : undefined
+              }>
               <BottomSheetContent
                 closeLabel={closeLabel}
-                fillAvailable={size === 'large'}
+                fillAvailable={size === 'fixed' || size === 'large'}
                 footer={footer}
                 onClose={onClose}
                 roundedTop

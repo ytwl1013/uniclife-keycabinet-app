@@ -10,11 +10,13 @@ import { AppText } from '@/components/ui/app-text';
 import { Pill, PillTone } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
 import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
+import { ActivityTimelineItem } from '@/features/activity/components/activity-timeline';
+import { useActivityPagination } from '@/features/activity/use-activity-pagination';
 import { TranslationKey, useTranslation } from '@/i18n';
 import { SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 
 import { CabinetEventKind, CabinetView, PrototypeApp } from '../types';
-import { PrototypeEventEmpty, PrototypeEventList, PrototypeEventRow } from './event-list';
+import { PrototypeEventEmpty, PrototypeEventList } from './event-list';
 import { PrototypeKeySlotGrid } from './key-slot-grid';
 import { usePrototypeDialog } from './prototype-dialog';
 import { ActionButton, FilterChip, FormField, InlineButton, SearchInput, SectionCard, SectionTitle, Stat, StatePanel } from './prototype-ui';
@@ -195,7 +197,10 @@ export function CabinetActivity({
   const [time, setTime] = useState<'all' | 'week' | 'month'>('all');
   const [actorId, setActorId] = useState('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const cabinetEvents = app.events.filter((event) => event.cabinetId === cabinet.id);
+  const cabinetEvents = useMemo(
+    () => app.events.filter((event) => event.cabinetId === cabinet.id),
+    [app.events, cabinet.id],
+  );
   const operators = useMemo(() => {
     const seen = new Set<string>();
     return cabinetEvents.filter((event) => {
@@ -216,6 +221,11 @@ export function CabinetActivity({
       return event.kind === kind;
     });
   }, [actorId, app.now, cabinetEvents, kind, time]);
+  const {
+    hasMore,
+    loadMore,
+    visibleEntries: visibleEvents,
+  } = useActivityPagination(events, `${cabinet.id}:${kind}:${actorId}:${time}`);
   const activeFilters = [
     kind !== 'all' ? { id: 'kind', label: t(trKey(`activity.filter.${kind}`)), clear: () => setKind('all') } : null,
     actorId !== 'all' ? { id: 'actor', label: operators.find((operator) => operator.id === actorId)?.name ?? actorId, clear: () => setActorId('all') } : null,
@@ -228,7 +238,8 @@ export function CabinetActivity({
         alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerStyle={{ flexGrow: 1, padding: 20, rowGap: 12 }}
-        data={events}
+        contentInsetAdjustmentBehavior="automatic"
+        data={visibleEvents}
         keyExtractor={(event) => event.id}
         ListEmptyComponent={<PrototypeEventEmpty label={t(trKey('activity.emptyFiltered'))} />}
         ListHeaderComponent={(
@@ -255,13 +266,12 @@ export function CabinetActivity({
           </View>
         )}
         ListHeaderComponentStyle={{ marginBottom: 12 }}
+        onEndReached={hasMore ? loadMore : undefined}
+        onEndReachedThreshold={0.35}
         refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
-        renderItem={({ index, item }) => (
+        renderItem={({ item }) => (
           <SectionCard>
-            <PrototypeEventRow
-              event={item}
-              isLast={index === events.length - 1}
-            />
+            <ActivityTimelineItem event={item} />
           </SectionCard>
         )}
         showsVerticalScrollIndicator={false}
@@ -305,6 +315,7 @@ export function CabinetSettings({
   const [invitationClock, setInvitationClock] = useState(Date.now());
   const visibleMembers = app.members.filter((member) => member.cabinetId === cabinet.id);
   const configuredKeys = app.keys.filter((key) => key.cabinetId === cabinet.id);
+  const isSuperAdmin = cabinet.role === 'superAdmin';
   const confirmation = usePrototypeDialog();
 
   useEffect(() => setCabinetName(cabinet.name), [cabinet.name]);
@@ -337,6 +348,7 @@ export function CabinetSettings({
   };
 
   const removeMember = async (membershipId: string, name: string) => {
+    setOpenMemberMenu(undefined);
     const confirmed = await confirmation.present({
       title: t(trKey('cabinet.removeMemberTitle')),
       description: t(trKey('cabinet.removeMemberDescription'), { name }),
@@ -347,14 +359,81 @@ export function CabinetSettings({
     if (confirmed) await run(membershipId, () => app.removeMember({ cabinetId: cabinet.id, membershipId }), 'cabinet.memberRemovedSuccess');
   };
 
+  const transferSuperAdmin = async (membershipId: string, name: string) => {
+    setOpenMemberMenu(undefined);
+    const confirmed = await confirmation.present({
+      title: t(trKey('cabinet.transferSuperAdminTitle')),
+      description: t(trKey('cabinet.transferSuperAdminDescription'), { name }),
+      confirmLabel: t(trKey('cabinet.transferSuperAdminConfirm')),
+      cancelLabel: t(trKey('cabinet.cancel')),
+      tone: 'danger',
+    });
+    if (confirmed) {
+      await run(
+        membershipId,
+        () => app.transferSuperAdmin({ cabinetId: cabinet.id, membershipId }),
+        'cabinet.superAdminTransferredSuccess',
+      );
+    }
+  };
+
   const openDeleteAll = () => {
+    if (!isSuperAdmin) return;
     setDeleteCountdown(5);
     setDeleteAllOpen(true);
   };
 
   const deleteAll = async () => {
+    if (!isSuperAdmin) return;
     await run('delete-all', () => app.deleteAllKeys({ cabinetId: cabinet.id }), 'cabinet.keysDeletedSuccess');
     setDeleteAllOpen(false);
+  };
+
+  const removeCabinet = async () => {
+    const permanentlyDelete = isSuperAdmin;
+    const confirmed = await confirmation.present({
+      title: t(
+        trKey(permanentlyDelete
+          ? 'cabinetManagement.deleteConfirmTitle'
+          : 'cabinetManagement.confirmTitle'),
+        { cabinet: cabinet.name },
+      ),
+      description: t(trKey(permanentlyDelete
+        ? 'cabinetManagement.deleteConfirmDescription'
+        : 'cabinetManagement.confirmDescription')),
+      confirmLabel: t(trKey(permanentlyDelete
+        ? 'cabinetManagement.deleteConfirm'
+        : 'cabinetManagement.removeConfirm')),
+      cancelLabel: t(trKey('cabinet.cancel')),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+
+    setBusyId('delete-cabinet');
+    try {
+      if (permanentlyDelete) {
+        await app.deleteCabinet({ cabinetId: cabinet.id });
+      } else {
+        await app.disconnectCabinet({ cabinetId: cabinet.id });
+      }
+      Alert.alert(
+        t(trKey('cabinet.successTitle')),
+        t(
+          trKey(permanentlyDelete
+            ? 'cabinetManagement.deletedSuccess'
+            : 'cabinetManagement.removedSuccess'),
+          { cabinet: cabinet.name },
+        ),
+      );
+      router.replace('/(tabs)');
+    } catch {
+      Alert.alert(
+        t(trKey('cabinet.actionFailedTitle')),
+        t(trKey('cabinetManagement.actionFailed')),
+      );
+    } finally {
+      setBusyId(undefined);
+    }
   };
 
   const rename = async () => {
@@ -465,29 +544,62 @@ export function CabinetSettings({
         )}
         ListHeaderComponentStyle={{ marginBottom: 8 }}
         ListFooterComponent={(
-          <SectionCard className="mt-2">
-            <SectionTitle description={t(trKey('cabinet.clearSectionDescription'))} title={t(trKey('cabinet.clearSectionTitle'))} />
-            {deleteAllOpen ? (
-              <View className="gap-3 rounded-control border border-danger bg-danger-soft p-4">
-                <AppText variant="title" tone="danger">{t(trKey('cabinet.deleteAllConfirmTitle'))}</AppText>
-                <AppText tone="content">{t(trKey('cabinet.deleteAllConfirmDescription'), { count: configuredKeys.length })}</AppText>
-                <ActionButton disabled={deleteCountdown > 0 || Boolean(busyId)} icon="error" label={deleteCountdown > 0 ? t(trKey('cabinet.deleteAllCountdown'), { seconds: deleteCountdown }) : t(trKey('cabinet.deleteAllConfirm'))} onPress={() => void deleteAll()} tone="danger" />
-                <ActionButton disabled={Boolean(busyId)} label={t(trKey('cabinet.cancel'))} onPress={() => setDeleteAllOpen(false)} tone="neutral" />
-              </View>
-            ) : (
+          <View className="mt-2 gap-section">
+            <SectionCard>
+              <SectionTitle description={t(trKey('cabinet.clearSectionDescription'))} title={t(trKey('cabinet.clearSectionTitle'))} />
+              {!isSuperAdmin ? (
+                <View className="flex-row items-center gap-3 rounded-control bg-warning-soft px-3.5 py-3">
+                  <AppIcon name="error" size={20} tone="warning" />
+                  <AppText className="flex-1" variant="caption" tone="warning">
+                    {t(trKey('cabinet.clearKeysSuperAdminRequired'))}
+                  </AppText>
+                </View>
+              ) : null}
+              {deleteAllOpen && isSuperAdmin ? (
+                <View className="gap-3 rounded-control border border-danger bg-danger-soft p-4">
+                  <AppText variant="title" tone="danger">{t(trKey('cabinet.deleteAllConfirmTitle'))}</AppText>
+                  <AppText tone="content">{t(trKey('cabinet.deleteAllConfirmDescription'), { count: configuredKeys.length })}</AppText>
+                  <ActionButton disabled={deleteCountdown > 0 || Boolean(busyId)} icon="error" label={deleteCountdown > 0 ? t(trKey('cabinet.deleteAllCountdown'), { seconds: deleteCountdown }) : t(trKey('cabinet.deleteAllConfirm'))} onPress={() => void deleteAll()} tone="danger" />
+                  <ActionButton disabled={Boolean(busyId)} label={t(trKey('cabinet.cancel'))} onPress={() => setDeleteAllOpen(false)} tone="neutral" />
+                </View>
+              ) : (
+                <ActionButton
+                  disabled={!isSuperAdmin || Boolean(busyId) || app.isOffline || configuredKeys.length === 0}
+                  icon="error"
+                  label={t(trKey('cabinet.clearKeysAction'))}
+                  onPress={openDeleteAll}
+                  tone="danger"
+                />
+              )}
+            </SectionCard>
+
+            <SectionCard>
+              <SectionTitle
+                description={t(trKey(isSuperAdmin
+                  ? 'cabinet.deleteCabinetSectionDescription'
+                  : 'cabinet.disconnectCabinetSectionDescription'))}
+                title={t(trKey('cabinet.deleteCabinetSectionTitle'))}
+              />
               <ActionButton
-                disabled={Boolean(busyId) || app.isOffline || configuredKeys.length === 0}
-                icon="error"
-                label={t(trKey('cabinet.clearKeysAction'))}
-                onPress={openDeleteAll}
+                disabled={Boolean(busyId) || app.isOffline}
+                icon="trash"
+                label={busyId === 'delete-cabinet'
+                  ? t(trKey('cabinetManagement.removing'))
+                  : t(trKey(isSuperAdmin
+                    ? 'cabinetManagement.deleteConfirm'
+                    : 'cabinetManagement.removeConfirm'))}
+                onPress={() => void removeCabinet()}
                 tone="danger"
               />
-            )}
-          </SectionCard>
+            </SectionCard>
+          </View>
         )}
         refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         renderItem={({ item: member }) => {
-          const canRemove = member.userId !== app.currentUserId;
+          const canManageMember =
+            isSuperAdmin &&
+            member.userId !== app.currentUserId &&
+            member.role !== 'superAdmin';
           return (
             <View className="gap-2 rounded-control border border-line bg-surface p-3">
               <View className="flex-row items-center gap-3">
@@ -499,8 +611,10 @@ export function CabinetSettings({
                   <AppText numberOfLines={1} variant="caption" tone="muted">{member.email}</AppText>
                 </View>
                 <View className="items-end gap-1">
-                  <Pill tone="blue">{t(trKey('cabinet.role.admin'))}</Pill>
-                  {canRemove ? (
+                  <Pill tone={member.role === 'superAdmin' ? 'purple' : 'blue'}>
+                    {t(trKey(`cabinet.role.${member.role}`))}
+                  </Pill>
+                  {canManageMember ? (
                     <Pressable
                       accessibilityLabel={t(trKey('cabinet.memberActions'))}
                       accessibilityRole="button"
@@ -513,7 +627,17 @@ export function CabinetSettings({
               </View>
               {openMemberMenu === member.id ? (
                 <View className="flex-row flex-wrap items-center justify-end gap-3 border-t border-line pt-2">
-                  {canRemove ? <InlineButton disabled={Boolean(busyId)} label={t(trKey('cabinet.removeMember'))} onPress={() => void removeMember(member.id, member.name)} tone="danger" /> : null}
+                  <InlineButton
+                    disabled={Boolean(busyId)}
+                    label={t(trKey('cabinet.transferSuperAdmin'))}
+                    onPress={() => void transferSuperAdmin(member.id, member.name)}
+                  />
+                  <InlineButton
+                    disabled={Boolean(busyId)}
+                    label={t(trKey('cabinet.removeMember'))}
+                    onPress={() => void removeMember(member.id, member.name)}
+                    tone="danger"
+                  />
                 </View>
               ) : null}
             </View>

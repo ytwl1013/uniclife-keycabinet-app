@@ -227,7 +227,9 @@ export default function HomeRoute() {
         </View>
 
         <View className="gap-3" collapsable={false} onLayout={sectionLayout(1)} ref={guideTargetRefs[1]}>
-          <AppText className="px-1" variant="title" tone="foreground">{t('home.cabinetsTitle')}</AppText>
+          <AppText className="px-1" variant="title" tone="foreground">
+            {t('home.cabinetsTitle')}
+          </AppText>
           {cabinets.length ? cabinets.map((cabinet) => (
             <CabinetCard cabinet={cabinet} key={cabinet.id} sku={selectors.skuById(cabinet.skuId)} />
           )) : (

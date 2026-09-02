@@ -10,6 +10,14 @@ const backendRoot = fileURLToPath(new URL('../../../', import.meta.url));
 loadEnvironmentFiles(backendRoot, runtimeEnvironment);
 
 const envSchema = z.object({
+  ADMIN_API_TOKEN: z
+    .string()
+    .min(32)
+    .max(512)
+    .refine((value) => !value.includes('<') && !value.includes('>') && !value.startsWith('replace-with'), {
+      message: 'ADMIN_API_TOKEN must not be an example placeholder',
+    })
+    .optional(),
   AUTH_ALLOW_RESET_CODE_PREVIEW: z
     .enum(['true', 'false'])
     .default('false')
@@ -18,6 +26,7 @@ const envSchema = z.object({
   AUTH_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
   AUTH_TOKEN_PEPPER: z.string().min(32).optional(),
   DATABASE_URL: z.string().url().optional(),
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
   FRONTEND_ORIGIN: z.string().default('http://localhost:8081'),
   HOST: z.string().default('0.0.0.0'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

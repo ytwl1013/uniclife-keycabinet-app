@@ -33,6 +33,7 @@ const mockSession = jest.fn();
 const mockListCabinets = jest.fn();
 const mockListLoans = jest.fn();
 const mockListEvents = jest.fn();
+const mockListFeedbackHistory = jest.fn();
 
 jest.mock('@/api/session-token', () => ({
   clearSessionToken: () => mockClearSessionToken(),
@@ -44,6 +45,7 @@ jest.mock('@/api/backend', () => ({
   backendApi: {
     listCabinets: (...args: unknown[]) => mockListCabinets(...args),
     listEvents: (...args: unknown[]) => mockListEvents(...args),
+    listFeedbackHistory: (...args: unknown[]) => mockListFeedbackHistory(...args),
     listLoans: (...args: unknown[]) => mockListLoans(...args),
     session: (...args: unknown[]) => mockSession(...args),
   },
@@ -79,6 +81,7 @@ describe('persisted session recovery', () => {
     mockListCabinets.mockResolvedValue([]);
     mockListLoans.mockResolvedValue({ items: [] });
     mockListEvents.mockResolvedValue({ items: [], actors: [] });
+    mockListFeedbackHistory.mockResolvedValue({ items: [] });
   });
 
   afterEach(() => {

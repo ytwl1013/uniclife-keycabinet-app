@@ -64,10 +64,19 @@ describe('mobile selection and confirmations', () => {
       resolve(__dirname, '../src/features/account/components/account-screen.tsx'),
       'utf8',
     );
+    const nativeSheet = readFileSync(
+      resolve(__dirname, '../src/components/ui/bottom-sheet-native.tsx'),
+      'utf8',
+    );
 
-    expect(source).toContain('size="large"');
+    expect(source).toContain('size="fixed"');
     expect(source).not.toContain('<ScrollView');
     expect(source).toContain('accessibilityRole="radiogroup"');
+    expect(nativeSheet).toContain(
+      "import { BottomSheet as OverlayBottomSheet } from './bottom-sheet-overlay'",
+    );
+    expect(nativeSheet).toContain("if (props.size === 'fixed')");
+    expect(nativeSheet).toContain('<OverlayBottomSheet {...props} />');
   });
 
   it('uses icon-only tabs with translated accessibility names', () => {

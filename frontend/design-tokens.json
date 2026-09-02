@@ -67,6 +67,10 @@
   "boxShadow": {
     "card": "0 8px 24px rgba(39, 64, 96, 0.08)"
   },
+  "bottomSheet": {
+    "fixedHeight": 560,
+    "maxHeightRatio": 0.82
+  },
   "navigation": {
     "tabBarHeight": 55,
     "tabBarMaxWidth": 480,

@@ -9,7 +9,8 @@ import type {
   CheckoutKeyRequest,
   CurrentUserAccount,
   FeedbackRequest,
-  FeedbackRecord,
+  FeedbackThread,
+  FeedbackThreadSummary,
   InitializeCabinetRequest,
   JoinCabinetRequest,
   Key,
@@ -77,12 +78,24 @@ export const backendApi = {
   deleteAccount: (token: string, input: WriteOptions = {}) =>
     callApi<{ deleted: boolean }>('/users/me', { ...json('DELETE', input), token }),
   submitFeedback: (token: string, input: FeedbackRequest) =>
-    callApi<{ submissionId: string; submittedAt: string }>(
+    callApi<{ submissionId: string; submittedAt: string; thread: FeedbackThread }>(
       '/support/feedback',
       { ...json('POST', input), token },
     ),
   listFeedbackHistory: (token: string) =>
-    callApi<{ items: FeedbackRecord[] }>('/support/feedback?limit=100', { token }),
+    callApi<{ items: FeedbackThreadSummary[] }>('/support/feedback?limit=100', { token }),
+  getFeedbackThread: (token: string, feedbackId: string) =>
+    callApi<FeedbackThread>(`/support/feedback/${encodeURIComponent(feedbackId)}`, { token }),
+  replyToFeedback: (token: string, feedbackId: string, content: string) =>
+    callApi<{ thread: FeedbackThread }>(
+      `/support/feedback/${encodeURIComponent(feedbackId)}/messages`,
+      { ...json('POST', { content }), token },
+    ),
+  markFeedbackThreadRead: (token: string, feedbackId: string) =>
+    callApi<{ markedReadCount: number }>(
+      `/support/feedback/${encodeURIComponent(feedbackId)}/read`,
+      { ...json('POST'), token },
+    ),
   listCabinets: (token: string) => callApi<CabinetSummary[]>('/cabinets', { token }),
   getCabinet: (token: string, cabinetId: string) =>
     callApi<CabinetDetail>(`/cabinets/${encodeURIComponent(cabinetId)}`, { token }),
@@ -119,6 +132,28 @@ export const backendApi = {
       `/cabinets/${encodeURIComponent(cabinetId)}`,
       { ...json('PATCH', input), token },
     ),
+  disconnectCabinet: (token: string, cabinetId: string, input: WriteOptions) =>
+    callApi<{ removed: boolean; cabinetVersion: number }>(
+      `/cabinets/${encodeURIComponent(cabinetId)}/membership`,
+      { ...json('DELETE', input), token },
+    ),
+  deleteCabinet: (token: string, cabinetId: string, input: WriteOptions) =>
+    callApi<{ deleted: boolean; disconnectedMemberCount: number }>(
+      `/cabinets/${encodeURIComponent(cabinetId)}`,
+      { ...json('DELETE', input), token },
+    ),
+  transferCabinetSuperAdmin: (
+    token: string,
+    cabinetId: string,
+    input: { membershipId: string } & WriteOptions,
+  ) => callApi<{
+    previousSuperAdmin: CabinetMembership;
+    nextSuperAdmin: CabinetMembership;
+    cabinetVersion: number;
+  }>(
+    `/cabinets/${encodeURIComponent(cabinetId)}/super-admin-transfer`,
+    { ...json('POST', input), token },
+  ),
   removeMember: (token: string, cabinetId: string, membershipId: string, input: WriteOptions) =>
     callApi<{ removed: boolean }>(
       `/cabinets/${encodeURIComponent(cabinetId)}/members/${encodeURIComponent(membershipId)}`,

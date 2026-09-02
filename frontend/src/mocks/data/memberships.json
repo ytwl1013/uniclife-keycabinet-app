@@ -3,7 +3,7 @@
     "id": "membership-hq-owner",
     "cabinetId": "cabinet-hq",
     "userId": "user-owner",
-    "role": "admin",
+    "role": "super_admin",
     "active": true,
     "joinedAt": "2026-05-05T08:05:00.000Z"
   },
@@ -27,7 +27,7 @@
     "id": "membership-loft-owner",
     "cabinetId": "cabinet-loft",
     "userId": "user-owner",
-    "role": "admin",
+    "role": "super_admin",
     "active": true,
     "joinedAt": "2026-05-06T08:05:00.000Z"
   },
@@ -43,7 +43,7 @@
     "id": "membership-studio-owner",
     "cabinetId": "cabinet-studio",
     "userId": "user-member",
-    "role": "admin",
+    "role": "super_admin",
     "active": true,
     "joinedAt": "2026-05-07T08:05:00.000Z"
   }

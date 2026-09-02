@@ -5,7 +5,7 @@ import {
   updateProfileRequestSchema,
   writeOptionsSchema,
 } from '@uniclife/shared';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { requireAuth, toUserAccount } from '../../common/auth/session.js';
@@ -18,6 +18,7 @@ import { requireDatabase } from '../../db/client.js';
 import {
   cabinetEvents,
   cabinetMemberships,
+  cabinets,
   consents,
   sessions,
   users,
@@ -227,7 +228,7 @@ export async function registerUserRoutes(
       },
       async (transaction) => {
         const now = new Date().toISOString();
-        const activeMemberships = await transaction
+        let activeMemberships = await transaction
           .select()
           .from(cabinetMemberships)
           .where(
@@ -236,6 +237,36 @@ export async function registerUserRoutes(
               eq(cabinetMemberships.active, true),
             ),
           );
+        const cabinetIds = [...new Set(activeMemberships.map((membership) => membership.cabinetId))]
+          .sort();
+        if (cabinetIds.length > 0) {
+          await transaction
+            .select({ id: cabinets.id })
+            .from(cabinets)
+            .where(inArray(cabinets.id, cabinetIds))
+            .orderBy(asc(cabinets.id))
+            .for('update');
+          activeMemberships = await transaction
+            .select()
+            .from(cabinetMemberships)
+            .where(
+              and(
+                eq(cabinetMemberships.userId, currentUser.id),
+                eq(cabinetMemberships.active, true),
+              ),
+            );
+        }
+        const ownedCabinetIds = activeMemberships
+          .filter((membership) => membership.role === 'super_admin')
+          .map((membership) => membership.cabinetId);
+        if (ownedCabinetIds.length > 0) {
+          throw new AppError(
+            409,
+            'SUPER_ADMIN_TRANSFER_REQUIRED',
+            '请先转让或删除名下箱子的超级管理员权限',
+            { cabinetIds: ownedCabinetIds },
+          );
+        }
         for (const membership of activeMemberships) {
           await transaction
             .update(cabinetMemberships)

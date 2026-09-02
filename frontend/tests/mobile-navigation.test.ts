@@ -26,6 +26,33 @@ describe('simplified mobile navigation architecture', () => {
     expect(layout).toContain('<Stack.Screen name="loans/index"');
   });
 
+  it('hides the Home management entry while retaining deletion controls and cabinet settings', () => {
+    const home = source('src/app/(tabs)/index.tsx');
+    const layout = source('src/app/(details)/_layout.tsx');
+    const management = source('src/app/(details)/cabinets/manage.tsx');
+    const cabinetSettings = source(
+      'src/features/cabinet-prototype/components/cabinet-sections.tsx',
+    );
+
+    expect(home).not.toContain('testID="home-cabinet-settings-button"');
+    expect(home).not.toContain("router.push('/(details)/cabinets/manage' as Href)");
+    expect(layout).toContain('<Stack.Screen name="cabinets/manage"');
+    expect(management).toContain("from 'heroui-native/dialog'");
+    expect(management).toContain('cabinet-remove-confirmation-modal');
+    expect(management).toContain('cabinet-remove-confirm-button');
+    expect(management).toContain('actions.disconnectCabinet');
+    expect(management).toContain('actions.deleteCabinet');
+    expect(management).toContain('selectors.isCabinetSuperAdmin');
+    expect(cabinetSettings).toContain("cabinet.role === 'superAdmin'");
+    expect(cabinetSettings).toContain('app.transferSuperAdmin');
+    expect(cabinetSettings).toContain("member.role !== 'superAdmin'");
+    expect(cabinetSettings).toContain('app.disconnectCabinet');
+    expect(cabinetSettings).toContain('app.deleteCabinet');
+    expect(cabinetSettings).toContain('cabinet.deleteCabinetSectionTitle');
+    expect(cabinetSettings).toContain('cabinet.clearKeysSuperAdminRequired');
+    expect(cabinetSettings).toContain('disabled={!isSuperAdmin');
+  });
+
   it('opens available slots on check-out, keeps empty-slot registration, and moves key history below the check-out form', () => {
     const slotGrid = source('src/features/cabinet-prototype/components/key-slot-grid.tsx');
     const keyDetail = source('src/app/(details)/cabinets/[cabinetId]/keys/[keyId].tsx');
@@ -155,6 +182,7 @@ describe('simplified mobile navigation architecture', () => {
     expect(layout).toContain('<Stack.Screen name="notifications"');
     expect(layout).toContain('<Stack.Screen name="account/contact-support"');
     expect(layout).toContain('<Stack.Screen name="account/feedback-history"');
+    expect(layout).toContain('<Stack.Screen name="account/feedback/[feedbackId]"');
     expect(layout).toContain('<Stack.Screen name="account/profile"');
     expect(layout).toContain('<Stack.Screen name="account/security"');
     expect(layout).toContain('<Stack.Screen name="account/change-email"');
@@ -186,6 +214,8 @@ describe('simplified mobile navigation architecture', () => {
     expect(support).toContain("router.push('/(details)/account/feedback-history' as Href)");
     expect(feedbackHistory).toContain('actions.listFeedbackHistory()');
     expect(feedbackHistory).toContain('historyStatusSent');
+    expect(feedbackHistory).toContain("router.push(`/(details)/account/feedback/${item.id}` as Href)");
+    expect(notifications).toContain('if (item.href) router.push(item.href)');
   });
 
   it('provides menu and calendar filters with cabinet-grouped return cards', () => {

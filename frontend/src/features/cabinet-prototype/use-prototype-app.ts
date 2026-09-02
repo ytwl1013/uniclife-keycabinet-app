@@ -59,8 +59,8 @@ async function callAction(source: AppSource, names: string[], input: UnknownReco
   return Promise.resolve(source.actions[name](input as never));
 }
 
-function role(_value: unknown): CabinetRole {
-  return 'admin';
+function role(value: unknown): CabinetRole {
+  return value === 'super_admin' ? 'superAdmin' : 'admin';
 }
 
 function cabinetStatus(value: unknown): CabinetStatus {
@@ -76,7 +76,12 @@ function normalizeEventKind(value: unknown): CabinetEventKind {
   if (normalized.includes('key_updated') || normalized.includes('update_key') || normalized.includes('note')) return 'keyUpdated';
   if (normalized.includes('member_added') || normalized.includes('bind')) return 'memberAdded';
   if (normalized.includes('member_removed') || normalized.includes('unbind')) return 'memberRemoved';
-  if (normalized.includes('role') || normalized.includes('admin_grant') || normalized.includes('admin_revoke')) return 'roleChanged';
+  if (
+    normalized.includes('super_admin_transferred') ||
+    normalized.includes('role') ||
+    normalized.includes('admin_grant') ||
+    normalized.includes('admin_revoke')
+  ) return 'roleChanged';
   if (normalized.includes('clear')) return 'keysCleared';
   if (normalized.includes('restore')) return 'keysRestored';
   return 'admin';
@@ -130,6 +135,7 @@ export function usePrototypeApp(): PrototypeApp {
       returnedAt: text(loan.returnedAt) || undefined,
       operatorUserId: text(loan.operatorId, text(loan.operatorUserId)),
     }));
+    const loanViewById = new Map(loanViews.map((loan) => [loan.id, loan]));
 
     const activeLoanByKey = new Map(
       rawLoans
@@ -225,12 +231,11 @@ export function usePrototypeApp(): PrototypeApp {
         const keyName = text(summary.keyName, key?.name ?? t(trKey('key.unknown')));
         const actorName = text(actor.name, text(actor.displayName, text(actor.email, t(trKey('activity.systemActor')))));
         const targetName = text(summary.memberName, text(summary.targetName));
-        let detail: string | undefined;
-        if (text(summary.borrowerName)) {
-          detail = t(trKey('loan.borrowerDetail'), { borrower: text(summary.borrowerName) });
-        } else if (targetName) {
-          detail = t(trKey('activity.memberDetail'), { member: targetName });
-        }
+        const relatedLoan = loanViewById.get(text(event.relatedLoanId));
+        const borrowerName = text(summary.borrowerName, relatedLoan?.borrowerName) || undefined;
+        const detail = targetName
+          ? t(trKey('activity.memberDetail'), { member: targetName })
+          : undefined;
         return {
           id: text(event.id),
           cabinetId: text(event.cabinetId),
@@ -242,6 +247,7 @@ export function usePrototypeApp(): PrototypeApp {
           createdAt: text(event.occurredAt, text(event.createdAt)),
           title: t(trKey(`activity.event.${kind}`), { key: keyName, actor: actorName }),
           detail,
+          borrowerName,
           borrowerContact: text(summary.borrowerContact) || undefined,
         };
       })
@@ -281,8 +287,26 @@ export function usePrototypeApp(): PrototypeApp {
       removeMember: async (input) => {
         await callAction(source, ['removeMember'], { ...input, ...writeOptions('remove-member', input.cabinetId) });
       },
+      transferSuperAdmin: async (input) => {
+        await callAction(source, ['transferCabinetSuperAdmin'], {
+          ...input,
+          ...writeOptions('transfer-super-admin', input.cabinetId),
+        });
+      },
       deleteAllKeys: async (input) => {
         await callAction(source, ['deleteCabinetKeys'], { ...input, ...writeOptions('delete-all-keys', input.cabinetId) });
+      },
+      disconnectCabinet: async (input) => {
+        await callAction(source, ['disconnectCabinet'], {
+          ...input,
+          ...writeOptions('disconnect-cabinet', input.cabinetId),
+        });
+      },
+      deleteCabinet: async (input) => {
+        await callAction(source, ['deleteCabinet'], {
+          ...input,
+          ...writeOptions('delete-cabinet', input.cabinetId),
+        });
       },
       createJoinInvitation: async (input) => {
         const result = record(await callAction(source, ['createCabinetJoinInvitation'], input));

@@ -51,6 +51,7 @@ const emptyState = (): AppState => ({
   keys: [],
   loans: [],
   events: [],
+  feedbackThreads: [],
 });
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -97,10 +98,11 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const loadWorkspace = useCallback(async (token: string, currentUser: CurrentUserAccount) => {
     const summaries = await backendApi.listCabinets(token);
-    const [details, loansResult, eventsResult] = await Promise.all([
+    const [details, loansResult, eventsResult, feedbackResult] = await Promise.all([
       Promise.all(summaries.map(({ cabinet }) => backendApi.getCabinet(token, cabinet.id))),
       backendApi.listLoans(token),
       backendApi.listEvents(token),
+      backendApi.listFeedbackHistory(token),
     ]);
 
     const memberships = details.flatMap((detail) =>
@@ -128,6 +130,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       keys: uniqueById(details.flatMap((detail) => detail.keys)),
       loans: loansResult.items,
       events: eventsResult.items,
+      feedbackThreads: feedbackResult.items,
     }));
   }, [updateState]);
 
@@ -365,7 +368,14 @@ export function AppProvider({ children }: PropsWithChildren) {
     async submitFeedback(input) {
       const token = requireToken();
       try {
-        return await backendApi.submitFeedback(token, input);
+        const result = await backendApi.submitFeedback(token, input);
+        const { messages: _messages, ...summary } = result.thread;
+        updateState((current) => ({
+          ...current,
+          feedbackThreads: uniqueById([summary, ...current.feedbackThreads]),
+          version: current.version + 1,
+        }));
+        return { submissionId: result.submissionId, submittedAt: result.submittedAt };
       } catch (error) {
         return handleAuthorizedError(error);
       }
@@ -374,9 +384,52 @@ export function AppProvider({ children }: PropsWithChildren) {
       const token = requireToken();
       try {
         const result = await backendApi.listFeedbackHistory(token);
+        updateState((current) => ({
+          ...current,
+          feedbackThreads: result.items,
+          version: current.version + 1,
+        }));
         return result.items;
       } catch (error) {
         return handleAuthorizedError(error);
+      }
+    },
+    async getFeedbackThread({ feedbackId }) {
+      const token = requireToken();
+      try {
+        return await backendApi.getFeedbackThread(token, feedbackId);
+      } catch (error) {
+        return handleAuthorizedError(error);
+      }
+    },
+    async replyToFeedback({ feedbackId, content }) {
+      const token = requireToken();
+      try {
+        const { thread } = await backendApi.replyToFeedback(token, feedbackId, content);
+        const { messages: _messages, ...summary } = thread;
+        updateState((current) => ({
+          ...current,
+          feedbackThreads: uniqueById([summary, ...current.feedbackThreads]),
+          version: current.version + 1,
+        }));
+        return thread;
+      } catch (error) {
+        return handleAuthorizedError(error);
+      }
+    },
+    async markFeedbackThreadRead({ feedbackId }) {
+      const token = requireToken();
+      try {
+        await backendApi.markFeedbackThreadRead(token, feedbackId);
+        updateState((current) => ({
+          ...current,
+          feedbackThreads: current.feedbackThreads.map((thread) =>
+            thread.id === feedbackId ? { ...thread, unreadMessageCount: 0 } : thread
+          ),
+          version: current.version + 1,
+        }));
+      } catch (error) {
+        await handleAuthorizedError(error);
       }
     },
     async resolveQr(input) {
@@ -446,6 +499,36 @@ export function AppProvider({ children }: PropsWithChildren) {
         return cabinet;
       } catch (error) {
         return handleAuthorizedError(error);
+      }
+    },
+    async disconnectCabinet({ cabinetId, ...input }) {
+      const token = requireToken();
+      try {
+        await backendApi.disconnectCabinet(token, cabinetId, input);
+        await refresh();
+      } catch (error) {
+        await handleAuthorizedError(error);
+      }
+    },
+    async deleteCabinet({ cabinetId, ...input }) {
+      const token = requireToken();
+      try {
+        await backendApi.deleteCabinet(token, cabinetId, input);
+        await refresh();
+      } catch (error) {
+        await handleAuthorizedError(error);
+      }
+    },
+    async transferCabinetSuperAdmin({ cabinetId, membershipId, ...input }) {
+      const token = requireToken();
+      try {
+        await backendApi.transferCabinetSuperAdmin(token, cabinetId, {
+          membershipId,
+          ...input,
+        });
+        await refresh();
+      } catch (error) {
+        await handleAuthorizedError(error);
       }
     },
     async removeMember({ cabinetId, membershipId, ...input }) {

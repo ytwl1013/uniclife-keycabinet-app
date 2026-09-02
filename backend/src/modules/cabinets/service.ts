@@ -34,6 +34,34 @@ export async function requireCabinetMember(
   return toMembership(membership);
 }
 
+export async function requireCabinetSuperAdmin(
+  executor: DbExecutor,
+  cabinetId: string,
+  userId: string,
+) {
+  const membership = await requireCabinetMember(executor, cabinetId, userId);
+  if (membership.role !== 'super_admin') {
+    throw new AppError(403, 'SUPER_ADMIN_REQUIRED', '仅超级管理员可以执行此操作');
+  }
+  return membership;
+}
+
+export async function lockCabinet(
+  executor: DbExecutor,
+  cabinetId: string,
+) {
+  const [cabinet] = await executor
+    .select()
+    .from(cabinets)
+    .where(eq(cabinets.id, cabinetId))
+    .limit(1)
+    .for('update');
+  if (!cabinet) {
+    throw new AppError(404, 'CABINET_NOT_FOUND', '钥匙柜不存在');
+  }
+  return cabinet;
+}
+
 export async function touchCabinet(
   executor: DbExecutor,
   cabinetId: string,

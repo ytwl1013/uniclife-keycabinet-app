@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Href } from 'expo-router';
 import {
   createContext,
   PropsWithChildren,
@@ -13,6 +14,7 @@ import { AppIconName, AppIconTone } from '@/components/ui/app-icon';
 import { useApp } from '@/app-state';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
 import { isNotifiableEvent } from '@/features/notifications/notification-policy';
+import { useTranslation } from '@/i18n';
 
 export type AppNotification = {
   id: string;
@@ -22,6 +24,7 @@ export type AppNotification = {
   icon: AppIconName;
   tone: AppIconTone;
   read: boolean;
+  href?: Href;
 };
 
 type NotificationsContextValue = {
@@ -49,7 +52,8 @@ const eventIcon = {
 
 export function NotificationsProvider({ children }: PropsWithChildren) {
   const app = usePrototypeApp();
-  const { currentUser } = useApp();
+  const { actions, currentUser, state } = useApp();
+  const { t } = useTranslation();
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
   const storageKey = `uniclife.notifications.read.v1.${currentUser?.id ?? 'anonymous'}`;
@@ -83,14 +87,26 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
     void AsyncStorage.setItem(storageKey, JSON.stringify([...next])).catch(() => undefined);
   }, [loadedStorageKey, storageKey]);
 
+  const supportThreadsByNotificationId = useMemo(() => new Map(
+    state.feedbackThreads.map((thread) => [`support:${thread.id}`, thread]),
+  ), [state.feedbackThreads]);
+
   const markRead = useCallback((id: string) => {
+    const supportThread = supportThreadsByNotificationId.get(id);
+    if (supportThread) {
+      if (supportThread.unreadMessageCount > 0) {
+        void actions.markFeedbackThreadRead({ feedbackId: supportThread.id }).catch(() => undefined);
+      }
+      return;
+    }
     if (readIds.has(id)) return;
     saveReadIds(new Set([...readIds, id]));
-  }, [readIds, saveReadIds]);
+  }, [actions, readIds, saveReadIds, supportThreadsByNotificationId]);
 
-  const notifications = useMemo<AppNotification[]>(() => app.events
-    .filter(isNotifiableEvent)
-    .map((event) => ({
+  const notifications = useMemo<AppNotification[]>(() => {
+    const eventNotifications: AppNotification[] = app.events
+      .filter(isNotifiableEvent)
+      .map((event) => ({
       id: event.id,
       title: event.title,
       body: event.detail ?? event.actorName,
@@ -98,11 +114,34 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
       icon: eventIcon[event.kind].icon,
       tone: eventIcon[event.kind].tone,
       read: readIds.has(event.id),
-    })), [app.events, readIds]);
+    }));
+    const supportNotifications: AppNotification[] = state.feedbackThreads
+      .filter((thread) => thread.supportMessageCount > 0 && thread.latestSupportMessageAt)
+      .map((thread) => ({
+        id: `support:${thread.id}`,
+        title: t('support.replyNotificationTitle', {
+          title: thread.title || t('support.historyUntitled'),
+        }),
+        body: thread.latestSupportMessagePreview ?? '',
+        createdAt: thread.latestSupportMessageAt!,
+        icon: 'support',
+        tone: 'brand',
+        read: thread.unreadMessageCount === 0,
+        href: `/(details)/account/feedback/${thread.id}` as Href,
+      }));
+    return [...supportNotifications, ...eventNotifications].sort(
+      (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
+    );
+  }, [app.events, readIds, state.feedbackThreads, t]);
 
   const markAllRead = useCallback(() => {
-    saveReadIds(new Set(notifications.map((notification) => notification.id)));
-  }, [notifications, saveReadIds]);
+    saveReadIds(new Set(app.events.filter(isNotifiableEvent).map((event) => event.id)));
+    for (const thread of state.feedbackThreads) {
+      if (thread.unreadMessageCount > 0) {
+        void actions.markFeedbackThreadRead({ feedbackId: thread.id }).catch(() => undefined);
+      }
+    }
+  }, [actions, app.events, saveReadIds, state.feedbackThreads]);
 
   const value = useMemo<NotificationsContextValue>(() => ({
     notifications,

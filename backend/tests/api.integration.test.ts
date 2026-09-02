@@ -182,6 +182,14 @@ databaseTest('backend API workflow', () => {
     expect(eventsResponse.json().data.items.map((event: { type: string }) => event.type)).toEqual(
       expect.arrayContaining(['cabinet_initialized', 'key_added', 'checkout', 'return', 'keys_deleted']),
     );
+    expect(eventsResponse.json().data.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'return',
+          summaryData: expect.objectContaining({ borrowerName: 'Sample Borrower' }),
+        }),
+      ]),
+    );
 
     await app.close();
   });

@@ -18,8 +18,23 @@ export type FeedbackNotification = {
   };
 };
 
+export type FeedbackUserReplyNotification = {
+  feedbackId: string;
+  createdAt: string;
+  type: FeedbackType;
+  title: string;
+  content: string;
+  user: FeedbackNotification['user'];
+};
+
+export type FeedbackSupportReplyNotification = FeedbackUserReplyNotification & {
+  supportDisplayName: string;
+};
+
 export interface FeedbackNotifier {
   send(notification: FeedbackNotification): Promise<void>;
+  sendUserReply?(notification: FeedbackUserReplyNotification): Promise<void>;
+  sendSupportReply?(notification: FeedbackSupportReplyNotification): Promise<void>;
 }
 
 type SmtpFeedbackNotifierOptions = {
@@ -83,11 +98,71 @@ export function buildFeedbackMail(
   };
 }
 
+export function buildUserReplyMail(
+  notification: FeedbackUserReplyNotification,
+  options: Pick<SmtpFeedbackNotifierOptions, 'envelopeFrom' | 'from' | 'to'>,
+): SendMailOptions {
+  const typeLabel = feedbackTypeLabels[notification.type];
+  const title = singleLine(notification.title, '未填写标题');
+  return {
+    envelope: { from: options.envelopeFrom, to: options.to },
+    from: options.from,
+    replyTo: notification.user.email,
+    subject: `Re: [反馈问题][${typeLabel}][${notification.feedbackId}] ${title}`,
+    text: [
+      '用户在钥匙柜应用内回复了客服会话。',
+      '',
+      `反馈编号：${notification.feedbackId}`,
+      `回复时间：${notification.createdAt}`,
+      `用户 ID：${notification.user.id}`,
+      `用户名：${notification.user.displayName}`,
+      `登录邮箱：${notification.user.email}`,
+      '',
+      '回复内容',
+      notification.content,
+      '',
+      '请在管理后台的“客服反馈”中继续处理。',
+    ].join('\n'),
+    to: options.to,
+  };
+}
+
+export function buildSupportReplyMail(
+  notification: FeedbackSupportReplyNotification,
+  options: Pick<SmtpFeedbackNotifierOptions, 'envelopeFrom' | 'from'>,
+): SendMailOptions {
+  const typeLabel = feedbackTypeLabels[notification.type];
+  const title = singleLine(notification.title, '未填写标题');
+  return {
+    envelope: { from: options.envelopeFrom, to: notification.user.email },
+    from: options.from,
+    subject: `Re: [反馈问题][${typeLabel}][${notification.feedbackId}] ${title}`,
+    text: [
+      `${notification.user.displayName}，您好：`,
+      '',
+      `${notification.supportDisplayName} 回复了您的反馈（${notification.feedbackId}）：`,
+      '',
+      notification.content,
+      '',
+      '您可以打开钥匙柜应用的“通知”，查看该反馈并继续回复。',
+    ].join('\n'),
+    to: notification.user.email,
+  };
+}
+
 export class SmtpFeedbackNotifier implements FeedbackNotifier {
   constructor(private readonly options: SmtpFeedbackNotifierOptions) {}
 
   async send(notification: FeedbackNotification): Promise<void> {
     await this.options.transport.sendMail(buildFeedbackMail(notification, this.options));
+  }
+
+  async sendUserReply(notification: FeedbackUserReplyNotification): Promise<void> {
+    await this.options.transport.sendMail(buildUserReplyMail(notification, this.options));
+  }
+
+  async sendSupportReply(notification: FeedbackSupportReplyNotification): Promise<void> {
+    await this.options.transport.sendMail(buildSupportReplyMail(notification, this.options));
   }
 }
 

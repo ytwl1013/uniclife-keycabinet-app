@@ -63,6 +63,9 @@ export type MockAppActions = {
   ): Promise<CabinetAccessResult>;
   renameCabinet(input: RenameCabinetInput): Promise<Cabinet>;
   removeMember(input: { cabinetId: string; membershipId: string } & WriteOptions): Promise<void>;
+  transferCabinetSuperAdmin(
+    input: { cabinetId: string; membershipId: string } & WriteOptions,
+  ): Promise<void>;
   addKey(input: AddKeyInput): Promise<Key>;
   updateKey(input: UpdateKeyInput): Promise<Key>;
   deleteKey(input: { keyId: string } & WriteOptions): Promise<void>;
@@ -231,6 +234,16 @@ export function createMockAppService(
     userId: string,
   ): CabinetMembership => {
     return assertMember(draft, cabinetId, userId);
+  };
+
+  const assertSuperAdmin = (
+    draft: MockAppState,
+    cabinetId: string,
+    userId: string,
+  ): CabinetMembership => {
+    const membership = assertMember(draft, cabinetId, userId);
+    assertMock(membership.role === 'super_admin', 'SUPER_ADMIN_REQUIRED');
+    return membership;
   };
 
   const touchCabinet = (draft: MockAppState, cabinetId: string) => {
@@ -503,6 +516,10 @@ export function createMockAppService(
       const membershipsToRemove = draft.memberships.filter(
         (candidate) => candidate.userId === user.id && candidate.active,
       );
+      assertMock(
+        membershipsToRemove.every((membership) => membership.role !== 'super_admin'),
+        'SUPER_ADMIN_TRANSFER_REQUIRED',
+      );
       for (const membership of membershipsToRemove) {
         membership.active = false;
         membership.removedAt = draft.now;
@@ -631,7 +648,7 @@ export function createMockAppService(
         id: id('membership'),
         cabinetId: cabinet.id,
         userId: currentUser.id,
-        role: 'admin',
+        role: 'super_admin',
         active: true,
         joinedAt: draft.now,
       };
@@ -674,7 +691,7 @@ export function createMockAppService(
 
   const removeMember: MockAppActions['removeMember'] = async (input) =>
     commit('remove-member', input, (draft, user) => {
-      assertManager(draft, input.cabinetId, user.id);
+      assertSuperAdmin(draft, input.cabinetId, user.id);
       const target = draft.memberships.find(
         (membership) =>
           membership.id === input.membershipId &&
@@ -683,6 +700,7 @@ export function createMockAppService(
       );
       assertMock(target, 'MEMBER_NOT_FOUND');
       assertMock(target.userId !== user.id, 'PERMISSION_DENIED');
+      assertMock(target.role !== 'super_admin', 'SUPER_ADMIN_PROTECTED');
       target.active = false;
       target.removedAt = draft.now;
       appendEvent(draft, {
@@ -691,6 +709,34 @@ export function createMockAppService(
         type: 'member_removed',
         reversible: false,
         summaryData: { membershipId: target.id, removedUserId: target.userId },
+      });
+      touchCabinet(draft, input.cabinetId);
+    });
+
+  const transferCabinetSuperAdmin: MockAppActions['transferCabinetSuperAdmin'] = async (input) =>
+    commit('transfer-super-admin', input, (draft, user) => {
+      const current = assertSuperAdmin(draft, input.cabinetId, user.id);
+      const target = draft.memberships.find(
+        (membership) =>
+          membership.id === input.membershipId &&
+          membership.cabinetId === input.cabinetId &&
+          membership.active,
+      );
+      assertMock(target, 'MEMBER_NOT_FOUND');
+      assertMock(target.id !== current.id && target.role === 'admin', 'SUPER_ADMIN_TRANSFER_TARGET_INVALID');
+      current.role = 'admin';
+      target.role = 'super_admin';
+      appendEvent(draft, {
+        cabinetId: input.cabinetId,
+        actorId: user.id,
+        type: 'super_admin_transferred',
+        reversible: false,
+        summaryData: {
+          previousMembershipId: current.id,
+          previousUserId: current.userId,
+          nextMembershipId: target.id,
+          nextUserId: target.userId,
+        },
       });
       touchCabinet(draft, input.cabinetId);
     });
@@ -868,7 +914,7 @@ export function createMockAppService(
 
   const deleteCabinetKeys: MockAppActions['deleteCabinetKeys'] = async (input) =>
     commit('delete-cabinet-keys', input, (draft, user) => {
-      assertManager(draft, input.cabinetId, user.id);
+      assertSuperAdmin(draft, input.cabinetId, user.id);
       const keys = draft.keys.filter((key) => key.cabinetId === input.cabinetId);
       assertMock(keys.length > 0, 'NO_KEYS_TO_CLEAR');
       const deletedIds = new Set(keys.map((key) => key.id));
@@ -944,6 +990,7 @@ export function createMockAppService(
     initializeCabinet,
     renameCabinet,
     removeMember,
+    transferCabinetSuperAdmin,
     addKey,
     updateKey,
     deleteKey,

@@ -60,7 +60,7 @@ describe('product QR cabinet initialization', () => {
 
     const initialized = await app.actions.initializeCabinet({ productQrCode: qrCode, name: 'Studio Keys' });
     expect(initialized.cabinet.name).toBe('Studio Keys');
-    expect(initialized.membership.role).toBe('admin');
+    expect(initialized.membership.role).toBe('super_admin');
     expect(app.getState().slots.filter((slot) => slot.cabinetId === initialized.cabinet.id)).toHaveLength(32);
 
     const second = await app.actions.initializeCabinet({ productQrCode: qrCode, name: 'Second Cabinet' });
@@ -76,15 +76,34 @@ describe('product QR cabinet initialization', () => {
   });
 });
 
-describe('single Admin permissions', () => {
-  it('stores every active membership as Admin and allows an Admin to remove another Admin', async () => {
-    const app = service('user-admin');
-    expect(app.getState().memberships.every((membership) => membership.role === 'admin')).toBe(true);
-    await app.actions.removeMember({ cabinetId: 'cabinet-hq', membershipId: 'membership-hq-owner' });
-    expect(app.getState().memberships.find((membership) => membership.id === 'membership-hq-owner')?.active).toBe(false);
+describe('Super Admin permissions', () => {
+  it('protects the Super Admin and supports transferring the permission', async () => {
+    const adminApp = service('user-admin');
+    await expect(
+      adminApp.actions.removeMember({
+        cabinetId: 'cabinet-hq',
+        membershipId: 'membership-hq-owner',
+      }),
+    ).rejects.toThrow();
+
+    const superAdminApp = service('user-owner');
+    await superAdminApp.actions.transferCabinetSuperAdmin({
+      cabinetId: 'cabinet-hq',
+      membershipId: 'membership-hq-admin',
+    });
+    expect(
+      superAdminApp.getState().memberships.find(
+        (membership) => membership.id === 'membership-hq-owner',
+      )?.role,
+    ).toBe('admin');
+    expect(
+      superAdminApp.getState().memberships.find(
+        (membership) => membership.id === 'membership-hq-admin',
+      )?.role,
+    ).toBe('super_admin');
   });
 
-  it('migrates v1 roles, SKUs, deleted keys, marketing consent, and recovery metadata to v3', async () => {
+  it('migrates v1 roles, SKUs, deleted keys, marketing consent, and recovery metadata to v4', async () => {
     const legacy = createInitialMockState({ currentUserId: 'user-owner', hydrated: true, now: FIXED_NOW }) as unknown as Record<string, unknown>;
     legacy.memberships = (legacy.memberships as Record<string, unknown>[]).map((membership, index) => ({ ...membership, role: index % 2 ? 'member' : 'owner' }));
     legacy.cabinets = (legacy.cabinets as Record<string, unknown>[]).map((cabinet) => ({ ...cabinet, skuId: cabinet.id === 'cabinet-loft' ? 'sku-uc48-navy' : 'sku-uc24-white' }));
@@ -95,7 +114,16 @@ describe('single Admin permissions', () => {
     const storage = createMemoryStorage({ [LEGACY_MOCK_STORAGE_KEY]: JSON.stringify(legacy) });
     const migrated = await loadStateOverlay(storage);
 
-    expect(migrated?.memberships.every((membership) => membership.role === 'admin')).toBe(true);
+    for (const cabinet of migrated?.cabinets ?? []) {
+      expect(
+        migrated?.memberships.filter(
+          (membership) =>
+            membership.cabinetId === cabinet.id &&
+            membership.active &&
+            membership.role === 'super_admin',
+        ),
+      ).toHaveLength(1);
+    }
     expect(migrated?.skus.map((sku) => sku.sku)).toEqual(['BG5163-BK', 'BG0680-BK']);
     expect(migrated?.keys.some((key) => key.id === 'key-flat-101')).toBe(false);
     expect(migrated?.consents.some((consent) => String(consent.kind) === 'marketing')).toBe(false);
@@ -131,6 +159,13 @@ describe('single Admin permissions', () => {
 });
 
 describe('permanent key deletion', () => {
+  it('allows only the Super Admin to delete all cabinet key information', async () => {
+    const adminApp = service('user-admin');
+    await expect(
+      adminApp.actions.deleteCabinetKeys({ cabinetId: 'cabinet-hq' }),
+    ).rejects.toMatchObject({ code: 'SUPER_ADMIN_REQUIRED' });
+  });
+
   it('blocks deleting a checked-out key and permanently deletes an available key with audit history', async () => {
     const app = service();
     await expect(app.actions.deleteKey({ keyId: 'key-mailroom' })).rejects.toMatchObject({ code: 'ACTIVE_LOANS_BLOCK_CLEAR' });
