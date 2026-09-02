@@ -26,7 +26,7 @@ describe('simplified mobile navigation architecture', () => {
     expect(layout).toContain('<Stack.Screen name="loans/index"');
   });
 
-  it('opens cabinet management from Home and requires modal confirmation before removal', () => {
+  it('hides the Home management entry while retaining deletion controls and cabinet settings', () => {
     const home = source('src/app/(tabs)/index.tsx');
     const layout = source('src/app/(details)/_layout.tsx');
     const management = source('src/app/(details)/cabinets/manage.tsx');
@@ -34,18 +34,23 @@ describe('simplified mobile navigation architecture', () => {
       'src/features/cabinet-prototype/components/cabinet-sections.tsx',
     );
 
-    expect(home).toContain('testID="home-cabinet-settings-button"');
-    expect(home).toContain("router.push('/(details)/cabinets/manage' as Href)");
+    expect(home).not.toContain('testID="home-cabinet-settings-button"');
+    expect(home).not.toContain("router.push('/(details)/cabinets/manage' as Href)");
     expect(layout).toContain('<Stack.Screen name="cabinets/manage"');
-    expect(management).toContain("import { Dialog } from 'heroui-native/dialog'");
-    expect(management).toContain('testID="cabinet-remove-confirmation-modal"');
-    expect(management).toContain('testID="cabinet-remove-confirm-button"');
+    expect(management).toContain("from 'heroui-native/dialog'");
+    expect(management).toContain('cabinet-remove-confirmation-modal');
+    expect(management).toContain('cabinet-remove-confirm-button');
     expect(management).toContain('actions.disconnectCabinet');
     expect(management).toContain('actions.deleteCabinet');
     expect(management).toContain('selectors.isCabinetSuperAdmin');
     expect(cabinetSettings).toContain("cabinet.role === 'superAdmin'");
     expect(cabinetSettings).toContain('app.transferSuperAdmin');
     expect(cabinetSettings).toContain("member.role !== 'superAdmin'");
+    expect(cabinetSettings).toContain('app.disconnectCabinet');
+    expect(cabinetSettings).toContain('app.deleteCabinet');
+    expect(cabinetSettings).toContain('cabinet.deleteCabinetSectionTitle');
+    expect(cabinetSettings).toContain('cabinet.clearKeysSuperAdminRequired');
+    expect(cabinetSettings).toContain('disabled={!isSuperAdmin');
   });
 
   it('opens available slots on check-out, keeps empty-slot registration, and moves key history below the check-out form', () => {

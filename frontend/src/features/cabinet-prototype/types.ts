@@ -116,6 +116,8 @@ export type PrototypeActions = {
   removeMember(input: { cabinetId: string; membershipId: string }): Promise<void>;
   transferSuperAdmin(input: { cabinetId: string; membershipId: string }): Promise<void>;
   deleteAllKeys(input: { cabinetId: string }): Promise<void>;
+  disconnectCabinet(input: { cabinetId: string }): Promise<void>;
+  deleteCabinet(input: { cabinetId: string }): Promise<void>;
   createJoinInvitation(input: { cabinetId: string }): Promise<CabinetJoinInvitation>;
   revokeJoinInvitation(input: {
     cabinetId: string;

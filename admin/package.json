@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "generate-env-secrets": "tsx scripts/generate-env-secrets.ts",
     "hash-password": "tsx scripts/hash-password.ts"
   },
   "dependencies": {

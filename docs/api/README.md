@@ -151,7 +151,7 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | DELETE | `/cabinets/:cabinetId/membership` | 普通管理员解除当前账户绑定；保留柜体、历史与审计，超级管理员不能调用 |
 | DELETE | `/cabinets/:cabinetId/members/:membershipId` | 超级管理员移除指定普通管理员 |
 | DELETE | `/cabinets/:cabinetId` | 超级管理员永久删除箱子、全部绑定、邀请、槽位、钥匙、借用、事件和旧箱子审计 |
-| DELETE | `/cabinets/:cabinetId/keys` | 永久删除柜内钥匙资料，将有效借用标记为 cancelled，并保留历史引用和事件 |
+| DELETE | `/cabinets/:cabinetId/keys` | 仅超级管理员可永久删除柜内全部钥匙资料；有效借用标记为 cancelled，并保留历史引用和事件 |
 | POST | `/cabinets/:cabinetId/keys` | 在空槽位创建钥匙 |
 | PATCH | `/keys/:keyId` | 更新钥匙名称或备注 |
 | DELETE | `/keys/:keyId` | 删除单把钥匙；存在有效借用时拒绝 |
@@ -164,7 +164,7 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 
 除初始化和加入外，柜体写请求可携带 `expectedVersion`。服务端使用条件更新保证版本一致，冲突时整个事务回滚并返回当前版本。
 
-当前账户从“你的箱子”管理页删除箱子时，前端按当前成员角色选择接口：普通管理员调用 `DELETE /cabinets/:cabinetId/membership`，只停用自己的成员关系；超级管理员调用 `DELETE /cabinets/:cabinetId`，永久删除整个箱子和所有关联信息。两种操作都必须携带可复用的 `requestId` 与 `expectedVersion`。硬删除会清理旧箱子审计，但额外保留一条不含敏感明文的 `cabinets.deleted` 全局审计，记录删除者和聚合数量。
+当前账户从箱子“设置”页底部删除箱子时，前端按当前成员角色选择接口：普通管理员调用 `DELETE /cabinets/:cabinetId/membership`，只停用自己的成员关系；超级管理员调用 `DELETE /cabinets/:cabinetId`，永久删除整个箱子和所有关联信息。两种操作都必须携带可复用的 `requestId` 与 `expectedVersion`。硬删除会清理旧箱子审计，但额外保留一条不含敏感明文的 `cabinets.deleted` 全局审计，记录删除者和聚合数量。
 
 超级管理员转让请求示例：
 

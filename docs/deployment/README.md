@@ -60,10 +60,12 @@ Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不�
 - `API_BASE_URL_DEVELOPMENT`：本地 Fastify 地址，例如 `http://127.0.0.1:4000`
 - `API_BASE_URL_DEV`：远端 Dev API 地址；为避免管理令牌被窃听，代码强制要求 HTTPS
 - `ADMIN_USERNAME`：单一初始管理员邮箱，仅在 Next.js 服务端读取
-- `ADMIN_PASSWORD_HASH`：bcrypt cost 12 哈希；运行 `pnpm --filter @uniclife/admin hash-password` 交互生成，禁止保存明文密码
+- `ADMIN_PASSWORD_HASH`：bcrypt cost 12 哈希；运行 `pnpm --filter @uniclife/admin generate-env-secrets` 交互输入并确认原始登录密码后生成，禁止在环境变量中保存明文密码
 - `ADMIN_SESSION_SECRET`：至少 32 字符的独立随机值，用于签名 HttpOnly 管理会话
 - `ADMIN_SESSION_TTL_HOURS`：管理会话时长，范围 1–24 小时，默认 8 小时
 - `ADMIN_API_TOKEN`：Next.js 到 Fastify 的服务端令牌，必须与后端配置一致
+
+`generate-env-secrets` 会同时生成密码哈希、随机会话密钥和随机管理 API Token，只输出到当前终端供手动复制，不会自动写入或覆盖任何 `.env`。管理员在登录页输入原始密码，服务端负责与哈希校验。
 
 浏览器只访问 Next.js 同源路由，API Base URL 与 `ADMIN_API_TOKEN` 都不会进入客户端 bundle。生产部署还应在入口网关增加跨实例登录限流、TLS/HSTS 和可信代理头配置；应用内存限流只作为单实例的基础保护。
 

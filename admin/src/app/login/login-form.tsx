@@ -57,7 +57,7 @@ export function LoginForm() {
       <TextField fullWidth isRequired name="password" type={showPassword ? 'text' : 'password'}>
         <div className="flex items-center justify-between">
           <Label>密码</Label>
-          <span className="text-[11px] text-zinc-400">由环境变量初始化</span>
+          <span className="text-[11px] text-zinc-400">输入你设置的原始密码</span>
         </div>
         <div className="relative mt-2">
           <LockKeyhole aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-zinc-400" size={16} />

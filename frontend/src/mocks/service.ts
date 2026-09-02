@@ -914,7 +914,7 @@ export function createMockAppService(
 
   const deleteCabinetKeys: MockAppActions['deleteCabinetKeys'] = async (input) =>
     commit('delete-cabinet-keys', input, (draft, user) => {
-      assertManager(draft, input.cabinetId, user.id);
+      assertSuperAdmin(draft, input.cabinetId, user.id);
       const keys = draft.keys.filter((key) => key.cabinetId === input.cabinetId);
       assertMock(keys.length > 0, 'NO_KEYS_TO_CLEAR');
       const deletedIds = new Set(keys.map((key) => key.id));

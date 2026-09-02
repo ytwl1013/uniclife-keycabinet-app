@@ -47,7 +47,7 @@ export const en = {
     available: 'Available', checkedOut: 'Checked out', overdue: 'Overdue',
   },
   cabinetManagement: {
-    openAction: 'Manage cabinets', title: 'Manage cabinets', description: 'Manage cabinets connected to this account.',
+    openAction: 'Manage cabinets', title: 'Manage cabinets', description: 'View cabinets connected to this account. Deletion is available at the bottom of each cabinet’s Settings page.',
     emptyTitle: 'No cabinets to manage', emptyDescription: 'Connected cabinets will appear here.',
     offlineTitle: 'You are offline', offlineDescription: 'Reconnect before removing a cabinet.',
     removeAccessibilityLabel: 'Remove %{cabinet}', confirmTitle: 'Remove %{cabinet}?',
@@ -67,7 +67,8 @@ export const en = {
     syncNoticeTitle: 'Shared cabinet', syncNoticeDescription: 'Changes are visible to every bound account.', syncedDemo: 'Up to date', notifications: 'All members are notified of changes.',
     available: 'Available', checkedOut: 'Checked out', overdue: 'Overdue',
     membersTitle: 'Bound accounts', membersDescription: 'The Super Admin can remove Admins or transfer Super Admin ownership. Other Admins cannot remove the Super Admin.',
-    clearSectionTitle: 'Key configuration', clearSectionDescription: 'Permanently delete all key records. The cabinet, active and historical loans, and immutable audit trail remain.', clearKeysAction: 'Delete all key information', clearKeysTitle: 'Delete all key information?', clearKeysDescription: 'This permanently deletes configured key information and cannot be recovered.', clearKeysConfirm: 'Delete keys',
+    clearSectionTitle: 'Key configuration', clearSectionDescription: 'Permanently delete all key records. The cabinet, active and historical loans, and immutable audit trail remain.', clearKeysAction: 'Delete all key information', clearKeysSuperAdminRequired: 'Only the Super Admin can delete all key information.', clearKeysTitle: 'Delete all key information?', clearKeysDescription: 'This permanently deletes configured key information and cannot be recovered.', clearKeysConfirm: 'Delete keys',
+    deleteCabinetSectionTitle: 'Delete cabinet', disconnectCabinetSectionDescription: 'Remove this cabinet from the current account. Cabinet history and other Admin access remain.', deleteCabinetSectionDescription: 'Permanently delete this cabinet, every Admin binding, key and loan history, and old cabinet audit data.',
     renameTitle: 'Cabinet name', renameDescription: 'Choose the name shown to every bound Admin.', cabinetNameLabel: 'Cabinet name', renameAction: 'Rename cabinet', renamedSuccess: 'The cabinet name was updated.',
     deleteAllConfirmTitle: 'Permanently delete all key information?', deleteAllConfirmDescription: '%{count} key records will be permanently deleted. Cabinet details, loan history, and immutable audit events remain. This cannot be undone.', deleteAllCountdown: 'Delete in %{seconds}s', deleteAllConfirm: 'Permanently delete', keysDeletedSuccess: 'All key information was permanently deleted.',
     managePermissionRequiredTitle: 'Management permission required', managePermissionRequiredDescription: 'Only an Owner or Admin can remove ordinary members or clear keys.',

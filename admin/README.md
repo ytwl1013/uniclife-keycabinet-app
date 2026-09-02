@@ -6,12 +6,14 @@
 
 ```bash
 cp admin/.env.example admin/.env.local
-pnpm --filter @uniclife/admin hash-password
+pnpm --filter @uniclife/admin generate-env-secrets
 pnpm dev:backend
 pnpm dev:admin
 ```
 
-将密码命令输出的 bcrypt 哈希写入 `ADMIN_PASSWORD_HASH`，并生成两个不同的随机值分别用于 `ADMIN_SESSION_SECRET` 和 `ADMIN_API_TOKEN`。后者还要写入后端被忽略的 `.env.development.local`。不要提交任何真实环境文件。
+`generate-env-secrets` 会在终端中隐藏地询问两次管理员登录密码，然后输出 `ADMIN_PASSWORD_HASH`、`ADMIN_SESSION_SECRET` 和 `ADMIN_API_TOKEN` 三行。手动复制到 `admin/.env.local`；其中 `ADMIN_API_TOKEN` 还要复制到后端被忽略的 `.env.development.local`，并保持完全一致。命令不会自动修改环境文件。
+
+登录页面输入的是你刚才设置的原始密码，不是哈希值。服务端使用 bcrypt 将输入密码与 `ADMIN_PASSWORD_HASH` 校验，因此不需要记住哈希。
 
 默认 `pnpm dev:admin` 使用 `APP_ENV=development` 对应的 `API_BASE_URL_DEVELOPMENT`。需要连接远端 Dev 后端时运行：
 

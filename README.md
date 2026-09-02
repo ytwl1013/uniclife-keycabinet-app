@@ -33,6 +33,7 @@ pnpm install
 cp backend/.env.development.example backend/.env.development
 cp frontend/.env.development.example frontend/.env.local
 cp admin/.env.example admin/.env.local
+pnpm --filter @uniclife/admin generate-env-secrets
 ```
 
 将 `frontend/.env.local` 中的示例地址改为开发电脑的局域网 IPv4 地址，保证真机与开发电脑连接同一局域网。iOS Simulator 可以使用 `localhost`。

@@ -84,6 +84,15 @@ databaseTest('cabinet Super Admin workflow', () => {
     expect(protectedRemoval.statusCode).toBe(403);
     expect(protectedRemoval.json().code).toBe('SUPER_ADMIN_REQUIRED');
 
+    const protectedKeyDeletion = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/cabinets/${cabinetId}/keys`,
+      headers: authorizationB,
+      payload: { expectedVersion: 2, requestId: `delete-keys-as-admin-${runId}` },
+    });
+    expect(protectedKeyDeletion.statusCode).toBe(403);
+    expect(protectedKeyDeletion.json().code).toBe('SUPER_ADMIN_REQUIRED');
+
     const detail = await app.inject({
       method: 'GET',
       url: `/api/v1/cabinets/${cabinetId}`,

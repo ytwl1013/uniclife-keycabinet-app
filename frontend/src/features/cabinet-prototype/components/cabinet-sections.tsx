@@ -378,13 +378,62 @@ export function CabinetSettings({
   };
 
   const openDeleteAll = () => {
+    if (!isSuperAdmin) return;
     setDeleteCountdown(5);
     setDeleteAllOpen(true);
   };
 
   const deleteAll = async () => {
+    if (!isSuperAdmin) return;
     await run('delete-all', () => app.deleteAllKeys({ cabinetId: cabinet.id }), 'cabinet.keysDeletedSuccess');
     setDeleteAllOpen(false);
+  };
+
+  const removeCabinet = async () => {
+    const permanentlyDelete = isSuperAdmin;
+    const confirmed = await confirmation.present({
+      title: t(
+        trKey(permanentlyDelete
+          ? 'cabinetManagement.deleteConfirmTitle'
+          : 'cabinetManagement.confirmTitle'),
+        { cabinet: cabinet.name },
+      ),
+      description: t(trKey(permanentlyDelete
+        ? 'cabinetManagement.deleteConfirmDescription'
+        : 'cabinetManagement.confirmDescription')),
+      confirmLabel: t(trKey(permanentlyDelete
+        ? 'cabinetManagement.deleteConfirm'
+        : 'cabinetManagement.removeConfirm')),
+      cancelLabel: t(trKey('cabinet.cancel')),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+
+    setBusyId('delete-cabinet');
+    try {
+      if (permanentlyDelete) {
+        await app.deleteCabinet({ cabinetId: cabinet.id });
+      } else {
+        await app.disconnectCabinet({ cabinetId: cabinet.id });
+      }
+      Alert.alert(
+        t(trKey('cabinet.successTitle')),
+        t(
+          trKey(permanentlyDelete
+            ? 'cabinetManagement.deletedSuccess'
+            : 'cabinetManagement.removedSuccess'),
+          { cabinet: cabinet.name },
+        ),
+      );
+      router.replace('/(tabs)');
+    } catch {
+      Alert.alert(
+        t(trKey('cabinet.actionFailedTitle')),
+        t(trKey('cabinetManagement.actionFailed')),
+      );
+    } finally {
+      setBusyId(undefined);
+    }
   };
 
   const rename = async () => {
@@ -495,25 +544,55 @@ export function CabinetSettings({
         )}
         ListHeaderComponentStyle={{ marginBottom: 8 }}
         ListFooterComponent={(
-          <SectionCard className="mt-2">
-            <SectionTitle description={t(trKey('cabinet.clearSectionDescription'))} title={t(trKey('cabinet.clearSectionTitle'))} />
-            {deleteAllOpen ? (
-              <View className="gap-3 rounded-control border border-danger bg-danger-soft p-4">
-                <AppText variant="title" tone="danger">{t(trKey('cabinet.deleteAllConfirmTitle'))}</AppText>
-                <AppText tone="content">{t(trKey('cabinet.deleteAllConfirmDescription'), { count: configuredKeys.length })}</AppText>
-                <ActionButton disabled={deleteCountdown > 0 || Boolean(busyId)} icon="error" label={deleteCountdown > 0 ? t(trKey('cabinet.deleteAllCountdown'), { seconds: deleteCountdown }) : t(trKey('cabinet.deleteAllConfirm'))} onPress={() => void deleteAll()} tone="danger" />
-                <ActionButton disabled={Boolean(busyId)} label={t(trKey('cabinet.cancel'))} onPress={() => setDeleteAllOpen(false)} tone="neutral" />
-              </View>
-            ) : (
+          <View className="mt-2 gap-section">
+            <SectionCard>
+              <SectionTitle description={t(trKey('cabinet.clearSectionDescription'))} title={t(trKey('cabinet.clearSectionTitle'))} />
+              {!isSuperAdmin ? (
+                <View className="flex-row items-center gap-3 rounded-control bg-warning-soft px-3.5 py-3">
+                  <AppIcon name="error" size={20} tone="warning" />
+                  <AppText className="flex-1" variant="caption" tone="warning">
+                    {t(trKey('cabinet.clearKeysSuperAdminRequired'))}
+                  </AppText>
+                </View>
+              ) : null}
+              {deleteAllOpen && isSuperAdmin ? (
+                <View className="gap-3 rounded-control border border-danger bg-danger-soft p-4">
+                  <AppText variant="title" tone="danger">{t(trKey('cabinet.deleteAllConfirmTitle'))}</AppText>
+                  <AppText tone="content">{t(trKey('cabinet.deleteAllConfirmDescription'), { count: configuredKeys.length })}</AppText>
+                  <ActionButton disabled={deleteCountdown > 0 || Boolean(busyId)} icon="error" label={deleteCountdown > 0 ? t(trKey('cabinet.deleteAllCountdown'), { seconds: deleteCountdown }) : t(trKey('cabinet.deleteAllConfirm'))} onPress={() => void deleteAll()} tone="danger" />
+                  <ActionButton disabled={Boolean(busyId)} label={t(trKey('cabinet.cancel'))} onPress={() => setDeleteAllOpen(false)} tone="neutral" />
+                </View>
+              ) : (
+                <ActionButton
+                  disabled={!isSuperAdmin || Boolean(busyId) || app.isOffline || configuredKeys.length === 0}
+                  icon="error"
+                  label={t(trKey('cabinet.clearKeysAction'))}
+                  onPress={openDeleteAll}
+                  tone="danger"
+                />
+              )}
+            </SectionCard>
+
+            <SectionCard>
+              <SectionTitle
+                description={t(trKey(isSuperAdmin
+                  ? 'cabinet.deleteCabinetSectionDescription'
+                  : 'cabinet.disconnectCabinetSectionDescription'))}
+                title={t(trKey('cabinet.deleteCabinetSectionTitle'))}
+              />
               <ActionButton
-                disabled={Boolean(busyId) || app.isOffline || configuredKeys.length === 0}
-                icon="error"
-                label={t(trKey('cabinet.clearKeysAction'))}
-                onPress={openDeleteAll}
+                disabled={Boolean(busyId) || app.isOffline}
+                icon="trash"
+                label={busyId === 'delete-cabinet'
+                  ? t(trKey('cabinetManagement.removing'))
+                  : t(trKey(isSuperAdmin
+                    ? 'cabinetManagement.deleteConfirm'
+                    : 'cabinetManagement.removeConfirm'))}
+                onPress={() => void removeCabinet()}
                 tone="danger"
               />
-            )}
-          </SectionCard>
+            </SectionCard>
+          </View>
         )}
         refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         renderItem={({ item: member }) => {

@@ -46,8 +46,16 @@ async function readHiddenPassword(): Promise<string> {
   });
 }
 
-const password = await readHiddenPassword();
-if (password.length < 12 || password.length > 128) {
-  throw new Error('管理员密码长度必须在 12–128 个字符之间');
+async function main(): Promise<void> {
+  const password = await readHiddenPassword();
+  if (password.length < 12 || password.length > 128) {
+    throw new Error('管理员密码长度必须在 12–128 个字符之间');
+  }
+  process.stdout.write(`${await hash(password, 12)}\n`);
 }
-process.stdout.write(`${await hash(password, 12)}\n`);
+
+void main().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : '生成密码哈希失败';
+  process.stderr.write(`\n错误：${message}\n`);
+  process.exitCode = 1;
+});

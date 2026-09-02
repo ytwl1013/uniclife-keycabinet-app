@@ -1040,7 +1040,8 @@ export async function registerCabinetRoutes(
           requestId: input.requestId,
         },
         async (transaction) => {
-          await requireCabinetMember(transaction, cabinetId, currentUser.id);
+          await lockCabinet(transaction, cabinetId);
+          await requireCabinetSuperAdmin(transaction, cabinetId, currentUser.id);
           const cabinetKeys = await transaction
             .select()
             .from(keys)

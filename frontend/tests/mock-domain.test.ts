@@ -159,6 +159,13 @@ describe('Super Admin permissions', () => {
 });
 
 describe('permanent key deletion', () => {
+  it('allows only the Super Admin to delete all cabinet key information', async () => {
+    const adminApp = service('user-admin');
+    await expect(
+      adminApp.actions.deleteCabinetKeys({ cabinetId: 'cabinet-hq' }),
+    ).rejects.toMatchObject({ code: 'SUPER_ADMIN_REQUIRED' });
+  });
+
   it('blocks deleting a checked-out key and permanently deletes an available key with audit history', async () => {
     const app = service();
     await expect(app.actions.deleteKey({ keyId: 'key-mailroom' })).rejects.toMatchObject({ code: 'ACTIVE_LOANS_BLOCK_CLEAR' });
