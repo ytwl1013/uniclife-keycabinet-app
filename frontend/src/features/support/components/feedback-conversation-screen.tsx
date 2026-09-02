@@ -1,7 +1,14 @@
 import type { FeedbackConversationStatus, FeedbackThread } from '@uniclife/shared';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Pressable,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { isApiError } from '@/api/client';
 import { useApp } from '@/app-state';
@@ -13,8 +20,6 @@ import {
   FeedbackBanner,
 } from '@/features/account/components/account-ui';
 import {
-  AuthField,
-  AuthPrimaryButton,
   AuthSecondaryButton,
 } from '@/features/auth/components/auth-ui';
 import { useTranslation } from '@/i18n';
@@ -43,6 +48,7 @@ export function FeedbackConversationScreen() {
   const { actions, currentUser, state } = useApp();
   const { formatDateTime, t } = useTranslation();
   const { palette } = useAppTheme();
+  const { width: viewportWidth } = useWindowDimensions();
   const [thread, setThread] = useState<FeedbackThread | null>(null);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -56,6 +62,10 @@ export function FeedbackConversationScreen() {
     waiting_for_user: t('support.waitingForUser'),
     resolved: t('support.resolved'),
   }), [t]);
+  const messageBubbleMaxWidth = Math.max(
+    160,
+    (Math.min(viewportWidth, 480) - 40) * 0.76,
+  );
 
   const load = useCallback(async (refresh = false) => {
     if (!feedbackId || state.sessionStatus !== 'authenticated') {
@@ -127,9 +137,47 @@ export function FeedbackConversationScreen() {
       <AccountPage
         backLabel={t('support.back')}
         description={t('support.conversationDescription')}
+        footer={thread ? (
+          <View className="flex-row items-end gap-2">
+            <TextInput
+              accessibilityLabel={t('support.replyPlaceholder')}
+              className="max-h-28 min-h-11 flex-1 rounded-[22px] border border-line bg-background px-4 py-2.5 text-body text-foreground focus:border-brand"
+              editable={!submitting && state.online}
+              maxLength={5000}
+              multiline
+              onChangeText={(value) => {
+                setContent(value);
+                setError('');
+                setSuccess('');
+              }}
+              placeholder={t('support.replyPlaceholder')}
+              placeholderTextColor={palette.muted}
+              selectionColor={palette.brand}
+              textAlignVertical="center"
+              value={content}
+            />
+            <Pressable
+              accessibilityLabel={t('support.replySend')}
+              accessibilityRole="button"
+              accessibilityState={{ busy: submitting, disabled: !state.online || !content.trim() }}
+              className={`h-11 w-11 items-center justify-center rounded-pill bg-brand active:opacity-75 ${
+                !state.online || !content.trim() || submitting ? 'opacity-45' : ''
+              }`}
+              disabled={!state.online || !content.trim() || submitting}
+              hitSlop={6}
+              onPress={() => void submit()}>
+              {submitting ? (
+                <ActivityIndicator color={palette.onBrand} size="small" />
+              ) : (
+                <AppIcon name="send" size={19} tone="onBrand" />
+              )}
+            </Pressable>
+          </View>
+        ) : undefined}
         onBack={() => router.back()}
         onRefresh={() => void load(true)}
         refreshing={refreshing}
+        scrollToEndOnContentChange
         title={thread?.title || t('support.historyUntitled')}>
         {error ? <FeedbackBanner message={error} tone="danger" /> : null}
         {success ? <FeedbackBanner message={success} tone="success" /> : null}
@@ -160,64 +208,62 @@ export function FeedbackConversationScreen() {
               </View>
             </View>
 
-            <View className="gap-4">
+            <View className="gap-3">
               {thread.messages.map((message) => {
                 const support = message.sender === 'support';
                 return (
-                  <View className={`flex-row ${support ? 'justify-start' : 'justify-end'}`} key={message.id}>
-                    <View className={`max-w-[86%] gap-2 rounded-card border p-card ${support ? 'border-line bg-surface' : 'border-brand bg-brand-soft'}`}>
-                      <View className="flex-row items-center gap-2">
-                        <View className={`h-8 w-8 items-center justify-center rounded-pill ${support ? 'bg-brand-soft' : 'bg-surface'}`}>
-                          <AppIcon name={support ? 'support' : 'person'} size={16} tone="brand" />
-                        </View>
-                        <View className="min-w-0 flex-1">
-                          <AppText numberOfLines={1} variant="caption" tone="foreground">
-                            {support ? t('support.senderSupport') : t('support.senderYou')}
-                          </AppText>
-                          <AppText variant="caption" tone="muted">{formatDateTime(message.createdAt)}</AppText>
-                        </View>
+                  <View
+                    className={`w-full flex-row items-end gap-2 ${support ? 'justify-start' : 'justify-end'}`}
+                    key={message.id}>
+                    {support ? (
+                      <View className="h-8 w-8 items-center justify-center rounded-pill bg-brand-soft">
+                        <AppIcon name="support" size={16} tone="brand" />
                       </View>
-                      <AppText selectable tone="content">{message.content}</AppText>
-                      {message.imageCount > 0 ? (
-                        <AppText variant="caption" tone="muted">
-                          {t('support.historyImages', { count: message.imageCount })}
+                    ) : null}
+
+                    <View
+                      className={`gap-1 ${support ? 'items-start' : 'items-end'}`}
+                      style={{ maxWidth: messageBubbleMaxWidth }}>
+                      <View className={`flex-row items-center gap-2 ${support ? '' : 'flex-row-reverse'}`}>
+                        <AppText numberOfLines={1} variant="caption" tone="foreground">
+                          {support ? t('support.senderSupport') : t('support.senderYou')}
+                        </AppText>
+                        <AppText numberOfLines={1} variant="caption" tone="muted">
+                          {formatDateTime(message.createdAt)}
+                        </AppText>
+                      </View>
+
+                      <View
+                        className={`gap-1.5 px-4 py-3 ${
+                          support
+                            ? 'rounded-[20px] rounded-bl-md border border-line bg-surface'
+                            : 'rounded-[20px] rounded-br-md bg-brand'
+                        }`}>
+                        <AppText selectable tone={support ? 'content' : 'onBrand'}>
+                          {message.content}
+                        </AppText>
+                        {message.imageCount > 0 ? (
+                          <AppText variant="caption" tone={support ? 'muted' : 'onBrand'}>
+                            {t('support.historyImages', { count: message.imageCount })}
+                          </AppText>
+                        ) : null}
+                      </View>
+
+                      {message.status === 'failed' ? (
+                        <AppText selectable variant="caption" tone="warning">
+                          {t('support.emailDeliveryFailed')}
                         </AppText>
                       ) : null}
-                      {message.status === 'failed' ? (
-                        <AppText variant="caption" tone="warning">{t('support.emailDeliveryFailed')}</AppText>
-                      ) : null}
                     </View>
+
+                    {!support ? (
+                      <View className="h-8 w-8 items-center justify-center rounded-pill bg-brand-soft">
+                        <AppIcon name="person" size={16} tone="brand" />
+                      </View>
+                    ) : null}
                   </View>
                 );
               })}
-            </View>
-
-            <View className="gap-4 rounded-card border border-line bg-surface p-card shadow-card">
-              <AuthField
-                className="min-h-32"
-                editable={!submitting && state.online}
-                label={t('support.replyPlaceholder')}
-                maxLength={5000}
-                multiline
-                onChangeText={(value) => {
-                  setContent(value);
-                  setError('');
-                  setSuccess('');
-                }}
-                placeholder={t('support.replyPlaceholder')}
-                textAlignVertical="top"
-                value={content}
-              />
-              <AppText className="-mt-3 self-end" variant="caption" tone="muted">
-                {t('support.contentCount', { count: content.length })}
-              </AppText>
-              <AuthPrimaryButton
-                busy={submitting}
-                busyLabel={t('support.replying')}
-                disabled={!state.online || !content.trim()}
-                label={t('support.replySend')}
-                onPress={() => void submit()}
-              />
             </View>
           </>
         ) : null}
