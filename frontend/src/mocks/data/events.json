@@ -1,0 +1,35 @@
+[
+  {
+    "id": "event-front-checkout",
+    "cabinetId": "cabinet-hq",
+    "keyId": "key-front-door",
+    "actorId": "user-admin",
+    "type": "checkout",
+    "occurredAt": "2026-07-21T06:30:00.000Z",
+    "reversible": false,
+    "relatedLoanId": "loan-front-door-returned",
+    "summaryData": { "borrowerName": "Taylor Reed" }
+  },
+  {
+    "id": "event-front-return",
+    "cabinetId": "cabinet-hq",
+    "keyId": "key-front-door",
+    "actorId": "user-admin",
+    "type": "return",
+    "occurredAt": "2026-07-21T07:30:00.000Z",
+    "reversible": false,
+    "relatedLoanId": "loan-front-door-returned",
+    "summaryData": {}
+  },
+  {
+    "id": "event-mailroom-checkout",
+    "cabinetId": "cabinet-hq",
+    "keyId": "key-mailroom",
+    "actorId": "user-owner",
+    "type": "checkout",
+    "occurredAt": "2026-07-21T07:45:00.000Z",
+    "reversible": false,
+    "relatedLoanId": "loan-mailroom-active",
+    "summaryData": { "borrowerName": "Jordan Lee" }
+  }
+]

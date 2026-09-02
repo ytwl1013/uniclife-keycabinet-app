@@ -1,0 +1,24 @@
+[
+  {
+    "id": "sku-bg5163-bk",
+    "sku": "BG5163-BK",
+    "model": "BG5163-BK",
+    "name": "Uniclife 32 Position Key Cabinet",
+    "color": "Black",
+    "capacity": 32,
+    "description": "Uniclife wall-mounted key cabinet with 32 numbered positions.",
+    "manualUrl": "https://example.com/manuals/bg5163-bk",
+    "imageAsset": "cabinet-bg5163-bk"
+  },
+  {
+    "id": "sku-bg0680-bk",
+    "sku": "BG0680-BK",
+    "model": "BG0680-BK",
+    "name": "Uniclife 60 Position Key Cabinet",
+    "color": "Black",
+    "capacity": 60,
+    "description": "Uniclife wall-mounted key cabinet with 60 numbered positions.",
+    "manualUrl": "https://example.com/manuals/bg0680-bk",
+    "imageAsset": "cabinet-bg0680-bk"
+  }
+]

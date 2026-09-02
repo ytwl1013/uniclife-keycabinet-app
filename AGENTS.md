@@ -20,6 +20,7 @@
 
 ```text
 frontend/         前端应用代码
+admin/            Next.js 管理后台、服务端管理会话和后端管理 API 代理
 backend/          后端 API、业务服务、数据访问和集成代码
 shared/           前后端共享类型、接口契约、校验 schema 和常量
 docs/             产品、接口、数据库、权限、部署和运维文档
@@ -33,9 +34,8 @@ tests/            跨端到端测试、契约测试和集成测试
 前端目录建议按职责拆分：
 
 ```text
-frontend/src/app/          应用入口、路由、全局 providers
-frontend/src/pages/        页面级组件
-frontend/src/features/     业务功能模块
+frontend/src/app/          Expo Router 页面、布局和全局 providers
+frontend/src/features/     业务功能模块及较大业务组件
 frontend/src/components/   可复用 UI 组件
 frontend/src/api/          请求客户端、接口封装、错误归一化
 frontend/src/stores/       前端状态管理
@@ -45,6 +45,9 @@ frontend/tests/            前端单测、组件测试和页面流程测试
 
 前端规则：
 
+- 页面实现直接放在 `frontend/src/app` 的对应路由文件中；该目录不得放置非路由 helper、hook、数据或工具文件。
+- 较大的业务组件放在 `frontend/src/features/<domain>/components`，共享 UI 组件放在 `frontend/src/components/ui`。
+- Stack 和 Tab 的页面选项统一在最近的 `_layout.tsx` 注册，不得再创建与文件路由重复的独立路由注册表。
 - 所有后端调用必须通过 `frontend/src/api` 的统一请求层。
 - 页面必须处理加载、空数据、异常、权限不足和会话过期状态。
 - 涉及钥匙领取、归还、盘点、授权、异常开柜等关键动作时，前端必须展示明确的确认、结果和失败原因。
@@ -68,6 +71,12 @@ backend/src/common/           通用错误、日志、校验、工具
 backend/src/db/               数据模型、迁移、种子数据
 backend/tests/                后端单测、集成测试和契约测试
 ```
+
+### Admin 规划
+
+`admin/` 是独立 Next.js workspace，只负责管理界面、管理员 Web 会话和服务端 API 转发。浏览器端不得持有 `ADMIN_API_TOKEN`、数据库连接或其他后端管理凭据；全局用户、审计数据和状态写操作必须由 `backend/src/modules/admin` 提供并在后端执行权限校验与审计。
+
+管理员初始账号只允许通过被 Git 忽略的环境文件或部署平台 Secret 注入。仓库只能提交 `.env.example` 中的变量名与占位格式，不得提供可直接用于部署的默认密码、哈希或会话密钥。
 
 后端规则：
 
@@ -93,6 +102,14 @@ backend/tests/                后端单测、集成测试和契约测试
 - 日志不得输出密码、Token、身份证件号、手机号、门禁凭据、设备密钥或完整个人敏感信息。
 - 权限判断必须在后端执行，前端隐藏按钮不能替代后端权限校验。
 - 审计日志必须能支撑关键动作追责，但不得记录不必要的敏感明文。
+
+## CI/CD 与 MR 规则
+
+- `dev` 是日常集成分支，所有实现改动必须通过 Merge Request 合入 `dev`。
+- 禁止直接推送到 `dev`，也禁止绕过 MR 和 Codex review bot 直接合入 `dev`。
+- 非 draft 的 `dev` 目标 MR 会由 Codex review bot 自动审核；审核通过且 GitLab CI 通过后才允许合并。
+- 初始化阶段的 CI 至少保留仓库规范和敏感信息检查；新增前端、后端、共享契约或集成测试后，必须同步扩展对应 lint、类型检查、测试、构建或契约校验。
+- 修改 CI/CD、分支保护、webhook、review bot 或合并策略时，必须同步更新 `docs/ci-cd-review-bot.md`。
 
 ## 文档规则
 

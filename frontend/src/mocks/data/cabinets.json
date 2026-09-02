@@ -1,0 +1,38 @@
+[
+  {
+    "id": "cabinet-hq",
+    "skuId": "sku-bg5163-bk",
+    "deviceUuid": "c59841b6-bab3-47ee-b280-47da3b29bd27",
+    "name": "Headquarters",
+    "location": "Ground floor reception",
+    "timeZone": "America/New_York",
+    "status": "online",
+    "lastSyncedAt": "2026-07-21T08:14:00.000Z",
+    "createdAt": "2026-05-05T08:00:00.000Z",
+    "version": 8
+  },
+  {
+    "id": "cabinet-loft",
+    "skuId": "sku-bg0680-bk",
+    "deviceUuid": "dc93abea-198b-4221-8fdb-7efc729081c7",
+    "name": "Riverside Property",
+    "location": "Building A service desk",
+    "timeZone": "Europe/Berlin",
+    "status": "online",
+    "lastSyncedAt": "2026-07-21T08:12:00.000Z",
+    "createdAt": "2026-05-06T08:00:00.000Z",
+    "version": 5
+  },
+  {
+    "id": "cabinet-studio",
+    "skuId": "sku-bg5163-bk",
+    "deviceUuid": "a9a0929d-dd9d-46c3-8270-2f686921b53c",
+    "name": "Creative Studio",
+    "location": "Equipment room",
+    "timeZone": "Europe/Paris",
+    "status": "offline",
+    "lastSyncedAt": "2026-07-20T18:20:00.000Z",
+    "createdAt": "2026-05-07T08:00:00.000Z",
+    "version": 3
+  }
+]

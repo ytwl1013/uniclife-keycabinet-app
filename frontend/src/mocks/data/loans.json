@@ -1,0 +1,29 @@
+[
+  {
+    "id": "loan-mailroom-active",
+    "cabinetId": "cabinet-hq",
+    "keyId": "key-mailroom",
+    "borrowerName": "Jordan Lee",
+    "borrowerContact": "+1 212 555 0168",
+    "checkedOutAt": "2026-07-21T07:45:00.000Z",
+    "expectedReturnAt": "2026-07-21T16:00:00.000Z",
+    "status": "active",
+    "operatorId": "user-owner",
+    "checkoutEventId": "event-mailroom-checkout"
+  },
+  {
+    "id": "loan-front-door-returned",
+    "cabinetId": "cabinet-hq",
+    "keyId": "key-front-door",
+    "borrowerName": "Taylor Reed",
+    "borrowerContact": "taylor.reed@example.com",
+    "checkedOutAt": "2026-07-21T06:30:00.000Z",
+    "expectedReturnAt": "2026-07-21T08:00:00.000Z",
+    "returnedAt": "2026-07-21T07:30:00.000Z",
+    "status": "returned",
+    "operatorId": "user-admin",
+    "returnOperatorId": "user-admin",
+    "checkoutEventId": "event-front-checkout",
+    "returnEventId": "event-front-return"
+  }
+]

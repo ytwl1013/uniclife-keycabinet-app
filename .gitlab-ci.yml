@@ -1,0 +1,39 @@
+stages:
+  - validate
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - when: never
+
+repository_policy:
+  stage: validate
+  image: alpine:3.20
+  script:
+    - test -f AGENTS.md
+    - test -f README.md
+    - |
+      forbidden_files="$(
+        find . -path './.git' -prune -o -type f \
+          \( -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o -name '*.p12' -o -name '*.pfx' \) \
+          ! -name '.env.example' \
+          ! -name '.env.*.example' \
+          -print
+      )"
+      if [ -n "$forbidden_files" ]; then
+        echo "Forbidden secret-like files are present:"
+        echo "$forbidden_files"
+        exit 1
+      fi
+    - |
+      if grep -RInE 'BEGIN ((RSA|OPENSSH|EC|DSA) )?PRIVATE KEY' . --exclude-dir=.git; then
+        echo "Private key material must not be committed."
+        exit 1
+      fi
+    - |
+      if grep -RInE '^[[:space:]]*[A-Z0-9_]*(TOKEN|SECRET|PASSWORD|PRIVATE_KEY|API_KEY)[[:space:]]*=[[:space:]]*['"'"'"]?[A-Za-z0-9_./+=-]{12,}' . --exclude-dir=.git --exclude=.gitlab-ci.yml; then
+        echo "Secret-like environment assignments must not be committed."
+        exit 1
+      fi

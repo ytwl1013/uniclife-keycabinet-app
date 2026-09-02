@@ -1,0 +1,16 @@
+[
+  {
+    "id": "product-qr-bg5163-bk",
+    "code": "uniclife://cabinet/v1/init/BG5163-BK/uniclife-bg5163-bk-2026",
+    "skuId": "sku-bg5163-bk",
+    "status": "active",
+    "createdAt": "2026-08-11T00:00:00.000Z"
+  },
+  {
+    "id": "product-qr-bg0680-bk",
+    "code": "uniclife://cabinet/v1/init/BG0680-BK/uniclife-bg0680-bk-2026",
+    "skuId": "sku-bg0680-bk",
+    "status": "active",
+    "createdAt": "2026-08-11T00:00:00.000Z"
+  }
+]

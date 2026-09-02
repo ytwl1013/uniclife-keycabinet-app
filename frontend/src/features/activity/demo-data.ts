@@ -1,0 +1,60 @@
+import { ActivityEntry } from './types';
+
+export const demoActivity: ActivityEntry[] = [
+  {
+    id: 'act-001',
+    kind: 'checkOut',
+    dayKey: 'demo.activity.today',
+    time: '09:15 AM',
+    titleKey: 'demo.activity.checkoutStorage',
+    detailKey: 'demo.activity.storageRoom',
+  },
+  {
+    id: 'act-002',
+    kind: 'return',
+    dayKey: 'demo.activity.today',
+    time: '10:42 AM',
+    titleKey: 'demo.activity.returnedMailbox',
+    detailKey: 'demo.activity.mailbox',
+  },
+  {
+    id: 'act-003',
+    kind: 'overdue',
+    dayKey: 'demo.activity.yesterday',
+    time: '06:20 PM',
+    titleKey: 'demo.activity.overdueBackDoor',
+    detailKey: 'demo.activity.overdueBackDoorDetail',
+  },
+  {
+    id: 'act-004',
+    kind: 'checkOut',
+    dayKey: 'demo.activity.yesterday',
+    time: '03:33 PM',
+    titleKey: 'demo.activity.checkoutMeetingRoom',
+    detailKey: 'demo.activity.meetingRoom',
+  },
+  {
+    id: 'act-005',
+    kind: 'return',
+    dayKey: 'demo.activity.yesterday',
+    time: '11:08 AM',
+    titleKey: 'demo.activity.returnedParking',
+    detailKey: 'demo.activity.parking',
+  },
+  {
+    id: 'act-006',
+    kind: 'admin',
+    dayKey: 'demo.activity.mayTwelve',
+    time: '04:09 PM',
+    titleKey: 'demo.activity.updatedSettings',
+    detailKey: 'demo.activity.updatedSettingsDetail',
+  },
+  {
+    id: 'act-007',
+    kind: 'admin',
+    dayKey: 'demo.activity.mayTwelve',
+    time: '09:21 AM',
+    titleKey: 'demo.activity.addedKey',
+    detailKey: 'demo.activity.addedKeyDetail',
+  },
+];

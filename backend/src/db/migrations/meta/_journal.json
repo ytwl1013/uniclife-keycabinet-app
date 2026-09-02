@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1787302182854,
+      "tag": "0000_backend_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787540874255,
+      "tag": "0001_peaceful_darkstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787564369390,
+      "tag": "0002_funny_stellaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787647875776,
+      "tag": "0003_glamorous_skin",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788245302009,
+      "tag": "0004_plain_slipstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788246155784,
+      "tag": "0005_futuristic_bruce_banner",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788333410239,
+      "tag": "0006_rare_wither",
+      "breakpoints": true
+    }
+  ]
+}

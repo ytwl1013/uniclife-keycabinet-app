@@ -1,0 +1,86 @@
+{
+  "colors": {
+    "light": {
+      "background": "#F7F9FE",
+      "surface": "#FFFFFF",
+      "foreground": "#0C1533",
+      "content": "#27324F",
+      "muted": "#7C879D",
+      "line": "#E6EBF5",
+      "brand": "#2F67F5",
+      "brandSoft": "#EEF4FF",
+      "success": "#18A663",
+      "successSoft": "#E9FBF2",
+      "warning": "#D97809",
+      "warningSoft": "#FFF4E7",
+      "danger": "#EE4B3E",
+      "dangerSoft": "#FFF0EE",
+      "accent": "#8A4FF7",
+      "accentSoft": "#F2EAFF",
+      "onBrand": "#FFFFFF"
+    },
+    "dark": {
+      "background": "#0B1020",
+      "surface": "#151C31",
+      "foreground": "#F4F7FF",
+      "content": "#D7DFF2",
+      "muted": "#9CA8C2",
+      "line": "#2A3552",
+      "brand": "#7EA2FF",
+      "brandSoft": "#1B2B55",
+      "success": "#54D69D",
+      "successSoft": "#14392C",
+      "warning": "#FFBC68",
+      "warningSoft": "#443018",
+      "danger": "#FF8177",
+      "dangerSoft": "#451F23",
+      "accent": "#B28BFF",
+      "accentSoft": "#30234A",
+      "onBrand": "#09122B"
+    }
+  },
+  "spacing": {
+    "screen": "20px",
+    "section": "18px",
+    "card": "16px",
+    "controlX": "14px",
+    "controlY": "12px",
+    "tabBarBottom": "110px"
+  },
+  "borderRadius": {
+    "card": "16px",
+    "control": "14px",
+    "pill": "9999px"
+  },
+  "fontSize": {
+    "display": ["34px", { "lineHeight": "40px", "fontWeight": "900" }],
+    "pageTitle": ["30px", { "lineHeight": "36px", "fontWeight": "900" }],
+    "title": ["18px", { "lineHeight": "24px", "fontWeight": "800" }],
+    "body": ["15px", { "lineHeight": "21px", "fontWeight": "600" }],
+    "label": ["13px", { "lineHeight": "18px", "fontWeight": "700" }],
+    "caption": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+    "metric": ["24px", { "lineHeight": "29px", "fontWeight": "900" }]
+  },
+  "maxWidth": {
+    "content": "480px"
+  },
+  "boxShadow": {
+    "card": "0 8px 24px rgba(39, 64, 96, 0.08)"
+  },
+  "bottomSheet": {
+    "fixedHeight": 560,
+    "maxHeightRatio": 0.82
+  },
+  "navigation": {
+    "tabBarHeight": 55,
+    "tabBarMaxWidth": 480,
+    "tabBarPaddingBottom": 10,
+    "tabIconFrameHeight": 40,
+    "tabIconFrameWidth": 50,
+    "tabIconSize": 24,
+    "scanButtonSize": 50,
+    "scanHaloSize": 58,
+    "scanIconSize": 27,
+    "iconpadding": 5
+  }
+}

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "user-owner",
+    "email": "alex.morgan@example.com",
+    "displayName": "Alex Morgan",
+    "locale": "en-US",
+    "status": "active",
+    "createdAt": "2026-05-01T08:00:00.000Z"
+  },
+  {
+    "id": "user-admin",
+    "email": "sophie.keller@example.com",
+    "displayName": "Sophie Keller",
+    "locale": "de-DE",
+    "status": "active",
+    "createdAt": "2026-05-02T08:00:00.000Z"
+  },
+  {
+    "id": "user-member",
+    "email": "lucas.bernard@example.com",
+    "displayName": "Lucas Bernard",
+    "locale": "fr-FR",
+    "status": "active",
+    "createdAt": "2026-05-03T08:00:00.000Z"
+  },
+  {
+    "id": "user-demo",
+    "email": "mia.rossi@example.com",
+    "displayName": "Mia Rossi",
+    "locale": "it-IT",
+    "status": "active",
+    "createdAt": "2026-05-04T08:00:00.000Z"
+  }
+]
