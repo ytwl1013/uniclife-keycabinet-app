@@ -100,15 +100,15 @@ export function ManualsScreen() {
                   />
                 </View>
                 <View className="min-w-0 flex-1 gap-1">
-                  <AppText numberOfLines={1} variant="title" tone="foreground">
+                  <AppText numberOfLines={2} variant="title" tone="foreground">
                     {item.cabinet.name}
                   </AppText>
                   <AppText numberOfLines={1} variant="caption" tone="content">
-                    {item.sku.name} · {item.sku.model}
+                    {item.sku.name}
                   </AppText>
-                  <AppText numberOfLines={1} variant="caption" tone="muted">
+                  {/* <AppText numberOfLines={1} variant="caption" tone="muted">
                     {item.sku.sku}
-                  </AppText>
+                  </AppText> */}
                 </View>
                 <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
                   {opening ? (

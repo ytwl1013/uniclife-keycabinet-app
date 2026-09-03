@@ -132,6 +132,28 @@ databaseTest('admin product workflow', () => {
     });
     expect(initialized.statusCode).toBe(200);
 
+    const createdUserId = registerResponse.json().data.user.id as string;
+    const userListResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/users?query=${encodeURIComponent(`product-${runId}@example.com`)}&status=all&limit=20&offset=0`,
+      headers: adminHeaders,
+    });
+    expect(userListResponse.statusCode).toBe(200);
+    expect(userListResponse.json().data.items).toEqual([
+      expect.objectContaining({ id: createdUserId, cabinetCount: 1 }),
+    ]);
+
+    const userDetailResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/users/${createdUserId}`,
+      headers: adminHeaders,
+    });
+    expect(userDetailResponse.statusCode).toBe(200);
+    expect(userDetailResponse.json().data).toMatchObject({
+      user: { id: createdUserId, cabinetCount: 1, activeSessionCount: 1 },
+      cabinets: [{ id: initialized.json().data.cabinet.id }],
+    });
+
     const lockedCapacity = await app.inject({
       method: 'PATCH',
       url: `/api/v1/admin/products/${created.id}`,

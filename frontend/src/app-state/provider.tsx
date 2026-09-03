@@ -418,7 +418,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       try {
         await backendApi.deleteAccount(token, input);
         if (stateRef.current.currentUserId) {
-          await removeLocalProfileAvatar(stateRef.current.currentUserId);
+          await removeLocalProfileAvatar(stateRef.current.currentUserId).catch(() => undefined);
         }
         await clearAuthentication(false);
       } catch (error) {

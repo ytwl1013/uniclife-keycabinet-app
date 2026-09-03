@@ -13,6 +13,10 @@ function avatarFile(userId: string): File {
   return new File(avatarDirectory(), `${encodeURIComponent(userId)}${avatarFileExtension}`);
 }
 
+function pendingAvatarFile(userId: string): File {
+  return new File(avatarDirectory(), `${encodeURIComponent(userId)}.pending${avatarFileExtension}`);
+}
+
 export async function loadLocalProfileAvatar(userId: string): Promise<string | undefined> {
   if (process.env.EXPO_OS === 'web') return undefined;
 
@@ -39,9 +43,12 @@ export async function saveLocalProfileAvatar(userId: string, sourceUri: string):
     { compress: 0.82, format: SaveFormat.JPEG },
   );
   const temporaryFile = new File(processed.uri);
+  const pendingFile = pendingAvatarFile(userId);
 
+  if (pendingFile.exists) pendingFile.delete();
+  temporaryFile.copy(pendingFile);
   if (destination.exists) destination.delete();
-  temporaryFile.copy(destination);
+  pendingFile.move(destination);
   return destination.uri;
 }
 

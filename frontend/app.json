@@ -44,7 +44,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow UnicLife to choose a profile photo. The selected photo is used only for your account profile.",
+          "photosPermission": "Allow UnicLife to choose a profile photo. The selected photo is stored only on this device and is not uploaded.",
           "cameraPermission": false,
           "microphonePermission": false
         }

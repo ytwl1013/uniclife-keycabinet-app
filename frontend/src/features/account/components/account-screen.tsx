@@ -140,9 +140,9 @@ export function AccountScreen() {
         />
         <View className="w-full items-center gap-1 px-4">
           <View className="max-w-full flex-col items-start justify-center gap-2">
-            <View className="rounded-pill bg-accent-soft px-2.5 py-1">
+            {/* <View className="rounded-pill bg-accent-soft px-2.5 py-1">
               <AppText variant="caption" tone="accent">{t('cabinet.role.admin')}</AppText>
-            </View>
+            </View> */}
             <AppText className="min-w-0 shrink text-center" numberOfLines={1} variant="pageTitle" tone="foreground">
               {currentUser.displayName}
             </AppText>

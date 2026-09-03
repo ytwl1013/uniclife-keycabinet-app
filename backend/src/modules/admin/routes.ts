@@ -186,6 +186,15 @@ export async function registerAdminRoutes(
     }
 
     const where = and(...filters);
+    const activeMembershipCounts = database
+      .select({
+        userId: cabinetMemberships.userId,
+        cabinetCount: count().as('cabinet_count'),
+      })
+      .from(cabinetMemberships)
+      .where(eq(cabinetMemberships.active, true))
+      .groupBy(cabinetMemberships.userId)
+      .as('active_membership_counts');
     const [totalRow] = await database.select({ value: count() }).from(users).where(where);
     const rows = await database
       .select({
@@ -198,11 +207,10 @@ export async function registerAdminRoutes(
         lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
         cabinetCount:
-          sql<number>`(select count(*)::int from ${cabinetMemberships} where ${cabinetMemberships.userId} = ${users.id} and ${cabinetMemberships.active} = true)`.mapWith(
-            Number,
-          ),
+          sql<number>`coalesce(${activeMembershipCounts.cabinetCount}, 0)`.mapWith(Number),
       })
       .from(users)
+      .leftJoin(activeMembershipCounts, eq(activeMembershipCounts.userId, users.id))
       .where(where)
       .orderBy(desc(users.createdAt), desc(users.id))
       .limit(query.limit)
@@ -225,6 +233,24 @@ export async function registerAdminRoutes(
     const userId = entityIdSchema.parse(request.params.userId);
     const database = requireDatabase();
     const now = new Date().toISOString();
+    const activeMembershipCounts = database
+      .select({
+        userId: cabinetMemberships.userId,
+        cabinetCount: count().as('cabinet_count'),
+      })
+      .from(cabinetMemberships)
+      .where(eq(cabinetMemberships.active, true))
+      .groupBy(cabinetMemberships.userId)
+      .as('active_membership_counts');
+    const activeSessionCounts = database
+      .select({
+        userId: sessions.userId,
+        activeSessionCount: count().as('active_session_count'),
+      })
+      .from(sessions)
+      .where(and(isNull(sessions.revokedAt), gt(sessions.expiresAt, now)))
+      .groupBy(sessions.userId)
+      .as('active_session_counts');
     const [user] = await database
       .select({
         id: users.id,
@@ -236,20 +262,30 @@ export async function registerAdminRoutes(
         lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
         cabinetCount:
-          sql<number>`(select count(*)::int from ${cabinetMemberships} where ${cabinetMemberships.userId} = ${users.id} and ${cabinetMemberships.active} = true)`.mapWith(
-            Number,
-          ),
+          sql<number>`coalesce(${activeMembershipCounts.cabinetCount}, 0)`.mapWith(Number),
         activeSessionCount:
-          sql<number>`(select count(*)::int from ${sessions} where ${sessions.userId} = ${users.id} and ${sessions.revokedAt} is null and ${sessions.expiresAt} > ${now})`.mapWith(
-            Number,
-          ),
+          sql<number>`coalesce(${activeSessionCounts.activeSessionCount}, 0)`.mapWith(Number),
       })
       .from(users)
+      .leftJoin(activeMembershipCounts, eq(activeMembershipCounts.userId, users.id))
+      .leftJoin(activeSessionCounts, eq(activeSessionCounts.userId, users.id))
       .where(and(eq(users.id, userId), isNull(users.deletedAt)))
       .limit(1);
 
     assertApp(user, 404, 'USER_NOT_FOUND', '用户不存在');
 
+    const keyCounts = database
+      .select({
+        cabinetId: keys.cabinetId,
+        keyCount: count().as('key_count'),
+        borrowedKeyCount:
+          sql<number>`count(*) filter (where ${keys.status} = 'borrowed')::int`.as(
+            'borrowed_key_count',
+          ),
+      })
+      .from(keys)
+      .groupBy(keys.cabinetId)
+      .as('cabinet_key_counts');
     const cabinetRows = await database
       .select({
         id: cabinets.id,
@@ -267,18 +303,14 @@ export async function registerAdminRoutes(
         productName: productSkus.name,
         productColor: productSkus.color,
         productCapacity: productSkus.capacity,
-        keyCount:
-          sql<number>`(select count(*)::int from ${keys} where ${keys.cabinetId} = ${cabinets.id})`.mapWith(
-            Number,
-          ),
+        keyCount: sql<number>`coalesce(${keyCounts.keyCount}, 0)`.mapWith(Number),
         borrowedKeyCount:
-          sql<number>`(select count(*)::int from ${keys} where ${keys.cabinetId} = ${cabinets.id} and ${keys.status} = 'borrowed')`.mapWith(
-            Number,
-          ),
+          sql<number>`coalesce(${keyCounts.borrowedKeyCount}, 0)`.mapWith(Number),
       })
       .from(cabinetMemberships)
       .innerJoin(cabinets, eq(cabinetMemberships.cabinetId, cabinets.id))
       .innerJoin(productSkus, eq(cabinets.skuId, productSkus.id))
+      .leftJoin(keyCounts, eq(keyCounts.cabinetId, cabinets.id))
       .where(and(eq(cabinetMemberships.userId, userId), eq(cabinetMemberships.active, true)))
       .orderBy(desc(cabinetMemberships.joinedAt), desc(cabinets.id));
 

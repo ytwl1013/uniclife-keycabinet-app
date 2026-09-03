@@ -178,6 +178,14 @@ export default function HomeRoute() {
                 </Pressable>
               ) : null}
               <Pressable
+                accessibilityLabel={t('home.userGuide')}
+                accessibilityRole="button"
+                className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
+                onPress={() => setGuideConfirmationVisible(true)}
+                testID="home-guide-button">
+                <AppIcon name="guide" size={22} tone="brand" />
+              </Pressable>
+              <Pressable
                 accessibilityLabel={t('notifications.title')}
                 accessibilityRole="button"
                 className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
@@ -190,14 +198,6 @@ export default function HomeRoute() {
                   </View>
                 ) : null}
               </Pressable>
-              <Pressable
-                accessibilityLabel={t('home.userGuide')}
-                accessibilityRole="button"
-                className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
-                onPress={() => setGuideConfirmationVisible(true)}
-                testID="home-guide-button">
-                <AppIcon name="guide" size={22} tone="brand" />
-              </Pressable>
             </View>
           </View>
         </View>
@@ -207,6 +207,7 @@ export default function HomeRoute() {
         alwaysBounceVertical
         className="min-w-0 flex-1"
         contentContainerClassName="mx-auto w-full max-w-content gap-6 px-screen pb-screen pt-screen"
+        contentContainerStyle={{ flexGrow: 1 }}
         ref={scrollRef}
         refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
         showsVerticalScrollIndicator={false}>

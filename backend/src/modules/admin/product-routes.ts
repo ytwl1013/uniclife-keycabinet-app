@@ -74,15 +74,24 @@ function toAdminProduct(row: ProductAdminRow): AdminProduct {
   };
 }
 
+function productCabinetCounts(database: AppDatabase) {
+  return database
+    .select({
+      skuId: cabinets.skuId,
+      cabinetCount: count().as('cabinet_count'),
+    })
+    .from(cabinets)
+    .groupBy(cabinets.skuId)
+    .as('product_cabinet_counts');
+}
+
 async function getProduct(database: AppDatabase, productId: string): Promise<ProductAdminRow | null> {
+  const cabinetCounts = productCabinetCounts(database);
   const [row] = await database
     .select({
       product: productSkus,
       qr: productQrs,
-      cabinetCount:
-        sql<number>`(select count(*)::int from ${cabinets} where ${cabinets.skuId} = ${productSkus.id})`.mapWith(
-          Number,
-        ),
+      cabinetCount: sql<number>`coalesce(${cabinetCounts.cabinetCount}, 0)`.mapWith(Number),
       imageMimeType: productSkuImages.mimeType,
       imageByteSize: productSkuImages.byteSize,
       imageWidth: productSkuImages.width,
@@ -92,6 +101,7 @@ async function getProduct(database: AppDatabase, productId: string): Promise<Pro
     .from(productSkus)
     .leftJoin(productQrs, eq(productQrs.skuId, productSkus.id))
     .leftJoin(productSkuImages, eq(productSkuImages.skuId, productSkus.id))
+    .leftJoin(cabinetCounts, eq(cabinetCounts.skuId, productSkus.id))
     .where(eq(productSkus.id, productId))
     .limit(1);
   return row ?? null;
@@ -157,15 +167,13 @@ export async function registerAdminProductRoutes(app: FastifyInstance): Promise<
           ilike(productSkus.description, pattern),
         )
       : undefined;
+    const cabinetCounts = productCabinetCounts(database);
     const [totalRow] = await database.select({ value: count() }).from(productSkus).where(where);
     const rows = await database
       .select({
         product: productSkus,
         qr: productQrs,
-        cabinetCount:
-          sql<number>`(select count(*)::int from ${cabinets} where ${cabinets.skuId} = ${productSkus.id})`.mapWith(
-            Number,
-          ),
+        cabinetCount: sql<number>`coalesce(${cabinetCounts.cabinetCount}, 0)`.mapWith(Number),
         imageMimeType: productSkuImages.mimeType,
         imageByteSize: productSkuImages.byteSize,
         imageWidth: productSkuImages.width,
@@ -175,6 +183,7 @@ export async function registerAdminProductRoutes(app: FastifyInstance): Promise<
       .from(productSkus)
       .leftJoin(productQrs, eq(productQrs.skuId, productSkus.id))
       .leftJoin(productSkuImages, eq(productSkuImages.skuId, productSkus.id))
+      .leftJoin(cabinetCounts, eq(cabinetCounts.skuId, productSkus.id))
       .where(where)
       .orderBy(desc(productSkus.updatedAt), desc(productSkus.id))
       .limit(query.limit)

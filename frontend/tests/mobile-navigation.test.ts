@@ -114,6 +114,13 @@ describe('simplified mobile navigation architecture', () => {
     expect(keyGrid).toContain('<AppRefreshControl');
   });
 
+  it('keeps the entire Home viewport pullable when the cabinet list is short', () => {
+    const home = source('src/app/(tabs)/index.tsx');
+
+    expect(home).toContain('alwaysBounceVertical');
+    expect(home).toContain('contentContainerStyle={{ flexGrow: 1 }}');
+  });
+
   it('keeps authenticated workspace data fresh through realtime events and lifecycle recovery', () => {
     const rootLayout = source('src/app/_layout.tsx');
     const autoRefresh = source('src/features/app-refresh/app-auto-refresh.tsx');

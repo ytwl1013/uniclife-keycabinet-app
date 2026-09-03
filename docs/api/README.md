@@ -47,7 +47,7 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | POST | `/auth/password-resets/complete` | 修改密码并撤销全部旧会话 | 公开 |
 | GET | `/users/me` | 当前账户资料 | 登录 |
 | PATCH | `/users/me/home-guide` | 记录当前账户已处理首页导航提示 | 本人 |
-| PATCH | `/users/me/profile` | 更新名称和头像 URI | 本人 |
+| PATCH | `/users/me/profile` | 更新名称；`avatarUri` 仅兼容历史客户端，当前移动端头像只保存在本机 | 本人 |
 | PATCH | `/users/me/email` | 更新邮箱 | 本人 |
 | PATCH | `/users/me/password` | 校验当前密码后修改密码 | 本人 |
 | POST | `/users/me/push-tokens` | 注册或更新当前会话设备的 Expo 推送令牌 | 本人 |
