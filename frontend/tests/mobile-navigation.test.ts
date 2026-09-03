@@ -298,6 +298,9 @@ describe('simplified mobile navigation architecture', () => {
     const scanRoute = source('src/app/(details)/scan.tsx');
     expect(scan).toContain('<CameraView');
     expect(scan).toContain('onBarcodeScanned');
+    expect(scan).toContain('ImagePicker.launchImageLibraryAsync');
+    expect(scan).toContain("scanFromURLAsync(imageUri, ['qr'])");
+    expect(scan).toContain("t('scan.chooseQrImage')");
     expect(scan).toContain('getScanModeMismatch(mode, code)');
     expect(scan).toContain("t('scan.productQrInJoinDescription')");
     expect(scan).toContain("t('scan.joinQrInInitializeDescription')");

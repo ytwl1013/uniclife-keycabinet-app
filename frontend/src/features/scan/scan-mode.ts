@@ -1,5 +1,6 @@
 import {
   cabinetJoinQrPayloadSchema,
+  cabinetQrPayloadSchema,
   productQrPayloadSchema,
 } from '@uniclife/shared';
 
@@ -22,4 +23,14 @@ export function getScanModeMismatch(
   }
 
   return null;
+}
+
+export function selectDetectedQrCode(codes: readonly string[]): string | null {
+  const nonEmptyCodes = codes.map((code) => code.trim()).filter(Boolean);
+
+  return (
+    nonEmptyCodes.find((code) => cabinetQrPayloadSchema.safeParse(code).success) ??
+    nonEmptyCodes[0] ??
+    null
+  );
 }

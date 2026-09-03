@@ -1,5 +1,6 @@
 import { useIsFocused } from '@react-navigation/native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, scanFromURLAsync, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
@@ -19,11 +20,24 @@ import {
   StatePanel,
 } from '@/features/cabinet-prototype/components/prototype-ui';
 import { useTranslation } from '@/i18n';
-import { getScanModeMismatch, ScanMode, ScanModeMismatch } from '@/features/scan/scan-mode';
+import {
+  getScanModeMismatch,
+  ScanMode,
+  ScanModeMismatch,
+  selectDetectedQrCode,
+} from '@/features/scan/scan-mode';
 
 export type { ScanMode } from '@/features/scan/scan-mode';
 
-type ScanErrorKind = 'invalid' | 'offline' | 'session' | 'generic' | ScanModeMismatch;
+type ScanErrorKind =
+  | 'invalid'
+  | 'offline'
+  | 'session'
+  | 'generic'
+  | 'imagePermission'
+  | 'imageQrNotFound'
+  | 'imageReadFailed'
+  | ScanModeMismatch;
 
 function ProductDatum({
   className = '',
@@ -222,6 +236,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const [errorKind, setErrorKind] = useState<ScanErrorKind | null>(null);
   const [resolving, setResolving] = useState(false);
   const [binding, setBinding] = useState(false);
+  const [readingImage, setReadingImage] = useState(false);
   const [cabinetName, setCabinetName] = useState('');
   const [scannedCode, setScannedCode] = useState('');
   const scanLockRef = useRef(false);
@@ -289,6 +304,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     setErrorKind(null);
     setResolving(false);
     setBinding(false);
+    setReadingImage(false);
     setCabinetName('');
     setScannedCode('');
     actionRequestIdRef.current = '';
@@ -379,6 +395,53 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     }
   }, [binding, resolveCode, resolving]);
 
+  const selectQrImage = useCallback(async () => {
+    if (resolving || binding || readingImage) return;
+
+    scanLockRef.current = true;
+    setErrorKind(null);
+    setCameraMountError(null);
+    setReadingImage(true);
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setErrorKind('imagePermission');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: false,
+        mediaTypes: ['images'],
+        quality: 1,
+      });
+      const imageUri = result.canceled ? undefined : result.assets[0]?.uri;
+
+      if (result.canceled) {
+        scanLockRef.current = false;
+        return;
+      }
+      if (!imageUri) {
+        setErrorKind('imageReadFailed');
+        return;
+      }
+
+      const detectedCodes = await scanFromURLAsync(imageUri, ['qr']);
+      const code = selectDetectedQrCode(detectedCodes.map((result) => result.data));
+      if (!code) {
+        setErrorKind('imageQrNotFound');
+        return;
+      }
+
+      scanLockRef.current = false;
+      await resolveCode(code);
+    } catch {
+      setErrorKind('imageReadFailed');
+    } finally {
+      setReadingImage(false);
+    }
+  }, [binding, readingImage, resolveCode, resolving]);
+
   const confirmQrAction = useCallback(async () => {
     if (
       !resolution ||
@@ -448,32 +511,53 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
       />
     );
   } else if (errorKind) {
-    const title =
-      errorKind === 'productQrInJoinMode'
-        ? t('scan.productQrInJoinTitle')
-        : errorKind === 'joinQrInInitializeMode'
-          ? t('scan.joinQrInInitializeTitle')
-          : errorKind === 'invalid'
-            ? t('scan.invalidTitle')
-            : t('scan.title');
-    const description =
-      errorKind === 'productQrInJoinMode'
-        ? t('scan.productQrInJoinDescription')
-        : errorKind === 'joinQrInInitializeMode'
-          ? t('scan.joinQrInInitializeDescription')
-          : errorKind === 'invalid'
-            ? t('scan.invalidDescription')
-            : t('scan.actionFailed');
+    let title = t('scan.title');
+    let description = t('scan.actionFailed');
+
+    if (errorKind === 'productQrInJoinMode') {
+      title = t('scan.productQrInJoinTitle');
+      description = t('scan.productQrInJoinDescription');
+    } else if (errorKind === 'joinQrInInitializeMode') {
+      title = t('scan.joinQrInInitializeTitle');
+      description = t('scan.joinQrInInitializeDescription');
+    } else if (errorKind === 'imagePermission') {
+      title = t('scan.imagePermissionTitle');
+      description = t('scan.imagePermissionDescription');
+    } else if (errorKind === 'imageQrNotFound') {
+      title = t('scan.imageQrNotFoundTitle');
+      description = t('scan.imageQrNotFoundDescription');
+    } else if (errorKind === 'imageReadFailed') {
+      title = t('scan.imageReadFailedTitle');
+      description = t('scan.imageReadFailedDescription');
+    } else if (errorKind === 'invalid') {
+      title = t('scan.invalidTitle');
+      description = t('scan.invalidDescription');
+    }
 
     mainContent = (
       <StatePanel
         action={
-          <ActionButton
-            icon="scan"
-            label={t('common.retry')}
-            onPress={resetScanner}
-            tone="neutral"
-          />
+          errorKind === 'imagePermission' ? (
+            <View className="w-full gap-3 pt-2">
+              <ActionButton
+                icon="settings"
+                label={t('scan.openSettings')}
+                onPress={() => void Linking.openSettings()}
+              />
+              <ActionButton
+                label={t('common.retry')}
+                onPress={resetScanner}
+                tone="neutral"
+              />
+            </View>
+          ) : (
+            <ActionButton
+              icon={errorKind === 'imageQrNotFound' ? 'photo' : 'scan'}
+              label={t('common.retry')}
+              onPress={resetScanner}
+              tone="neutral"
+            />
+          )
         }
         description={description}
         icon="error"
@@ -587,6 +671,21 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         {mainContent}
+        {state.hydrated &&
+        state.online &&
+        !sessionUnavailable &&
+        !resolution &&
+        !resolving &&
+        !binding &&
+        !errorKind ? (
+          <ActionButton
+            disabled={readingImage}
+            icon="photo"
+            label={readingImage ? t('scan.readingImage') : t('scan.chooseQrImage')}
+            onPress={() => void selectQrImage()}
+            tone="neutral"
+          />
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

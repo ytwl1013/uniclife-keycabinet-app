@@ -3,6 +3,7 @@ export type AppIconName =
   | 'cabinet'
   | 'cabinetGrid'
   | 'scan'
+  | 'photo'
   | 'activity'
   | 'history'
   | 'team'

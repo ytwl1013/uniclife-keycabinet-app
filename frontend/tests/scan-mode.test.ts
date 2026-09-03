@@ -1,4 +1,7 @@
-import { getScanModeMismatch } from '../src/features/scan/scan-mode';
+import {
+  getScanModeMismatch,
+  selectDetectedQrCode,
+} from '../src/features/scan/scan-mode';
 
 const productQr =
   'uniclife://cabinet/v1/init/BG5163-BK/uniclife-bg5163-bk-2026';
@@ -27,5 +30,11 @@ describe('scan mode QR restrictions', () => {
   it('leaves unknown codes to the normal invalid-code handling', () => {
     expect(getScanModeMismatch('initialize', 'https://example.com')).toBeNull();
     expect(getScanModeMismatch('join', 'https://example.com')).toBeNull();
+  });
+
+  it('prefers a supported cabinet QR when an image contains multiple codes', () => {
+    expect(selectDetectedQrCode(['https://example.com', joinQr])).toBe(joinQr);
+    expect(selectDetectedQrCode(['  ', productQr])).toBe(productQr);
+    expect(selectDetectedQrCode([])).toBeNull();
   });
 });
