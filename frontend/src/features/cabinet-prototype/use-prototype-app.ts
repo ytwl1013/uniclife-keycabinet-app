@@ -214,6 +214,7 @@ export function usePrototypeApp(): PrototypeApp {
         capacity: number(sku.capacity, number(sku.slotCount, cabinetSlots.length)),
         manualUrl: text(sku.manualUrl) || undefined,
         imageAsset: text(sku.imageAsset) || undefined,
+        imagePath: text(sku.imagePath) || undefined,
         role: role(membership.role ?? fallbackMembership?.role),
         availableCount: cabinetKeys.filter((key) => key.status === 'available').length,
         checkedOutCount: cabinetKeys.filter((key) => key.status === 'checkedOut').length,

@@ -21,7 +21,7 @@ export function PrototypeCabinetCard({ cabinet }: { cabinet: CabinetView }) {
       className="flex-row items-center gap-3.5 rounded-card border border-line bg-surface p-3.5 shadow-card active:opacity-75"
       onPress={() => router.push({ pathname: '/cabinets/[cabinetId]', params: { cabinetId: cabinet.id } })}>
       <View className="h-[88px] w-[88px] items-center justify-center rounded-[18px] bg-background">
-        <ProductImage accessibilityLabel={`${cabinet.model} ${cabinet.color}`} assetKey={cabinet.imageAsset} variant="thumbnail" />
+        <ProductImage accessibilityLabel={`${cabinet.model} ${cabinet.color}`} assetKey={cabinet.imageAsset} imagePath={cabinet.imagePath} variant="thumbnail" />
       </View>
       <View className="min-w-0 flex-1 gap-1.5">
         <View className="flex-row items-start gap-2">

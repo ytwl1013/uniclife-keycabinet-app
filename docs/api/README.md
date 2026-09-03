@@ -92,6 +92,10 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | `/admin/overview` | 用户、有效会话、柜体指标，近 7 日活动趋势与最近审计事件 |
+| GET | `/admin/products` | 产品列表；支持 `query`、`limit`、`offset` |
+| GET | `/admin/products/:productId` | 产品、图片元数据、不可变二维码和已初始化柜体数量 |
+| POST | `/admin/products` | 创建 SKU、预处理图片和永久产品二维码 |
+| PATCH | `/admin/products/:productId` | 更新产品展示资料和可选图片；不能修改 SKU 或二维码 |
 | GET | `/admin/users` | 全局用户列表；支持 `query`、`status=all\|active\|disabled`、`limit`、`offset` |
 | GET | `/admin/users/:userId` | 用户详情、有效会话数、绑定柜体状态、产品与钥匙统计，以及柜体的全部有效管理员 |
 | GET | `/admin/feedback` | 全局客服反馈；支持 `query`、会话 `status`、`limit`、`offset` |
@@ -102,6 +106,32 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | PATCH | `/admin/users/:userId/status` | 启用或停用用户；停用会撤销该用户全部有效会话 |
 
 用户状态写操作限制为每分钟 20 次，并写入 `admin.user_status_updated` 审计事件，记录目标用户、变更前后状态和环境管理员标识。返回数据不包含密码哈希、会话 Token、审计 metadata 或其他管理密钥。
+
+产品创建请求中的 `image` 必须已经由 Admin 浏览器转换为最长边不超过 1280px、文件不超过 700 KiB 的 WebP。后端只校验 Base64 长度、WebP 文件签名和 SHA-256 摘要后保存，不负责解码、旋转、缩放或压缩。创建和更新分别限制为每分钟 10 次和 20 次，并记录 `admin.product_created` / `admin.product_updated` 成功或失败审计。
+
+```json
+{
+  "sku": "BG5163-BK",
+  "model": "BG5163",
+  "name": "32 位钥匙柜",
+  "color": "黑色",
+  "capacity": 32,
+  "description": "产品说明",
+  "manualUrl": "https://example.com/manual",
+  "image": {
+    "data": "<preprocessed-webp-base64>",
+    "mimeType": "image/webp",
+    "byteSize": 182400,
+    "width": 960,
+    "height": 1280,
+    "sha256": "<64-lowercase-hex-characters>"
+  }
+}
+```
+
+SKU 在创建时转为大写，创建后没有修改或删除接口；产品二维码格式仍为 `uniclife://cabinet/v1/init/<SKU>/<PRODUCT_CODE>`，随机码只生成一次。更新请求不接受 SKU 或二维码，并携带 `expectedVersion` 做乐观并发控制。已有任一柜体使用产品后，容量不可修改并返回 HTTP 409 / `PRODUCT_CAPACITY_LOCKED`；图片、名称、型号、颜色、描述和说明书地址仍可修改。
+
+`GET /products/:productId/image?v=<version>` 是无需用户会话的产品 WebP 图片读取接口，供扫码结果和柜体页面展示。响应包含内容摘要 ETag；匹配当前 `v` 的 URL 可长期 immutable 缓存，无版本 URL 只短期缓存。图片更新会递增 URL 的 `v`，客户端因此不会继续显示旧图。
 
 `GET /admin/users/:userId` 仅接受管理服务端令牌，不接受普通用户会话。路径中的 `userId` 必须是 1–128 字符的有效实体 ID；用户不存在或已删除时返回 HTTP 404 / `USER_NOT_FOUND`。响应中的 `cabinets` 只包含目标用户当前有效绑定的柜体，`administrators` 只包含该柜体当前有效且未删除的管理员账户。
 
@@ -324,6 +354,8 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 - `EMAIL_ALREADY_REGISTERED`、`INVALID_CREDENTIALS`
 - `RESET_CHALLENGE_INVALID`、`RESET_CODE_INVALID`
 - `FEEDBACK_UNAVAILABLE`、`FEEDBACK_SEND_FAILED`
+- `PRODUCT_NOT_FOUND`、`PRODUCT_CAPACITY_LOCKED`、`PRODUCT_VERSION_CONFLICT`
+- `PRODUCT_IMAGE_SIZE_INVALID`、`PRODUCT_IMAGE_FORMAT_INVALID`、`PRODUCT_IMAGE_HASH_INVALID`、`PRODUCT_IMAGE_VERSION_NOT_FOUND`
 - `QR_NOT_FOUND`、`QR_DISABLED`
 - `JOIN_INVITATION_NOT_FOUND`、`JOIN_INVITATION_REVOKED`、`JOIN_INVITATION_USED`、`JOIN_INVITATION_EXPIRED`、`JOIN_INVITATION_INVALID`
 - `MEMBERSHIP_REQUIRED`、`MEMBER_NOT_FOUND`

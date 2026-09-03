@@ -48,6 +48,7 @@ export const productSkuSchema = z.object({
   description: z.string(),
   manualUrl: z.string().url(),
   imageAsset: z.string().min(1).max(256),
+  imagePath: z.string().regex(/^\/api\/v1\/products\/[A-Za-z0-9-]{1,128}\/image\?v=\d+$/).optional(),
 });
 
 export const productQrSchema = z.object({

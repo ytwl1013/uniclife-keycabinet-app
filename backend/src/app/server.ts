@@ -14,6 +14,7 @@ import { registerAuthRoutes } from '../modules/auth/routes.js';
 import { registerCabinetRoutes } from '../modules/cabinets/routes.js';
 import { registerKeyRoutes } from '../modules/keys/routes.js';
 import { registerRecordRoutes } from '../modules/records/routes.js';
+import { registerProductRoutes } from '../modules/products/routes.js';
 import { RealtimeHub } from '../modules/realtime/hub.js';
 import { registerRealtimeRoutes } from '../modules/realtime/routes.js';
 import { registerSupportRoutes } from '../modules/support/routes.js';
@@ -75,6 +76,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   });
 
   await app.register(registerHealthRoutes, { prefix: '/api/v1/health' });
+  await app.register(registerProductRoutes, { prefix: '/api/v1/products' });
   await app.register(registerAdminRoutes, {
     notifier: feedbackNotifier,
     prefix: '/api/v1/admin',

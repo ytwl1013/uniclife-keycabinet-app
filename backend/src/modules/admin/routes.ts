@@ -40,6 +40,7 @@ import type { RealtimeHub } from '../realtime/hub.js';
 import type { FeedbackNotifier } from '../../integrations/notifications/feedback-notifier.js';
 import type { ExpoPushNotifier } from '../../integrations/notifications/expo-push-notifier.js';
 import { registerAdminSupportRoutes } from './support-routes.js';
+import { registerAdminProductRoutes } from './product-routes.js';
 
 type AdminRouteOptions = {
   notifier?: FeedbackNotifier;
@@ -101,6 +102,7 @@ export async function registerAdminRoutes(
     requireAdminApi(request);
   });
 
+  await registerAdminProductRoutes(app);
   await registerAdminSupportRoutes(app, options);
 
   app.get('/overview', async () => {

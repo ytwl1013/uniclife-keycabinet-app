@@ -5,7 +5,12 @@ import { buildServer } from '../src/app/server.js';
 describe('admin route security boundary', () => {
   it('never exposes admin data without the dedicated service token', async () => {
     const app = await buildServer();
-    for (const url of ['/api/v1/admin/overview', '/api/v1/admin/users/user-test']) {
+    for (const url of [
+      '/api/v1/admin/overview',
+      '/api/v1/admin/users/user-test',
+      '/api/v1/admin/products',
+      '/api/v1/admin/products/sku-test',
+    ]) {
       const response = await app.inject({ method: 'GET', url });
 
       expect([401, 503]).toContain(response.statusCode);

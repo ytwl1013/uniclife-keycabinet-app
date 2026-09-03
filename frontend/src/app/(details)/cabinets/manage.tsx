@@ -121,6 +121,7 @@ export default function CabinetManagementRoute() {
                 <ProductImage
                   accessibilityLabel={sku?.name ?? cabinet.name}
                   assetKey={sku?.imageAsset}
+                  imagePath={sku?.imagePath}
                   variant="thumbnail"
                 />
               </View>

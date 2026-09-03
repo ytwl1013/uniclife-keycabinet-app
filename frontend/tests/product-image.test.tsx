@@ -7,6 +7,10 @@ import {
 } from '../src/components/ui/product-image';
 import { getSeedData } from '../src/mocks/seed';
 
+jest.mock('@/api/config', () => ({
+  apiConfig: { baseUrl: 'http://localhost:4000/api/v1' },
+}));
+
 jest.mock('expo-image', () => ({
   Image: (props: Record<string, unknown>) => {
     const React = jest.requireActual('react');
@@ -39,6 +43,20 @@ describe('SKU product images', () => {
     const image = getByTestId('product-image');
     expect(image.props.contentFit).toBe('contain');
     expect(image.props.style).toEqual({ width: 104, height: 104 });
+  });
+
+  it('prefers a versioned backend image over a bundled asset', async () => {
+    const { getByTestId } = await render(
+      <ProductImage
+        accessibilityLabel="Remote key cabinet"
+        assetKey="cabinet-bg5163-bk"
+        imagePath="/api/v1/products/sku_remote/image?v=2"
+        variant="thumbnail"
+      />,
+    );
+    expect(getByTestId('product-image').props.source).toEqual({
+      uri: 'http://localhost:4000/api/v1/products/sku_remote/image?v=2',
+    });
   });
 
   it('shows an accessible cabinet fallback only for an unknown asset', async () => {

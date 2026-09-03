@@ -106,6 +106,8 @@ pnpm dev
 
 前端运行时直接调用 `EXPO_PUBLIC_API_BASE_URL` 指向的后端，原型 Mock 数据只保留给单元测试，不再挂载到应用。首次启动后请注册账户，再扫描开发 seed 对应的产品二维码（`docs/demo-qr-codes/bg5163-product.png` 或 `docs/demo-qr-codes/bg0680-product.png`）初始化新柜体；加入已有柜体必须扫描其设置页生成的一次性加入二维码。仅启动 Expo 而未启动后端时，登录和业务数据不会回退到 Demo。
 
+开发 seed 只用于本地测试，生产数据库不运行 seed。生产 SKU 在 Admin 的“产品与二维码”中创建：SKU 与生成的产品二维码永久不变，图片、名称和描述等展示资料可继续修改；二维码可下载为高清 PNG 或 SVG 后交付批量印刷。产品原图会先在管理员浏览器中缩放、转 WebP、压缩并清除元数据，后端只接收不超过 700 KiB 的结果，避免占用 Render 免费实例做图片处理。
+
 后端按 `NODE_ENV` 加载对应的 `.env.<environment>`，生产环境由 Render 注入变量。Expo 本地开发统一使用被 Git 忽略的 `frontend/.env.local`，生产构建使用 EAS 的 production 环境。不要提交真实 `.env`、数据库密码、设备密钥、Token、Cookie 或证书。
 
 ## 验证

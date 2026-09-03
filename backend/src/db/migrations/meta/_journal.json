@@ -57,6 +57,13 @@
       "when": 1788343285924,
       "tag": "0007_brave_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788403003804,
+      "tag": "0008_flimsy_power_man",
+      "breakpoints": true
     }
   ]
 }

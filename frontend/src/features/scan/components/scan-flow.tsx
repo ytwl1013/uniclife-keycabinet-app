@@ -119,6 +119,7 @@ function ProductConfirmation({
           <ProductImage
             accessibilityLabel={resolution.sku.name}
             assetKey={resolution.sku.imageAsset}
+            imagePath={resolution.sku.imagePath}
             variant="scan"
           />
         </View>

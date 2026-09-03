@@ -56,6 +56,9 @@ export function toSku(row: typeof productSkus.$inferSelect): ProductSku {
     description: row.description,
     manualUrl: row.manualUrl,
     imageAsset: row.imageAsset,
+    ...(row.imageVersion > 0
+      ? { imagePath: `/api/v1/products/${encodeURIComponent(row.id)}/image?v=${row.imageVersion}` }
+      : {}),
   };
 }
 

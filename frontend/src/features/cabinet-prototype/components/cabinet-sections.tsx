@@ -45,6 +45,7 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
           <ProductImage
             accessibilityLabel={`${cabinet.model} ${cabinet.color}`}
             assetKey={cabinet.imageAsset}
+            imagePath={cabinet.imagePath}
             variant="detail"
           />
         </View>

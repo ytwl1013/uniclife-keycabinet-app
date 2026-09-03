@@ -4,6 +4,8 @@ import {
   cabinetStatusSchema,
   entityIdSchema,
   isoDateSchema,
+  productQrSchema,
+  productSkuSchema,
   supportedLocaleSchema,
   userStatusSchema,
 } from './domain.js';
@@ -30,6 +32,75 @@ export const adminFeedbackQuerySchema = z.object({
     .default('all'),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const productImageMaxBytes = 700 * 1024;
+export const productImageMaxDimension = 1280;
+
+export const adminProductQuerySchema = z.object({
+  query: z.string().trim().max(128).default(''),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const adminProductImageInputSchema = z.object({
+  data: z
+    .string()
+    .min(4)
+    .max(Math.ceil(productImageMaxBytes / 3) * 4 + 4)
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/),
+  mimeType: z.literal('image/webp'),
+  byteSize: z.number().int().min(1).max(productImageMaxBytes),
+  width: z.number().int().min(1).max(productImageMaxDimension),
+  height: z.number().int().min(1).max(productImageMaxDimension),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+});
+
+const adminProductEditableFields = {
+  model: z.string().trim().min(1).max(128),
+  name: z.string().trim().min(1).max(128),
+  color: z.string().trim().min(1).max(64),
+  capacity: z.coerce.number().int().min(1).max(1000),
+  description: z.string().trim().max(5000),
+  manualUrl: z.string().trim().url().max(2048),
+};
+
+export const adminProductCreateRequestSchema = z.object({
+  sku: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9-]{1,64}$/),
+  ...adminProductEditableFields,
+  image: adminProductImageInputSchema,
+});
+
+export const adminProductUpdateRequestSchema = z.object({
+  ...adminProductEditableFields,
+  expectedVersion: z.number().int().nonnegative(),
+  image: adminProductImageInputSchema.optional(),
+});
+
+export const adminProductImageSchema = adminProductImageInputSchema.omit({ data: true }).extend({
+  path: z.string().regex(/^\/api\/v1\/products\/[A-Za-z0-9-]{1,128}\/image\?v=\d+$/),
+  version: z.number().int().positive(),
+});
+
+export const adminProductSchema = productSkuSchema.extend({
+  qr: productQrSchema.nullable(),
+  image: adminProductImageSchema.nullable(),
+  cabinetCount: z.number().int().nonnegative(),
+  capacityEditable: z.boolean(),
+  version: z.number().int().nonnegative(),
+  createdAt: isoDateSchema,
+  updatedAt: isoDateSchema,
+});
+
+export const adminProductListSchema = z.object({
+  items: z.array(adminProductSchema),
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
 });
 
 export const adminUserStatusRequestSchema = z.object({
@@ -154,6 +225,13 @@ export const adminFeedbackListSchema = z.object({
 export type AdminUserQuery = z.infer<typeof adminUserQuerySchema>;
 export type AdminActivityQuery = z.infer<typeof adminActivityQuerySchema>;
 export type AdminFeedbackQuery = z.infer<typeof adminFeedbackQuerySchema>;
+export type AdminProductQuery = z.infer<typeof adminProductQuerySchema>;
+export type AdminProductImageInput = z.infer<typeof adminProductImageInputSchema>;
+export type AdminProductCreateRequest = z.infer<typeof adminProductCreateRequestSchema>;
+export type AdminProductUpdateRequest = z.infer<typeof adminProductUpdateRequestSchema>;
+export type AdminProductImage = z.infer<typeof adminProductImageSchema>;
+export type AdminProduct = z.infer<typeof adminProductSchema>;
+export type AdminProductList = z.infer<typeof adminProductListSchema>;
 export type AdminUserStatusRequest = z.infer<typeof adminUserStatusRequestSchema>;
 export type AdminUserStatusResult = z.infer<typeof adminUserStatusResultSchema>;
 export type AdminUser = z.infer<typeof adminUserSchema>;

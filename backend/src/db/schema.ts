@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  customType,
   index,
   integer,
   jsonb,
@@ -52,6 +53,9 @@ export const cabinetEventType = pgEnum('cabinet_event_type', [
 ]);
 
 const id = (name: string) => varchar(name, { length: 128 });
+const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({
+  dataType: () => 'bytea',
+});
 const createdAt = () =>
   timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow();
 
@@ -161,9 +165,39 @@ export const productSkus = pgTable(
     description: text('description').notNull(),
     manualUrl: text('manual_url').notNull(),
     imageAsset: varchar('image_asset', { length: 256 }).notNull(),
+    imageVersion: integer('image_version').notNull().default(0),
+    version: integer('version').notNull().default(0),
     createdAt: createdAt(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
   },
-  (table) => [check('product_skus_capacity_positive', sql`${table.capacity} > 0`)],
+  (table) => [
+    check('product_skus_capacity_positive', sql`${table.capacity} > 0`),
+    check('product_skus_image_version_nonnegative', sql`${table.imageVersion} >= 0`),
+    check('product_skus_version_nonnegative', sql`${table.version} >= 0`),
+  ],
+);
+
+export const productSkuImages = pgTable(
+  'product_sku_images',
+  {
+    skuId: id('sku_id')
+      .primaryKey()
+      .references(() => productSkus.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    data: bytea('data').notNull(),
+    mimeType: varchar('mime_type', { length: 32 }).notNull(),
+    byteSize: integer('byte_size').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    sha256: varchar('sha256', { length: 64 }).notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('product_sku_images_mime_type_webp', sql`${table.mimeType} = 'image/webp'`),
+    check('product_sku_images_byte_size_valid', sql`${table.byteSize} > 0 AND ${table.byteSize} <= 716800`),
+    check('product_sku_images_width_valid', sql`${table.width} > 0 AND ${table.width} <= 1280`),
+    check('product_sku_images_height_valid', sql`${table.height} > 0 AND ${table.height} <= 1280`),
+  ],
 );
 
 export const cabinetQrs = pgTable(

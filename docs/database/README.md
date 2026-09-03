@@ -11,7 +11,8 @@
 | `push_tokens` | 手机系统通知的 Expo 推送令牌 | 令牌唯一；绑定用户和有效会话；按用户更新时间及会话索引 |
 | `password_reset_challenges` | 验证码尝试、短时重置 Token 和消费状态 | 重置 Token 摘要唯一；尝试次数非负 |
 | `consents` | 条款和隐私版本同意 | 用户 + 类型 + 政策版本唯一 |
-| `product_skus` | 产品型号和槽位容量 | SKU 唯一；容量大于 0 |
+| `product_skus` | 产品型号、槽位容量和资料/图片版本 | SKU 唯一；容量大于 0；版本非负 |
+| `product_sku_images` | Admin 浏览器预处理后的产品 WebP 二进制与摘要 | 每个 SKU 最多一张；不超过 700 KiB；尺寸不超过 1280px；删除 SKU 时级联删除 |
 | `cabinet_qrs` | 旧版每设备二维码，仅为迁移兼容保留 | code 和旧 device UUID 唯一；新流程不再读取 |
 | `product_qrs` | 同一 SKU 批量印刷的产品初始化码 | code 唯一；每个 SKU 一个有效模板 |
 | `cabinets` | 应用内柜体实例、状态和并发版本 | 服务端实例 UUID 唯一；version 非负 |
@@ -54,10 +55,13 @@ pnpm db:seed:dev
 - `0004_plain_slipstream.sql` 以新枚举替换成员角色枚举并加入 `super_admin`，同时新增 `super_admin_transferred` 事件类型。`0005_futuristic_bruce_banner.sql` 按 `joined_at, id` 把每个箱子最早的有效成员提升为超级管理员，再创建有效超级管理员部分唯一索引；没有有效成员的历史箱子不会自动创建绑定。角色枚举采用替换方式，是为了让同一次 PostgreSQL 迁移事务可以立即使用新值。回滚应先部署不再写入或判断超级管理员的版本，再移除部分唯一索引，并把所有 `super_admin` 降为 `admin`；PostgreSQL 枚举值不能安全原位删除，需新建旧枚举并迁移列和事件，不能直接改写已执行迁移。
 - `0006_rare_wither.sql` 新增客服会话枚举、`feedback_messages`、根记录会话状态与最后消息时间，并把每条既有反馈回填为一条用户首消息。回滚前必须先部署只读取旧发送记录的版本并备份客服消息；随后才能删除消息表和新列。直接回滚会永久丢失所有后续客服/用户回复，PostgreSQL 枚举应在确认无列依赖后再删除。
 - `0007_brave_gorilla_man.sql` 新增 `push_tokens`，把 Expo 推送令牌绑定到用户和登录会话。同一令牌唯一，退出当前会话会删除对应记录，发送时也只读取未撤销且未过期的会话。回滚前先部署不再注册或发送系统推送的版本，再删除该表；回滚只会停止手机横幅和角标，不影响 App 内客服消息与已读记录。
+- `0008_flimsy_power_man.sql` 为 `product_skus` 新增资料版本、图片版本和更新时间，并新增独立的 `product_sku_images` 表。图片与常规产品查询分表，只有图片端点读取 `bytea`；Admin 上传的 WebP 最大 700 KiB，因此少量 SKU 不会给免费数据库造成运行时图片处理负担。回滚前必须先部署不再读取 `imagePath`、不再调用产品管理写接口的版本并备份产品图片；随后才能删除图片表和三个新列。删除图片表会永久丢失上传图片，但不会改变既有 SKU、产品二维码或柜体。
 
 ## 开发种子
 
 `pnpm db:seed:dev` 幂等写入两个虚构 SKU 和每个 SKU 一个可复用产品初始化码，供“同码创建多个柜体”流程验证。它不创建用户、不写真实设备凭据，并在 `NODE_ENV=production` 下拒绝运行。
+
+生产环境不使用 seed。迁移完成后，由管理员通过 Admin 新建真实 SKU、上传已在浏览器预处理的图片并下载产品二维码。SKU 和二维码不提供修改/删除操作，避免已经印刷的码失效；展示资料可以继续更新。
 
 ## 从本机数据库工具连接 Docker PostgreSQL
 

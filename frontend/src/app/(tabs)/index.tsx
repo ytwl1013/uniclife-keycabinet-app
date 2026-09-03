@@ -318,7 +318,7 @@ function CabinetCard({ cabinet, sku }: { cabinet: Cabinet; sku?: ProductSku }) {
   return (
     <Pressable className="flex-row items-center gap-4 rounded-card border border-line bg-surface p-3" onPress={() => router.push({ pathname: '/cabinets/[cabinetId]', params: { cabinetId: cabinet.id } } as Href)}>
       <View className="h-[88px] w-[88px] items-center justify-center rounded-[18px] bg-background">
-        <ProductImage accessibilityLabel={sku?.name ?? cabinet.name} assetKey={sku?.imageAsset} variant="thumbnail" />
+        <ProductImage accessibilityLabel={sku?.name ?? cabinet.name} assetKey={sku?.imageAsset} imagePath={sku?.imagePath} variant="thumbnail" />
       </View>
       <View className="min-w-0 flex-1 gap-1.5">
         <AppText variant="title" tone="foreground">{cabinet.name}</AppText>
