@@ -3,7 +3,7 @@ import {
   productQrPayloadSchema,
 } from '@uniclife/shared';
 
-export type ScanMode = 'initialize' | 'join';
+export type ScanMode = 'auto' | 'initialize' | 'join';
 
 export type ScanModeMismatch =
   | 'productQrInJoinMode'

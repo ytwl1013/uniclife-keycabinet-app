@@ -19,6 +19,11 @@ describe('scan mode QR restrictions', () => {
     expect(getScanModeMismatch('join', joinQr)).toBeNull();
   });
 
+  it('accepts both QR types from the shared Add cabinet flow', () => {
+    expect(getScanModeMismatch('auto', productQr)).toBeNull();
+    expect(getScanModeMismatch('auto', joinQr)).toBeNull();
+  });
+
   it('leaves unknown codes to the normal invalid-code handling', () => {
     expect(getScanModeMismatch('initialize', 'https://example.com')).toBeNull();
     expect(getScanModeMismatch('join', 'https://example.com')).toBeNull();

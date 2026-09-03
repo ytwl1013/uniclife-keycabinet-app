@@ -560,7 +560,11 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
       <ScannerPreview
         active={isFocused && !scanLockRef.current}
         instruction={
-          mode === 'initialize' ? t('scan.initializeAlignCode') : t('scan.joinAlignCode')
+          mode === 'initialize'
+            ? t('scan.initializeAlignCode')
+            : mode === 'join'
+              ? t('scan.joinAlignCode')
+              : t('scan.alignCode')
         }
         onCode={(code) => void resolveCode(code)}
         onMountError={(message) => setCameraMountError(message)}

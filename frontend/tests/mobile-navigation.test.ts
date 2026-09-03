@@ -295,12 +295,16 @@ describe('simplified mobile navigation architecture', () => {
 
   it('uses the native camera path for product initialization and invitation joining', () => {
     const scan = source('src/features/scan/components/scan-flow.tsx');
+    const scanRoute = source('src/app/(details)/scan.tsx');
     expect(scan).toContain('<CameraView');
     expect(scan).toContain('onBarcodeScanned');
     expect(scan).toContain('getScanModeMismatch(mode, code)');
     expect(scan).toContain("t('scan.productQrInJoinDescription')");
     expect(scan).toContain("t('scan.joinQrInInitializeDescription')");
-    expect(scan).toContain("mode === 'initialize' ? t('scan.initializeAlignCode') : t('scan.joinAlignCode')");
+    expect(scan).toContain("? t('scan.initializeAlignCode')");
+    expect(scan).toContain("? t('scan.joinAlignCode')");
+    expect(scan).toContain(": t('scan.alignCode')");
+    expect(scanRoute).toContain("rawMode === 'initialize' || rawMode === 'join' ? rawMode : 'auto'");
     expect(scan).toContain("t('scan.cabinetName')");
     expect(scan).toContain('await actions.initializeCabinet');
     expect(scan).toContain('await actions.joinCabinet');
