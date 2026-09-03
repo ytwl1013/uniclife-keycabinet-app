@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Pressable, View } from 'react-native';
 
 import { useApp } from '@/app-state';
-import { isApiError } from '@/api/client';
+import { isApiError, isNetworkApiError } from '@/api/client';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AppText } from '@/components/ui/app-text';
 import {
@@ -199,7 +199,7 @@ export function FeedbackFormScreen() {
         message = t('support.unavailable');
       } else if (isApiError(caught) && caught.code === 'FEEDBACK_SEND_FAILED') {
         message = t('support.sendFailed');
-      } else if (isApiError(caught) && caught.code === 'OFFLINE') {
+      } else if (isNetworkApiError(caught)) {
         message = t('auth.errors.offline');
       } else {
         message = t('support.sendFailed');

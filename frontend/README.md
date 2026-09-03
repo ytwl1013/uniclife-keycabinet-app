@@ -85,6 +85,9 @@ request layer.
 cp .env.example .env.local
 pnpm dev:frontend
 pnpm pro:frontend
+pnpm web:pro
+pnpm ios:pro
+pnpm android:pro
 pnpm --filter @uniclife/frontend lint
 pnpm --filter @uniclife/frontend typecheck
 pnpm --filter @uniclife/frontend test
@@ -95,12 +98,21 @@ For device development, set `EXPO_PUBLIC_API_BASE_URL_DEV` in `.env.local` to th
 development Mac's LAN IPv4 address, for example
 `http://192.168.1.100:4000/api/v1`, and set `EXPO_PUBLIC_API_BASE_URL_PRO` to the
 Render API. Both commands run `expo start` directly so Metro keeps its interactive
-terminal UI and Expo QR code. Run the frontend in its own terminal instead of a
+terminal UI and Expo QR code. Stop the previous Metro process before switching
+environments and fully reload the client; the commands clear Metro's transform
+cache. Keep `EXPO_PUBLIC_APP_ENV` out of `.env.local` because the startup command
+is the single source of truth. Run the frontend in its own terminal instead of a
 combined parallel workspace command. The device and Mac must use the same local
 network. Production builds obtain the pro public
 variables from the EAS production environment and require an HTTPS API URL. Never
 store a secret in an `EXPO_PUBLIC_*` variable because Expo embeds it in the client
 bundle.
+
+API calls have a 20-second deadline. If a stored session cannot be checked because
+the API is unreachable, startup completes on the sign-in screen with an offline
+notice instead of displaying an indefinite loader. The stored token is only
+removed when the backend explicitly rejects it, so a temporary outage is not
+misreported as an expired session.
 
 Customer-support replies use `expo-notifications` for a system banner, app-icon
 badge, and deep link into the conversation. Run `eas init`, configure APNs/FCM

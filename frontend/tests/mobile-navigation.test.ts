@@ -243,6 +243,9 @@ describe('simplified mobile navigation architecture', () => {
     const borrowed = source('src/features/cabinet-prototype/components/borrowed-keys-screen.tsx');
     const filterMenu = source('src/features/cabinet-prototype/components/borrowed-keys-filter-menu.tsx');
     const checkoutKeyboardAccessory = source('src/features/cabinet-prototype/components/checkout-keyboard-accessory.tsx');
+    const webCheckoutKeyboardAccessory = source(
+      'src/features/cabinet-prototype/components/checkout-keyboard-accessory.web.tsx',
+    );
     const dateRangeCalendar = source('src/components/ui/date-range-calendar.tsx');
     const dateRangeModal = source('src/components/ui/date-range-picker-modal.tsx');
     const dateTimeField = source('src/components/ui/date-time-field.tsx');
@@ -294,6 +297,8 @@ describe('simplified mobile navigation architecture', () => {
     expect(checkoutKeyboardAccessory).toContain('h-8 justify-center rounded-pill bg-brand px-3 shadow-card');
     expect(checkoutKeyboardAccessory).toContain('hitSlop={6}');
     expect(checkoutKeyboardAccessory).not.toContain('<ActionButton');
+    expect(webCheckoutKeyboardAccessory).not.toContain('InputAccessoryView');
+    expect(webCheckoutKeyboardAccessory).toContain('return null');
     expect(checkout).toContain("Keyboard.addListener('keyboardDidShow'");
     expect(checkout).toContain('Keyboard.dismiss()');
     expect(checkout).toContain('compact={keyboardVisible}');

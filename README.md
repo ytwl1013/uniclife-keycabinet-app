@@ -94,7 +94,7 @@ cp admin/.env.example admin/.env.local
 pnpm --filter @uniclife/admin generate-env-secrets
 ```
 
-将 `frontend/.env.local` 的 `EXPO_PUBLIC_API_BASE_URL_DEV` 改为开发电脑的局域网 IPv4 地址，保证真机与开发电脑处于同一局域网；iOS Simulator 可以使用 `localhost`。把 Frontend 和 Admin 的 `*_PRO` 地址配置为 Render 地址，其中 Frontend 地址包含 `/api/v1`，Admin 地址不包含。
+将 `frontend/.env.local` 的 `EXPO_PUBLIC_API_BASE_URL_DEV` 改为开发电脑的局域网 IPv4 地址，保证真机与开发电脑处于同一局域网；iOS Simulator 可以使用 `localhost`。把 Frontend 和 Admin 的 `*_PRO` 地址配置为 Render 地址，其中 Frontend 地址包含 `/api/v1`，Admin 地址不包含。Frontend 的 `.env.local` 不设置 `EXPO_PUBLIC_APP_ENV`，dev/pro 只能由启动命令选择。
 
 密钥生成命令会输出两枚管理 API 令牌：把 `ADMIN_API_TOKEN_DEV` 的值作为 `ADMIN_API_TOKEN` 写入本地 Backend 的被忽略环境文件，把 `ADMIN_API_TOKEN_PRO` 的值写入 Render 的 `ADMIN_API_TOKEN`。令牌不得提交到仓库。
 
@@ -122,6 +122,8 @@ pro 环境不启动本地 Backend，另外打开两个终端：
 | --- | --- | --- |
 | Terminal 1 | `pnpm pro:frontend` | 运行 `expo start` 并连接 Render API，显示 Expo 二维码 |
 | Terminal 2 | `pnpm pro:admin` | 本地启动 Admin 并连接 Render API |
+
+切换 Frontend 环境前先停止旧 Metro，再运行目标命令并完整重新加载客户端。Frontend 启动命令会清理 Metro 缓存；不要直接运行裸 `expo start`。需要直接打开指定平台时，可在 `frontend/` 使用 `pnpm web:pro`、`pnpm ios:pro` 或 `pnpm android:pro`。
 
 第一次使用开发数据库时可按需运行 `pnpm db:seed:dev`。
 

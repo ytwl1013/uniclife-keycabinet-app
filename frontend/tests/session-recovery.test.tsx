@@ -123,10 +123,8 @@ describe('persisted session recovery', () => {
     jest.useRealTimers();
   });
 
-  it('keeps the stored token and retries when the backend is temporarily offline', async () => {
-    mockSession
-      .mockRejectedValueOnce(new ApiError(0, 'OFFLINE', 'Network unavailable'))
-      .mockResolvedValue({ user });
+  it('keeps the stored token but finishes hydration when session restore times out', async () => {
+    mockSession.mockRejectedValue(new ApiError(0, 'REQUEST_TIMEOUT', 'Request timed out'));
 
     const screen = await render(
       <AppProvider>
@@ -135,18 +133,15 @@ describe('persisted session recovery', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('session-state').props.children).toBe('false:anonymous:false');
+      expect(screen.getByTestId('session-state').props.children).toBe('true:anonymous:false');
     });
     expect(mockClearSessionToken).not.toHaveBeenCalled();
 
     await act(async () => {
-      await jest.advanceTimersByTimeAsync(5_000);
+      await jest.advanceTimersByTimeAsync(25_000);
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('session-state').props.children).toBe('true:authenticated:true');
-    });
-    expect(mockSession).toHaveBeenCalledTimes(2);
+    expect(mockSession).toHaveBeenCalledTimes(1);
     expect(mockClearSessionToken).not.toHaveBeenCalled();
   });
 

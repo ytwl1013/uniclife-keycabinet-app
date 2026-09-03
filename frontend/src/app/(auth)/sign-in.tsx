@@ -25,7 +25,7 @@ const homeRoute = '/(tabs)' as Href;
 
 export default function SignInRoute() {
   const { t } = useTranslation();
-  const { actions } = useAuthActions();
+  const { actions, online } = useAuthActions();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -109,7 +109,11 @@ export default function SignInRoute() {
         />
       ) : null}
 
-      {requestError ? <AuthErrorNotice text={requestError} /> : null}
+      {requestError ? (
+        <AuthErrorNotice text={requestError} />
+      ) : !online ? (
+        <AuthErrorNotice text={t('auth.errors.offline')} />
+      ) : null}
 
       <AuthPrimaryButton
         busy={isSubmitting}

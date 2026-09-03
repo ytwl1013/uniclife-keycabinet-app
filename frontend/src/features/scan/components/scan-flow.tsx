@@ -7,7 +7,7 @@ import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { QrResolution, useApp } from '@/app-state';
-import { isApiError } from '@/api/client';
+import { isApiError, isNetworkApiError } from '@/api/client';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
@@ -320,7 +320,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     if (!isApiError(error)) {
       return 'generic';
     }
-    if (error.code === 'OFFLINE') {
+    if (isNetworkApiError(error)) {
       return 'offline';
     }
     if (error.code === 'SESSION_EXPIRED' || error.code === 'SESSION_REQUIRED') {

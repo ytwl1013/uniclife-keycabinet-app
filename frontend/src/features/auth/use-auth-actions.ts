@@ -47,6 +47,7 @@ export function useAuthActions() {
   return {
     currentUser,
     hydrated: state.hydrated,
+    online: state.online,
     actions: {
       signIn: (input: AuthCredentials) => actions.signIn(input),
       register: (input: RegistrationInput) => {
@@ -89,6 +90,7 @@ export function authErrorKey(error: unknown): TranslationKey {
   const keys: Record<string, string> = {
     NETWORK_OFFLINE: 'auth.errors.offline',
     OFFLINE: 'auth.errors.offline',
+    REQUEST_TIMEOUT: 'auth.errors.offline',
     SESSION_EXPIRED: 'auth.errors.sessionExpired',
     SESSION_REQUIRED: 'auth.errors.sessionExpired',
     UNAUTHORIZED: 'auth.errors.invalidCredentials',

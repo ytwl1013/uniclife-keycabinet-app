@@ -10,7 +10,7 @@ import {
 } from 'react';
 
 import { backendApi } from '@/api/backend';
-import { ApiError, isApiError } from '@/api/client';
+import { ApiError, isApiError, isNetworkApiError } from '@/api/client';
 import {
   loadLocalProfileAvatar,
   removeLocalProfileAvatar,
@@ -64,7 +64,6 @@ const emptyState = (): AppState => ({
 });
 
 const AppContext = createContext<AppContextValue | null>(null);
-const SESSION_RESTORE_RETRY_MS = 5_000;
 
 function isSessionError(error: unknown): boolean {
   return isApiError(error) &&
@@ -170,7 +169,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const handleAuthorizedError = useCallback(async (error: unknown) => {
     if (isSessionError(error)) {
       await clearAuthentication(true);
-    } else if (isApiError(error) && error.code === 'OFFLINE') {
+    } else if (isNetworkApiError(error)) {
       updateState((current) => ({ ...current, online: false, now: new Date().toISOString() }));
     }
     throw error;
@@ -257,12 +256,11 @@ export function AppProvider({ children }: PropsWithChildren) {
           return;
         }
 
-        const hasStoredSession = tokenRef.current !== null;
         updateState((current) => ({
           ...current,
-          // A temporary backend outage must not expose the sign-in routes while
-          // a persisted native session is still waiting to be restored.
-          hydrated: !hasStoredSession,
+          // Keep a potentially valid token, but never block navigation indefinitely
+          // when the backend cannot confirm it. A later sign-in can replace it.
+          hydrated: true,
           online: false,
           sessionStatus: 'anonymous',
         }));
@@ -280,15 +278,6 @@ export function AppProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
-
-  useEffect(() => {
-    if (state.hydrated || state.online || !tokenRef.current) return;
-
-    const retryInterval = setInterval(() => {
-      void hydrate();
-    }, SESSION_RESTORE_RETRY_MS);
-    return () => clearInterval(retryInterval);
-  }, [hydrate, state.hydrated, state.online]);
 
   const actions = useMemo<AppActions>(() => ({
     hydrate,

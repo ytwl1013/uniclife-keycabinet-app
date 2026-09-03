@@ -50,11 +50,11 @@
 
 - `EXPO_PUBLIC_API_BASE_URL_DEV`：本地 Backend 的 API v1 基础地址
 - `EXPO_PUBLIC_API_BASE_URL_PRO`：Render Backend 的 API v1 基础地址
-- `EXPO_PUBLIC_APP_ENV`：`dev` 或 `pro`，通常由 `pnpm dev:frontend` / `pnpm pro:frontend` 自动设置
+- `EXPO_PUBLIC_APP_ENV`：`dev` 或 `pro`；本地只由 `pnpm dev:frontend` / `pnpm pro:frontend` 等显式启动命令设置，不写入 `.env.local`，EAS production 环境固定设置为 `pro`
 - `EXPO_PUBLIC_EAS_PROJECT_ID`：EAS project UUID；仅在构建未自动注入 `extra.eas.projectId` 时作为系统推送注册的公开回退值
 - `EXPO_PUBLIC_SUPPORT_EMAIL`：账户页“邮箱联系”展示和复制的公开客服邮箱地址
 
-Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。pro 模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地命令通过 `EXPO_PUBLIC_APP_ENV` 选择地址，EAS 构建使用 EAS production 环境中的 pro 变量。
+Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。pro 模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地命令通过 `EXPO_PUBLIC_APP_ENV` 选择地址，EAS 构建使用 EAS production 环境中的 pro 变量。切换本地环境时必须先停止旧 Metro，再运行目标命令并完整重新加载客户端；仓库启动命令会清理 Metro 缓存。客户端 API 请求最长等待 20 秒，session 恢复遇到超时或网络错误后进入可操作的登录页，只有后端明确返回 401 才删除本地会话。
 
 ### 手机系统通知
 
