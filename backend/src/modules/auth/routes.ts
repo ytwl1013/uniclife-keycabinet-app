@@ -25,6 +25,7 @@ import { requireDatabase } from '../../db/client.js';
 import {
   consents,
   passwordResetChallenges,
+  pushTokens,
   sessions,
   users,
 } from '../../db/schema.js';
@@ -180,6 +181,7 @@ export async function registerAuthRoutes(
         .update(sessions)
         .set({ revokedAt: new Date().toISOString() })
         .where(eq(sessions.id, currentUser.sessionId));
+      await transaction.delete(pushTokens).where(eq(pushTokens.sessionId, currentUser.sessionId));
       await appendAudit(transaction, {
         actorId: currentUser.id,
         action: 'auth.sign_out',

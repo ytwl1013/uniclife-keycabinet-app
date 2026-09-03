@@ -29,6 +29,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "color": "#2F67F5",
+          "defaultChannel": "support"
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "Allow UnicLife to scan a product QR code. Camera frames are not stored or uploaded by this app."

@@ -38,10 +38,12 @@ import {
 import { appendAudit } from '../audit/service.js';
 import type { RealtimeHub } from '../realtime/hub.js';
 import type { FeedbackNotifier } from '../../integrations/notifications/feedback-notifier.js';
+import type { ExpoPushNotifier } from '../../integrations/notifications/expo-push-notifier.js';
 import { registerAdminSupportRoutes } from './support-routes.js';
 
 type AdminRouteOptions = {
   notifier?: FeedbackNotifier;
+  pushNotifier?: ExpoPushNotifier;
   realtime: RealtimeHub;
 };
 

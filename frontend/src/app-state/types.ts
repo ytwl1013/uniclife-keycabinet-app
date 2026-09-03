@@ -13,6 +13,7 @@ import type {
   Loan,
   ProductQr,
   ProductSku,
+  PushTokenRequest,
   RegisterRequest,
   UserAccount,
   WriteOptions,
@@ -92,6 +93,8 @@ export type AppActions = {
     input: { currentPassword: string; newPassword: string } & WriteOptions,
   ): Promise<void>;
   deleteAccount(input?: WriteOptions): Promise<void>;
+  registerPushToken(input: PushTokenRequest): Promise<void>;
+  unregisterPushToken(input: PushTokenRequest): Promise<void>;
   submitFeedback(input: FeedbackRequest): Promise<{ submissionId: string; submittedAt: string }>;
   listFeedbackHistory(): Promise<FeedbackThreadSummary[]>;
   getFeedbackThread(input: { feedbackId: string }): Promise<FeedbackThread>;

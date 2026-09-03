@@ -87,6 +87,13 @@ network. Production builds obtain the same public variable names from the EAS
 production environment and require an HTTPS API URL. Never store a secret in an
 `EXPO_PUBLIC_*` variable because Expo embeds it in the client bundle.
 
+Customer-support replies use `expo-notifications` for a system banner, app-icon
+badge, and deep link into the conversation. Run `eas init`, configure APNs/FCM
+credentials, and use a notification-enabled development or production build;
+remote push notifications are not available in Expo Go. The EAS project UUID is
+normally embedded by EAS and may use `EXPO_PUBLIC_EAS_PROJECT_ID` as a public
+fallback. Denying notification permission does not disable the in-app inbox.
+
 Activity logs are read-only in the app and cannot be downloaded. All cabinet
 memberships use the single Admin role. Key deletion is permanent; cabinet,
 historical loan, and immutable audit records remain available for accountability.

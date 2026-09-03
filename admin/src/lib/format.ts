@@ -29,6 +29,8 @@ const actionLabels: Record<string, string> = {
   'users.profile_updated': '更新资料',
   'users.email_updated': '更新邮箱',
   'users.password_changed': '修改密码',
+  'users.push_token_registered': '注册通知设备',
+  'users.push_token_unregistered': '移除通知设备',
   'users.account_deleted': '删除账户',
   'cabinets.initialized': '初始化钥匙柜',
   'keys.checked_out': '领取钥匙',

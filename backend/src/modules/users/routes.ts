@@ -1,6 +1,7 @@
 import {
   changePasswordRequestSchema,
   markHomeGuidePromptedRequestSchema,
+  pushTokenRequestSchema,
   updateEmailRequestSchema,
   updateProfileRequestSchema,
   writeOptionsSchema,
@@ -20,6 +21,7 @@ import {
   cabinetMemberships,
   cabinets,
   consents,
+  pushTokens,
   sessions,
   users,
 } from '../../db/schema.js';
@@ -31,6 +33,7 @@ import {
   type CabinetRealtimeChange,
   type RealtimePublisher,
 } from '../realtime/hub.js';
+import { registerPushToken, unregisterPushToken } from './push-token-service.js';
 
 export async function registerUserRoutes(
   app: FastifyInstance,
@@ -40,6 +43,58 @@ export async function registerUserRoutes(
     const currentUser = await requireAuth(request);
     return ok(toUserAccount(currentUser));
   });
+
+  app.post(
+    '/me/push-tokens',
+    { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } },
+    async (request) => {
+      const input = pushTokenRequestSchema.parse(request.body);
+      const currentUser = await requireAuth(request);
+      const database = requireDatabase();
+      await database.transaction(async (transaction) => {
+        const pushTokenId = await registerPushToken(transaction, {
+          ...input,
+          sessionId: currentUser.sessionId,
+          userId: currentUser.id,
+        });
+        await appendAudit(transaction, {
+          action: 'users.push_token_registered',
+          actorId: currentUser.id,
+          metadata: { platform: input.platform },
+          result: 'success',
+          targetId: pushTokenId,
+          targetType: 'push_token',
+        });
+      });
+      return ok({ registered: true }, '通知设备已注册');
+    },
+  );
+
+  app.delete(
+    '/me/push-tokens',
+    { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } },
+    async (request) => {
+      const input = pushTokenRequestSchema.parse(request.body);
+      const currentUser = await requireAuth(request);
+      const database = requireDatabase();
+      const removed = await database.transaction(async (transaction) => {
+        const didRemove = await unregisterPushToken(transaction, {
+          token: input.token,
+          userId: currentUser.id,
+        });
+        await appendAudit(transaction, {
+          action: 'users.push_token_unregistered',
+          actorId: currentUser.id,
+          metadata: { platform: input.platform, removed: didRemove },
+          result: 'success',
+          targetId: currentUser.id,
+          targetType: 'user',
+        });
+        return didRemove;
+      });
+      return ok({ removed }, '通知设备已移除');
+    },
+  );
 
   app.patch('/me/home-guide', async (request) => {
     const input = markHomeGuidePromptedRequestSchema.parse(request.body);
@@ -304,6 +359,7 @@ export async function registerUserRoutes(
           })
           .where(eq(users.id, currentUser.id));
         await transaction.delete(consents).where(eq(consents.userId, currentUser.id));
+        await transaction.delete(pushTokens).where(eq(pushTokens.userId, currentUser.id));
         await transaction
           .update(sessions)
           .set({ revokedAt: now })

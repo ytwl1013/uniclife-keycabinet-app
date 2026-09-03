@@ -50,6 +50,10 @@ const eventIcon = {
   admin: { icon: 'settings', tone: 'accent' },
 } as const satisfies Record<string, { icon: AppIconName; tone: AppIconTone }>;
 
+function supportReadId(thread: { id: string; latestSupportMessageAt: string | null }): string {
+  return `support:${thread.id}:${thread.latestSupportMessageAt ?? 'none'}`;
+}
+
 export function NotificationsProvider({ children }: PropsWithChildren) {
   const app = usePrototypeApp();
   const { actions, currentUser, state } = useApp();
@@ -94,6 +98,10 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
   const markRead = useCallback((id: string) => {
     const supportThread = supportThreadsByNotificationId.get(id);
     if (supportThread) {
+      const localReadId = supportReadId(supportThread);
+      if (!readIds.has(localReadId)) {
+        saveReadIds(new Set([...readIds, localReadId]));
+      }
       if (supportThread.unreadMessageCount > 0) {
         void actions.markFeedbackThreadRead({ feedbackId: supportThread.id }).catch(() => undefined);
       }
@@ -126,7 +134,7 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
         createdAt: thread.latestSupportMessageAt!,
         icon: 'support',
         tone: 'brand',
-        read: thread.unreadMessageCount === 0,
+        read: thread.unreadMessageCount === 0 || readIds.has(supportReadId(thread)),
         href: `/(details)/account/feedback/${thread.id}` as Href,
       }));
     return [...supportNotifications, ...eventNotifications].sort(
@@ -135,7 +143,10 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
   }, [app.events, readIds, state.feedbackThreads, t]);
 
   const markAllRead = useCallback(() => {
-    saveReadIds(new Set(app.events.filter(isNotifiableEvent).map((event) => event.id)));
+    saveReadIds(new Set([
+      ...app.events.filter(isNotifiableEvent).map((event) => event.id),
+      ...state.feedbackThreads.map(supportReadId),
+    ]));
     for (const thread of state.feedbackThreads) {
       if (thread.unreadMessageCount > 0) {
         void actions.markFeedbackThreadRead({ feedbackId: thread.id }).catch(() => undefined);

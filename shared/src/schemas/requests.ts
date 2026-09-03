@@ -51,6 +51,15 @@ export const markHomeGuidePromptedRequestSchema = writeOptionsSchema.extend({
   prompted: z.literal(true),
 });
 
+export const pushPlatformSchema = z.enum(['ios', 'android']);
+export const expoPushTokenSchema = z.string().trim().max(255).regex(
+  /^(?:Exponent|Expo)PushToken\[[A-Za-z0-9_-]+\]$/,
+);
+export const pushTokenRequestSchema = z.object({
+  platform: pushPlatformSchema,
+  token: expoPushTokenSchema,
+});
+
 export const feedbackTypeSchema = z.enum(['product', 'application']);
 export const feedbackMaxImages = 5;
 export const feedbackImageMaxBase64Length = 2_000_000;
@@ -192,6 +201,8 @@ export const eventListQuerySchema = z.object({
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type SignInRequest = z.infer<typeof signInRequestSchema>;
+export type PushPlatform = z.infer<typeof pushPlatformSchema>;
+export type PushTokenRequest = z.infer<typeof pushTokenRequestSchema>;
 export type InitializeCabinetRequest = z.infer<typeof initializeCabinetRequestSchema>;
 export type CreateCabinetJoinInvitationRequest = z.infer<
   typeof createCabinetJoinInvitationRequestSchema

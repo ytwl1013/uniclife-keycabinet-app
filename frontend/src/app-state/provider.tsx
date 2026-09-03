@@ -12,6 +12,10 @@ import {
 import { backendApi } from '@/api/backend';
 import { ApiError, isApiError } from '@/api/client';
 import {
+  clearRegisteredPushToken,
+  loadRegisteredPushToken,
+} from '@/api/push-token-storage';
+import {
   clearSessionToken,
   loadSessionToken,
   saveSessionToken,
@@ -73,6 +77,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const pendingRefreshCountRef = useRef(0);
   const refreshQueueRef = useRef<Promise<void>>(Promise.resolve());
   const resetPreviewCodes = useRef(new Map<string, string>());
+  const locallyReadSupportAtRef = useRef(new Map<string, string>());
 
   const updateState = useCallback((update: (current: AppState) => AppState) => {
     setState((current) => {
@@ -86,7 +91,9 @@ export function AppProvider({ children }: PropsWithChildren) {
     tokenRef.current = null;
     lastSuccessfulRefreshAtRef.current = 0;
     offlineOverrideRef.current = false;
+    locallyReadSupportAtRef.current.clear();
     await clearSessionToken();
+    await clearRegisteredPushToken();
     updateState((current) => ({
       ...emptyState(),
       hydrated: true,
@@ -130,7 +137,20 @@ export function AppProvider({ children }: PropsWithChildren) {
       keys: uniqueById(details.flatMap((detail) => detail.keys)),
       loans: loansResult.items,
       events: eventsResult.items,
-      feedbackThreads: feedbackResult.items,
+      feedbackThreads: feedbackResult.items.map((thread) => {
+        const locallyReadAt = locallyReadSupportAtRef.current.get(thread.id);
+        if (
+          locallyReadAt &&
+          thread.latestSupportMessageAt &&
+          Date.parse(thread.latestSupportMessageAt) <= Date.parse(locallyReadAt)
+        ) {
+          return { ...thread, unreadMessageCount: 0 };
+        }
+        if (locallyReadAt && thread.latestSupportMessageAt) {
+          locallyReadSupportAtRef.current.delete(thread.id);
+        }
+        return thread;
+      }),
     }));
   }, [updateState]);
 
@@ -278,7 +298,13 @@ export function AppProvider({ children }: PropsWithChildren) {
     async signOut() {
       const token = tokenRef.current;
       try {
-        if (token && stateRef.current.online) await backendApi.signOut(token);
+        if (token && stateRef.current.online) {
+          const pushToken = await loadRegisteredPushToken().catch(() => null);
+          if (pushToken) {
+            await backendApi.unregisterPushToken(token, pushToken).catch(() => undefined);
+          }
+          await backendApi.signOut(token);
+        }
       } finally {
         await clearAuthentication(false);
       }
@@ -365,6 +391,22 @@ export function AppProvider({ children }: PropsWithChildren) {
         await handleAuthorizedError(error);
       }
     },
+    async registerPushToken(input) {
+      const token = requireToken();
+      try {
+        await backendApi.registerPushToken(token, input);
+      } catch (error) {
+        await handleAuthorizedError(error);
+      }
+    },
+    async unregisterPushToken(input) {
+      const token = requireToken();
+      try {
+        await backendApi.unregisterPushToken(token, input);
+      } catch (error) {
+        await handleAuthorizedError(error);
+      }
+    },
     async submitFeedback(input) {
       const token = requireToken();
       try {
@@ -419,16 +461,40 @@ export function AppProvider({ children }: PropsWithChildren) {
     },
     async markFeedbackThreadRead({ feedbackId }) {
       const token = requireToken();
+      const currentThread = stateRef.current.feedbackThreads.find(
+        (thread) => thread.id === feedbackId,
+      );
+      const locallyReadAt = currentThread?.latestSupportMessageAt ?? new Date().toISOString();
+      const previousUnreadCount = currentThread?.unreadMessageCount ?? 0;
+      locallyReadSupportAtRef.current.set(feedbackId, locallyReadAt);
+      updateState((current) => ({
+        ...current,
+        feedbackThreads: current.feedbackThreads.map((thread) =>
+          thread.id === feedbackId ? { ...thread, unreadMessageCount: 0 } : thread
+        ),
+        version: current.version + 1,
+      }));
       try {
         await backendApi.markFeedbackThreadRead(token, feedbackId);
+      } catch (error) {
+        if (locallyReadSupportAtRef.current.get(feedbackId) === locallyReadAt) {
+          locallyReadSupportAtRef.current.delete(feedbackId);
+        }
         updateState((current) => ({
           ...current,
           feedbackThreads: current.feedbackThreads.map((thread) =>
-            thread.id === feedbackId ? { ...thread, unreadMessageCount: 0 } : thread
+            thread.id === feedbackId
+              ? {
+                  ...thread,
+                  unreadMessageCount: Math.max(
+                    thread.unreadMessageCount,
+                    previousUnreadCount,
+                  ),
+                }
+              : thread
           ),
           version: current.version + 1,
         }));
-      } catch (error) {
         await handleAuthorizedError(error);
       }
     },

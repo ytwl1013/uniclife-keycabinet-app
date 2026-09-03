@@ -101,6 +101,31 @@ export const sessions = pgTable(
   ],
 );
 
+export const pushTokens = pgTable(
+  'push_tokens',
+  {
+    id: id('id').primaryKey(),
+    userId: id('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    sessionId: id('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    token: varchar('token', { length: 255 }).notNull(),
+    platform: varchar('platform', { length: 16 }).notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('push_tokens_token_unique').on(table.token),
+    index('push_tokens_user_updated_idx').on(table.userId, table.updatedAt),
+    index('push_tokens_session_idx').on(table.sessionId),
+    check('push_tokens_platform_valid', sql`${table.platform} IN ('ios', 'android')`),
+  ],
+);
+
 export const passwordResetChallenges = pgTable(
   'password_reset_challenges',
   {

@@ -15,6 +15,7 @@ import type {
   JoinCabinetRequest,
   Key,
   Loan,
+  PushTokenRequest,
   RegisterRequest,
   ReturnKeyRequest,
   SignInRequest,
@@ -77,6 +78,16 @@ export const backendApi = {
   ) => callApi<{ changed: boolean }>('/users/me/password', { ...json('PATCH', input), token }),
   deleteAccount: (token: string, input: WriteOptions = {}) =>
     callApi<{ deleted: boolean }>('/users/me', { ...json('DELETE', input), token }),
+  registerPushToken: (token: string, input: PushTokenRequest) =>
+    callApi<{ registered: boolean }>(
+      '/users/me/push-tokens',
+      { ...json('POST', input), token },
+    ),
+  unregisterPushToken: (token: string, input: PushTokenRequest) =>
+    callApi<{ removed: boolean }>(
+      '/users/me/push-tokens',
+      { ...json('DELETE', input), token },
+    ),
   submitFeedback: (token: string, input: FeedbackRequest) =>
     callApi<{ submissionId: string; submittedAt: string; thread: FeedbackThread }>(
       '/support/feedback',

@@ -22,11 +22,16 @@ import {
   createSmtpFeedbackNotifier,
   type FeedbackNotifier,
 } from '../integrations/notifications/feedback-notifier.js';
+import {
+  createExpoPushNotifier,
+  type ExpoPushNotifier,
+} from '../integrations/notifications/expo-push-notifier.js';
 import type { PasswordResetNotifier } from '../integrations/notifications/password-reset-notifier.js';
 
 export type BuildServerOptions = {
   feedbackNotifier?: FeedbackNotifier;
   passwordResetNotifier?: PasswordResetNotifier;
+  pushNotifier?: ExpoPushNotifier;
   realtime?: RealtimeHub;
 };
 
@@ -49,6 +54,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
 
   const realtime = options.realtime ?? new RealtimeHub();
   const feedbackNotifier = options.feedbackNotifier ?? createSmtpFeedbackNotifier();
+  const pushNotifier = options.pushNotifier ?? createExpoPushNotifier();
   realtime.start();
 
   await app.register(sensible);
@@ -72,6 +78,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   await app.register(registerAdminRoutes, {
     notifier: feedbackNotifier,
     prefix: '/api/v1/admin',
+    pushNotifier,
     realtime,
   });
   await app.register(registerAuthRoutes, {

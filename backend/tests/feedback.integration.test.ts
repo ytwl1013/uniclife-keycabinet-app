@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { buildServer } from '../src/app/server.js';
 import type { FeedbackSupportReplyNotification } from '../src/integrations/notifications/feedback-notifier.js';
+import type { SupportReplyPush } from '../src/integrations/notifications/expo-push-notifier.js';
 
 const databaseTest = process.env.RUN_DATABASE_TESTS === 'true' ? describe : describe.skip;
 
 databaseTest('feedback history API', () => {
   it('stores delivery state and isolates history by authenticated user', async () => {
     const supportReplies: FeedbackSupportReplyNotification[] = [];
+    const supportPushes: SupportReplyPush[] = [];
     const app = await buildServer({
       feedbackNotifier: {
         send: async (notification) => {
@@ -19,6 +21,12 @@ databaseTest('feedback history API', () => {
           supportReplies.push(notification);
         },
         sendUserReply: async () => undefined,
+      },
+      pushNotifier: {
+        sendSupportReply: async (notification) => {
+          supportPushes.push(notification);
+          return { invalidTokens: [] };
+        },
       },
     });
 
@@ -44,6 +52,16 @@ databaseTest('feedback history API', () => {
     };
 
     const first = await register('first');
+    const pushRegistration = await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/push-tokens',
+      headers: first.authorization,
+      payload: {
+        platform: 'ios',
+        token: 'ExpoPushToken[feedback-integration]',
+      },
+    });
+    expect(pushRegistration.statusCode).toBe(200);
     const submitResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/support/feedback',
@@ -115,6 +133,12 @@ databaseTest('feedback history API', () => {
       });
       expect(supportReplies).toHaveLength(1);
       expect(supportReplies[0]).toMatchObject({ feedbackId, user: { email: first.email } });
+      expect(supportPushes).toHaveLength(1);
+      expect(supportPushes[0]).toMatchObject({
+        badge: 1,
+        feedbackId,
+        tokens: ['ExpoPushToken[feedback-integration]'],
+      });
 
       const userHistoryWithReply = await app.inject({
         method: 'GET',
@@ -134,6 +158,16 @@ databaseTest('feedback history API', () => {
       });
       expect(readResponse.statusCode).toBe(200);
       expect(readResponse.json().data.markedReadCount).toBe(1);
+
+      const historyAfterRead = await app.inject({
+        method: 'GET',
+        url: '/api/v1/support/feedback',
+        headers: first.authorization,
+      });
+      expect(historyAfterRead.json().data.items[0]).toMatchObject({
+        id: feedbackId,
+        unreadMessageCount: 0,
+      });
     }
 
     const failedResponse = await app.inject({
@@ -171,6 +205,23 @@ databaseTest('feedback history API', () => {
     });
     expect(secondHistory.statusCode).toBe(200);
     expect(secondHistory.json().data.items).toEqual([]);
+
+    if (adminToken) {
+      const signOut = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/sign-out',
+        headers: first.authorization,
+      });
+      expect(signOut.statusCode).toBe(200);
+      const replyAfterSignOut = await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/feedback/${feedbackId}/messages`,
+        headers: { authorization: `Bearer ${adminToken}` },
+        payload: { content: 'This reply must not target the signed-out device.' },
+      });
+      expect(replyAfterSignOut.statusCode).toBe(201);
+      expect(supportPushes).toHaveLength(1);
+    }
 
     await app.close();
   });

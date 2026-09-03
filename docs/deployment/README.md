@@ -49,9 +49,16 @@
 
 - `EXPO_PUBLIC_API_BASE_URL`：后端 API v1 基础地址
 - `EXPO_PUBLIC_APP_ENV`：`development` 或 `production`
+- `EXPO_PUBLIC_EAS_PROJECT_ID`：EAS project UUID；仅在构建未自动注入 `extra.eas.projectId` 时作为系统推送注册的公开回退值
 - `EXPO_PUBLIC_SUPPORT_EMAIL`：账户页“邮箱联系”展示和复制的公开客服邮箱地址
 
 Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。生产模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地使用 `.env.local`，EAS 构建使用 EAS 对应环境。
+
+### 手机系统通知
+
+客服回复的横幅和角标使用 `expo-notifications` 与 Expo Push Service。首次配置需执行 `eas init` 关联项目，并分别在 EAS Credentials 配置 iOS APNs push key 与 Android FCM v1；构建中必须能读取 EAS project ID。`app.json` 的通知 config plugin 变更只在重新生成原生二进制后生效，因此远程推送必须使用新的 development build 或生产 build 测试，不能使用 Expo Go。推送令牌由 App 在用户授权后通过受鉴权 API 注册，服务端只向仍绑定有效登录会话的令牌发送；退出登录会移除当前会话令牌。
+
+系统推送只承担提醒作用，App 内数据库消息是权威记录。Expo Push API 请求设置 10 秒超时且不自动重试，避免不确定响应造成重复横幅；失败不会回滚客服回复。`DeviceNotRegistered` 令牌会被删除。发布前必须用真机分别验证前台、后台、终止状态、通知权限拒绝、横幅点击深链和角标清零。
 
 ## 管理后台环境变量
 

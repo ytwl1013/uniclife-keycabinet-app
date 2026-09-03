@@ -9,19 +9,26 @@ import { assertApp, errorCode } from '../../common/http/errors.js';
 import { ok } from '../../common/http/response.js';
 import { requireDatabase } from '../../db/client.js';
 import type { FeedbackNotifier } from '../../integrations/notifications/feedback-notifier.js';
+import type { ExpoPushNotifier } from '../../integrations/notifications/expo-push-notifier.js';
 import { appendAudit } from '../audit/service.js';
 import type { RealtimePublisher } from '../realtime/hub.js';
 import {
   createFeedbackReply,
+  countUnreadSupportMessages,
   getFeedbackThread,
   listFeedbackThreads,
   markFeedbackMessageDelivered,
   markFeedbackMessageFailed,
   markFeedbackMessagesRead,
 } from '../support/service.js';
+import {
+  deletePushTokensByValue,
+  listUserPushTokens,
+} from '../users/push-token-service.js';
 
 export type AdminSupportRouteOptions = {
   notifier?: FeedbackNotifier;
+  pushNotifier?: ExpoPushNotifier;
   realtime: RealtimePublisher;
 };
 
@@ -130,10 +137,38 @@ export async function registerAdminSupportRoutes(
         );
       }
 
+      let pushDelivered = false;
+      let pushTargetCount = 0;
+      try {
+        const registeredTokens = await listUserPushTokens(database, current.userId);
+        pushTargetCount = registeredTokens.length;
+        if (options.pushNotifier && registeredTokens.length > 0) {
+          const result = await options.pushNotifier.sendSupportReply({
+            badge: await countUnreadSupportMessages(database, current.userId),
+            body: '客服回复了你的反馈，点击查看。',
+            feedbackId,
+            title: 'UnicLife 客服回复',
+            tokens: registeredTokens.map(({ token }) => token),
+          });
+          await deletePushTokensByValue(database, result.invalidTokens);
+          pushDelivered = true;
+        }
+      } catch (pushError) {
+        request.log.warn(
+          { err: pushError, feedbackId, userId: current.userId },
+          'support reply push delivery failed',
+        );
+      }
+
       try {
         await appendAudit(database, {
           action: 'admin.feedback_replied',
-          metadata: { adminActor: 'environment_admin', emailDelivered },
+          metadata: {
+            adminActor: 'environment_admin',
+            emailDelivered,
+            pushDelivered,
+            pushTargetCount,
+          },
           result: 'success',
           targetId: feedbackId,
           targetType: 'feedback',

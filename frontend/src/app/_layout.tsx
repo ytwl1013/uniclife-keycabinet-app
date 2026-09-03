@@ -9,6 +9,7 @@ import { AppUiProvider } from '@/components/ui/app-ui-provider';
 import { AppProvider, useApp } from '@/app-state';
 import { I18nProvider, useTranslation } from '@/i18n';
 import { NotificationsProvider } from '@/features/notifications/notifications-provider';
+import { SystemNotifications } from '@/features/notifications/system-notifications';
 import { AppAutoRefresh } from '@/features/app-refresh/app-auto-refresh';
 import { useAppTheme } from '@/styles/theme';
 
@@ -80,6 +81,7 @@ export default function RootLayout() {
         <AppProvider>
           <AppAutoRefresh />
           <NotificationsProvider>
+            <SystemNotifications />
             <AppNavigationGate />
           </NotificationsProvider>
         </AppProvider>

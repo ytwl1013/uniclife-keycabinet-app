@@ -9,6 +9,7 @@ import {
   feedbackRequestSchema,
   feedbackThreadSchema,
   markHomeGuidePromptedRequestSchema,
+  pushTokenRequestSchema,
   realtimeEventSchema,
   registerRequestSchema,
   updateKeyRequestSchema,
@@ -73,6 +74,17 @@ describe('backend request contracts', () => {
     expect(publicUser).not.toHaveProperty('homeGuidePromptedAt');
     expect(markHomeGuidePromptedRequestSchema.parse({ prompted: true }).prompted).toBe(true);
     expect(() => markHomeGuidePromptedRequestSchema.parse({ prompted: false })).toThrow();
+  });
+
+  it('accepts only native Expo push tokens and supported mobile platforms', () => {
+    expect(pushTokenRequestSchema.parse({
+      platform: 'ios',
+      token: 'ExpoPushToken[test-token_123]',
+    })).toMatchObject({ platform: 'ios' });
+    expect(() => pushTokenRequestSchema.parse({
+      platform: 'web',
+      token: 'not-a-push-token',
+    })).toThrow();
   });
 
   it('keeps realtime change notifications small and resource-scoped', () => {

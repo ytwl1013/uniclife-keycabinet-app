@@ -336,6 +336,22 @@ export async function markFeedbackMessagesRead(
   return rows.length;
 }
 
+export async function countUnreadSupportMessages(
+  database: AppDatabase,
+  userId: string,
+): Promise<number> {
+  const [result] = await database
+    .select({ value: count() })
+    .from(feedbackMessages)
+    .innerJoin(feedbackRecords, eq(feedbackMessages.feedbackId, feedbackRecords.id))
+    .where(and(
+      eq(feedbackRecords.userId, userId),
+      eq(feedbackMessages.sender, 'support'),
+      isNull(feedbackMessages.readAt),
+    ));
+  return result?.value ?? 0;
+}
+
 export async function submitFeedback(input: {
   feedback: FeedbackRequest;
   notifier: FeedbackNotifier;

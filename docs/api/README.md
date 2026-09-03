@@ -50,6 +50,8 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 | PATCH | `/users/me/profile` | 更新名称和头像 URI | 本人 |
 | PATCH | `/users/me/email` | 更新邮箱 | 本人 |
 | PATCH | `/users/me/password` | 校验当前密码后修改密码 | 本人 |
+| POST | `/users/me/push-tokens` | 注册或更新当前会话设备的 Expo 推送令牌 | 本人 |
+| DELETE | `/users/me/push-tokens` | 移除当前账户的指定 Expo 推送令牌 | 本人 |
 | DELETE | `/users/me` | 匿名化并停用账户；若仍是任意箱子的超级管理员则返回 409，需先转让或删除箱子 | 本人 |
 | POST | `/support/feedback` | 提交产品/应用反馈并通过后端 SMTP 发送邮件 | 登录 |
 | GET | `/support/feedback` | 查询当前用户最近的反馈会话摘要；支持 `limit=1..100` | 本人 |
@@ -71,6 +73,8 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 ```
 
 注册、登录、`GET /auth/session` 和当前账户写接口返回的本人资料还包含 `loginCount`、`lastLoginAt` 与 `homeGuidePromptedAt`。注册并创建会话计为第一次登录；每次密码登录在数据库事务内原子增加次数并更新时间。首页导航提示接口只接受 `prompted: true`，可携带 `requestId`，并记录成功审计。登录统计和导航状态不会出现在柜体成员或活动参与者资料中。
+
+推送令牌接口只接受 `ios|android` 和合法的 `ExpoPushToken[...]`/`ExponentPushToken[...]`。令牌绑定当前登录会话，同一令牌再次注册时转移到最新账户和会话；退出登录、会话失效或账户停用后不会再用于发送。服务端响应、审计和业务日志均不得输出原始推送令牌。
 
 ```json
 {

@@ -50,6 +50,13 @@
       "when": 1788333410239,
       "tag": "0006_rare_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788343285924,
+      "tag": "0007_brave_gorilla_man",
+      "breakpoints": true
     }
   ]
 }
