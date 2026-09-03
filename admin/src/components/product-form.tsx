@@ -180,8 +180,8 @@ export function ProductForm(props: ProductFormProps) {
                 ) : null}
               </label>
               <label className={labelClass}>
-                说明书地址
-                <input className={fieldClass} defaultValue={product?.manualUrl ?? ''} maxLength={2048} name="manualUrl" placeholder="https://…" required type="url" />
+                说明书地址（选填）
+                <input className={fieldClass} defaultValue={product?.manualUrl ?? ''} maxLength={2048} name="manualUrl" placeholder="https://…" type="url" />
               </label>
             </div>
 

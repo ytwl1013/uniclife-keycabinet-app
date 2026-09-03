@@ -16,6 +16,7 @@ export type AppIconName =
   | 'authorize'
   | 'audit'
   | 'notification'
+  | 'manual'
   | 'guide'
   | 'support'
   | 'send'

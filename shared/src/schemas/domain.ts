@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 export const entityIdSchema = z.string().trim().min(1).max(128);
 export const isoDateSchema = z.string().datetime({ offset: true });
+export const httpUrlSchema = z
+  .string()
+  .url()
+  .regex(/^https?:\/\//i, 'URL must use http or https');
 export const supportedLocales = [
   'en-US',
   'en-GB',
@@ -46,7 +50,7 @@ export const productSkuSchema = z.object({
   color: z.string().min(1).max(64),
   capacity: z.number().int().positive(),
   description: z.string(),
-  manualUrl: z.string().url(),
+  manualUrl: httpUrlSchema.optional(),
   imageAsset: z.string().min(1).max(256),
   imagePath: z.string().regex(/^\/api\/v1\/products\/[A-Za-z0-9-]{1,128}\/image\?v=\d+$/).optional(),
 });

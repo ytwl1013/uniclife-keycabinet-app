@@ -54,7 +54,7 @@ export function toSku(row: typeof productSkus.$inferSelect): ProductSku {
     color: row.color,
     capacity: row.capacity,
     description: row.description,
-    manualUrl: row.manualUrl,
+    ...(row.manualUrl ? { manualUrl: row.manualUrl } : {}),
     imageAsset: row.imageAsset,
     ...(row.imageVersion > 0
       ? { imagePath: `/api/v1/products/${encodeURIComponent(row.id)}/image?v=${row.imageVersion}` }

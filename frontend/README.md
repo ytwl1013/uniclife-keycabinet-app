@@ -60,6 +60,16 @@ The prototype supports `en-US`, `en-GB`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`,
 `pt-PT`, `nl-NL`, `pl-PL`, `zh-CN`, and `zh-TW`, with system-locale selection or an in-app
 override.
 
+## Product manuals
+
+The product contract exposes an optional HTTP/HTTPS `manualUrl`. Home derives the
+manual entry only from cabinets visible to the signed-in account and hides it when
+none of those cabinet SKUs has a manual. The authenticated details route lists one
+row per visible cabinet, including separate rows for cabinets sharing a SKU, and
+opens each manual through `expo-web-browser`. The app never receives Admin or
+database credentials; product metadata continues to come from the unified backend
+request layer.
+
 ## UI conventions
 
 - Use Uniwind/Tailwind CSS 4 `className` utilities and semantic tokens; do not add page-level `StyleSheet` objects.

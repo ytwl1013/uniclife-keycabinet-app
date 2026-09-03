@@ -218,6 +218,20 @@ describe('simplified mobile navigation architecture', () => {
     expect(notifications).toContain('if (item.href) router.push(item.href)');
   });
 
+  it('shows the manuals entry only when a visible cabinet has a manual link', () => {
+    const home = source('src/app/(tabs)/index.tsx');
+    const layout = source('src/app/(details)/_layout.tsx');
+    const manuals = source('src/features/manuals/components/manuals-screen.tsx');
+
+    expect(home).toContain('selectCabinetManuals(cabinets, selectors.skuById)');
+    expect(home).toContain('{manuals.length ? (');
+    expect(home).toContain('testID="home-manuals-button"');
+    expect(home).toContain("router.push('/(details)/manuals' as Href)");
+    expect(layout).toContain('<Stack.Screen name="manuals"');
+    expect(manuals).toContain('WebBrowser.openBrowserAsync(item.url)');
+    expect(manuals).toContain('testID={`manual-item-${item.cabinet.id}`}');
+  });
+
   it('provides menu and calendar filters with cabinet-grouped return cards', () => {
     const borrowed = source('src/features/cabinet-prototype/components/borrowed-keys-screen.tsx');
     const filterMenu = source('src/features/cabinet-prototype/components/borrowed-keys-filter-menu.tsx');

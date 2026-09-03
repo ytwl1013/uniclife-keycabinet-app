@@ -109,6 +109,8 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 
 产品创建请求中的 `image` 必须已经由 Admin 浏览器转换为最长边不超过 1280px、文件不超过 700 KiB 的 WebP。后端只校验 Base64 长度、WebP 文件签名和 SHA-256 摘要后保存，不负责解码、旋转、缩放或压缩。创建和更新分别限制为每分钟 10 次和 20 次，并记录 `admin.product_created` / `admin.product_updated` 成功或失败审计。
 
+`manualUrl` 为可选字段：可以不传、传空字符串，或填写 `http://` / `https://` 网页地址。留空时数据库保存空字符串，API 产品响应省略 `manualUrl`；App 只有在当前账户至少一个箱子的产品配置了说明书时，才展示说明书入口。
+
 ```json
 {
   "sku": "BG5163-BK",
@@ -129,7 +131,7 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 }
 ```
 
-SKU 在创建时转为大写，创建后没有修改或删除接口；产品二维码格式仍为 `uniclife://cabinet/v1/init/<SKU>/<PRODUCT_CODE>`，随机码只生成一次。更新请求不接受 SKU 或二维码，并携带 `expectedVersion` 做乐观并发控制。已有任一柜体使用产品后，容量不可修改并返回 HTTP 409 / `PRODUCT_CAPACITY_LOCKED`；图片、名称、型号、颜色、描述和说明书地址仍可修改。
+SKU 在创建时转为大写，创建后没有修改或删除接口；产品二维码格式仍为 `uniclife://cabinet/v1/init/<SKU>/<PRODUCT_CODE>`，随机码只生成一次。更新请求不接受 SKU 或二维码，并携带 `expectedVersion` 做乐观并发控制。已有任一柜体使用产品后，容量不可修改并返回 HTTP 409 / `PRODUCT_CAPACITY_LOCKED`；图片、名称、型号、颜色、描述和可选说明书地址仍可修改。
 
 `GET /products/:productId/image?v=<version>` 是无需用户会话的产品 WebP 图片读取接口，供扫码结果和柜体页面展示。响应包含内容摘要 ETag；匹配当前 `v` 的 URL 可长期 immutable 缓存，无版本 URL 只短期缓存。图片更新会递增 URL 的 `v`，客户端因此不会继续显示旧图。
 

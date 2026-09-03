@@ -13,6 +13,7 @@ import { UserAvatar } from '@/features/account/components/account-ui';
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { shouldAutomaticallyPromptHomeGuide } from '@/features/home/home-guide';
 import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
+import { selectCabinetManuals } from '@/features/manuals/select-cabinet-manuals';
 import { useNotifications } from '@/features/notifications/notifications-provider';
 import { useTranslation } from '@/i18n';
 
@@ -25,6 +26,7 @@ export default function HomeRoute() {
   const { unreadCount } = useNotifications();
   const { onRefresh, refreshing } = useAppRefresh();
   const cabinets = selectors.cabinetsForCurrentUser();
+  const manuals = selectCabinetManuals(cabinets, selectors.skuById);
   const borrowedKeys = selectors.borrowedKeys();
   const [guideConfirmationVisible, setGuideConfirmationVisible] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
@@ -165,6 +167,16 @@ export default function HomeRoute() {
               )}
             </Pressable>
             <View className="flex-row items-center gap-2">
+              {manuals.length ? (
+                <Pressable
+                  accessibilityLabel={t('manuals.title')}
+                  accessibilityRole="button"
+                  className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft active:opacity-70"
+                  onPress={() => router.push('/(details)/manuals' as Href)}
+                  testID="home-manuals-button">
+                  <AppIcon name="manual" size={22} tone="brand" />
+                </Pressable>
+              ) : null}
               <Pressable
                 accessibilityLabel={t('notifications.title')}
                 accessibilityRole="button"

@@ -32,7 +32,7 @@ export type ProductSku = {
   color: string;
   capacity: number;
   description: string;
-  manualUrl: string;
+  manualUrl?: string;
   imageAsset: string;
 };
 

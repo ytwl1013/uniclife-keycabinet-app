@@ -31,7 +31,7 @@ export const productSkuSchema = z.object({
   color: z.string().trim().min(1),
   capacity: z.number().int().positive(),
   description: z.string(),
-  manualUrl: z.string().url(),
+  manualUrl: z.string().url().regex(/^https?:\/\//i).optional(),
   imageAsset: z.string().trim().min(1),
 });
 

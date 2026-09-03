@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   cabinetStatusSchema,
   entityIdSchema,
+  httpUrlSchema,
   isoDateSchema,
   productQrSchema,
   productSkuSchema,
@@ -62,7 +63,14 @@ const adminProductEditableFields = {
   color: z.string().trim().min(1).max(64),
   capacity: z.coerce.number().int().min(1).max(1000),
   description: z.string().trim().max(5000),
-  manualUrl: z.string().trim().url().max(2048),
+  manualUrl: z
+    .string()
+    .trim()
+    .max(2048)
+    .refine((value) => value === '' || httpUrlSchema.safeParse(value).success, {
+      message: 'Manual URL must be empty or use http/https',
+    })
+    .default(''),
 };
 
 export const adminProductCreateRequestSchema = z.object({

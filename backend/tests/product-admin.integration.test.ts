@@ -66,6 +66,7 @@ databaseTest('admin product workflow', () => {
         ...editable,
         name: 'QA Product Updated',
         description: 'Description and product image were updated',
+        manualUrl: '',
         expectedVersion: created.version,
         sku: 'ATTEMPTED-SKU-CHANGE',
         image: preprocessedImage('updated'),
@@ -80,6 +81,7 @@ databaseTest('admin product workflow', () => {
       version: 1,
       image: { version: 2 },
     });
+    expect(updated).not.toHaveProperty('manualUrl');
     expect(updated.qr.code).toBe(originalQr);
 
     const imageResponse = await app.inject({

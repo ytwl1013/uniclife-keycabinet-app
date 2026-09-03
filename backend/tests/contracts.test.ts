@@ -1,4 +1,6 @@
 import {
+  adminProductCreateRequestSchema,
+  adminProductUpdateRequestSchema,
   adminUserDetailSchema,
   checkoutKeyRequestSchema,
   cabinetMembershipSchema,
@@ -19,8 +21,61 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { toIsoDate } from '../src/common/domain/dates.js';
+import { toSku } from '../src/common/domain/mappers.js';
 
 describe('backend request contracts', () => {
+  it('allows product manuals to be omitted while accepting only web links', () => {
+    const editable = {
+      model: 'BG5163',
+      name: 'Key cabinet',
+      color: 'Black',
+      capacity: 32,
+      description: 'Product description',
+    };
+
+    expect(adminProductUpdateRequestSchema.parse({
+      ...editable,
+      expectedVersion: 0,
+    }).manualUrl).toBe('');
+    expect(adminProductUpdateRequestSchema.parse({
+      ...editable,
+      expectedVersion: 0,
+      manualUrl: '   ',
+    }).manualUrl).toBe('');
+    expect(adminProductUpdateRequestSchema.parse({
+      ...editable,
+      expectedVersion: 0,
+      manualUrl: 'https://example.com/manual',
+    }).manualUrl).toBe('https://example.com/manual');
+    expect(() => adminProductUpdateRequestSchema.parse({
+      ...editable,
+      expectedVersion: 0,
+      manualUrl: 'javascript:alert(1)',
+    })).toThrow();
+    expect(() => adminProductCreateRequestSchema.parse({
+      ...editable,
+      sku: 'BG5163-BK',
+      manualUrl: 'ftp://example.com/manual',
+      image: {},
+    })).toThrow();
+
+    expect(toSku({
+      id: 'sku-test',
+      sku: 'BG5163-BK',
+      model: editable.model,
+      name: editable.name,
+      color: editable.color,
+      capacity: editable.capacity,
+      description: editable.description,
+      manualUrl: '',
+      imageAsset: 'database',
+      imageVersion: 0,
+      version: 0,
+      createdAt: '2026-09-03T00:00:00.000Z',
+      updatedAt: '2026-09-03T00:00:00.000Z',
+    })).not.toHaveProperty('manualUrl');
+  });
+
   it('normalizes registration email and enforces legal consent', () => {
     const valid = registerRequestSchema.parse({
       email: ' Person@Example.COM ',
