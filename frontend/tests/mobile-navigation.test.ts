@@ -297,6 +297,10 @@ describe('simplified mobile navigation architecture', () => {
     const scan = source('src/features/scan/components/scan-flow.tsx');
     expect(scan).toContain('<CameraView');
     expect(scan).toContain('onBarcodeScanned');
+    expect(scan).toContain('getScanModeMismatch(mode, code)');
+    expect(scan).toContain("t('scan.productQrInJoinDescription')");
+    expect(scan).toContain("t('scan.joinQrInInitializeDescription')");
+    expect(scan).toContain("mode === 'initialize' ? t('scan.initializeAlignCode') : t('scan.joinAlignCode')");
     expect(scan).toContain("t('scan.cabinetName')");
     expect(scan).toContain('await actions.initializeCabinet');
     expect(scan).toContain('await actions.joinCabinet');

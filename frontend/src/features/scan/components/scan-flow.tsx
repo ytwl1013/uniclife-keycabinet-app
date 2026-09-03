@@ -19,10 +19,11 @@ import {
   StatePanel,
 } from '@/features/cabinet-prototype/components/prototype-ui';
 import { useTranslation } from '@/i18n';
+import { getScanModeMismatch, ScanMode, ScanModeMismatch } from '@/features/scan/scan-mode';
 
-export type ScanMode = 'initialize' | 'join';
+export type { ScanMode } from '@/features/scan/scan-mode';
 
-type ScanErrorKind = 'invalid' | 'offline' | 'session' | 'generic';
+type ScanErrorKind = 'invalid' | 'offline' | 'session' | 'generic' | ScanModeMismatch;
 
 function ProductDatum({
   className = '',
@@ -48,10 +49,12 @@ function ProductDatum({
 
 function ScannerPreview({
   active,
+  instruction,
   onCode,
   onMountError,
 }: {
   active: boolean;
+  instruction: string;
   onCode: (code: string) => void;
   onMountError: (message: string) => void;
 }) {
@@ -79,7 +82,7 @@ function ScannerPreview({
         <View className="aspect-square w-3/4 rounded-card border-2 border-on-brand" />
         <View className="absolute inset-x-screen bottom-screen items-center gap-1 rounded-control bg-foreground/70 px-controlX py-controlY">
           <AppText className="text-center" variant="label" tone="onBrand">
-            {t('scan.alignCode')}
+            {instruction}
           </AppText>
           <AppText className="text-center" variant="caption" tone="onBrand">
             {ready ? t('scan.scanning') : t('common.loading')}
@@ -207,7 +210,7 @@ function ProductConfirmation({
   );
 }
 
-export function ScanFlow({ sample = false }: { mode: ScanMode; sample?: boolean }) {
+export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: boolean }) {
   const router = useRouter();
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
@@ -326,6 +329,13 @@ export function ScanFlow({ sample = false }: { mode: ScanMode; sample?: boolean 
       }
       scanLockRef.current = true;
       setErrorKind(null);
+
+      const modeMismatch = getScanModeMismatch(mode, code);
+      if (modeMismatch) {
+        setErrorKind(modeMismatch);
+        return;
+      }
+
       setResolving(true);
 
       try {
@@ -340,7 +350,7 @@ export function ScanFlow({ sample = false }: { mode: ScanMode; sample?: boolean 
         setResolving(false);
       }
     },
-    [actions, binding, classifyError, resolving],
+    [actions, binding, classifyError, mode, resolving],
   );
 
   const launchSystemScanner = useCallback(async () => {
@@ -438,6 +448,23 @@ export function ScanFlow({ sample = false }: { mode: ScanMode; sample?: boolean 
       />
     );
   } else if (errorKind) {
+    const title =
+      errorKind === 'productQrInJoinMode'
+        ? t('scan.productQrInJoinTitle')
+        : errorKind === 'joinQrInInitializeMode'
+          ? t('scan.joinQrInInitializeTitle')
+          : errorKind === 'invalid'
+            ? t('scan.invalidTitle')
+            : t('scan.title');
+    const description =
+      errorKind === 'productQrInJoinMode'
+        ? t('scan.productQrInJoinDescription')
+        : errorKind === 'joinQrInInitializeMode'
+          ? t('scan.joinQrInInitializeDescription')
+          : errorKind === 'invalid'
+            ? t('scan.invalidDescription')
+            : t('scan.actionFailed');
+
     mainContent = (
       <StatePanel
         action={
@@ -448,11 +475,9 @@ export function ScanFlow({ sample = false }: { mode: ScanMode; sample?: boolean 
             tone="neutral"
           />
         }
-        description={
-          errorKind === 'invalid' ? t('scan.invalidDescription') : t('scan.actionFailed')
-        }
+        description={description}
         icon="error"
-        title={errorKind === 'invalid' ? t('scan.invalidTitle') : t('scan.title')}
+        title={title}
       />
     );
   } else if (resolution) {
@@ -534,6 +559,9 @@ export function ScanFlow({ sample = false }: { mode: ScanMode; sample?: boolean 
     mainContent = (
       <ScannerPreview
         active={isFocused && !scanLockRef.current}
+        instruction={
+          mode === 'initialize' ? t('scan.initializeAlignCode') : t('scan.joinAlignCode')
+        }
         onCode={(code) => void resolveCode(code)}
         onMountError={(message) => setCameraMountError(message)}
       />
