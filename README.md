@@ -75,40 +75,75 @@ git push gitlab \
 
 这不会删除 GitLab 原有的 `main`、`dev` 或其他分支，也不使用强制推送。若以后启用 GitLab Pull Mirror，可用自动镜像替代这一步；仍应保持 GitHub 为唯一写入源。
 
-## 本地开发
+## 环境与快速启动
+
+本地只维护一套 Backend 开发环境；生产 Backend 由 Render 运行。Frontend 和 Admin 各自保存 dev/pro 两个 API 地址，由启动命令选择，不需要来回修改 `.env.local`。
+
+| 环境 | Backend | Frontend | Admin |
+| --- | --- | --- | --- |
+| dev | 本机 `http://127.0.0.1:4000` | `EXPO_PUBLIC_API_BASE_URL_DEV` | `API_BASE_URL_DEV` |
+| pro | Render（本机不启动 Backend） | `EXPO_PUBLIC_API_BASE_URL_PRO` | `API_BASE_URL_PRO` |
+
+### 首次配置
 
 ```bash
 pnpm install
 cp backend/.env.development.example backend/.env.development
-cp frontend/.env.development.example frontend/.env.local
+cp frontend/.env.example frontend/.env.local
 cp admin/.env.example admin/.env.local
 pnpm --filter @uniclife/admin generate-env-secrets
 ```
 
-将 `frontend/.env.local` 中的示例地址改为开发电脑的局域网 IPv4 地址，保证真机与开发电脑连接同一局域网。iOS Simulator 可以使用 `localhost`。
+将 `frontend/.env.local` 的 `EXPO_PUBLIC_API_BASE_URL_DEV` 改为开发电脑的局域网 IPv4 地址，保证真机与开发电脑处于同一局域网；iOS Simulator 可以使用 `localhost`。把 Frontend 和 Admin 的 `*_PRO` 地址配置为 Render 地址，其中 Frontend 地址包含 `/api/v1`，Admin 地址不包含。
 
-开发数据库单独运行在 Docker 中，后端仍由本机的 watch 模式运行：
+密钥生成命令会输出两枚管理 API 令牌：把 `ADMIN_API_TOKEN_DEV` 的值作为 `ADMIN_API_TOKEN` 写入本地 Backend 的被忽略环境文件，把 `ADMIN_API_TOKEN_PRO` 的值写入 Render 的 `ADMIN_API_TOKEN`。令牌不得提交到仓库。
+
+### 快速启动
+
+为了保留 Expo Metro 的完整交互界面和终端二维码，不再把三个服务合并到同一个并行命令。开发环境请分别打开三个终端。
+
+先准备开发数据库；该命令执行完成后会返回终端：
+
+```bash
+pnpm dev:prepare
+```
+
+然后分别启动：
+
+| 终端 | dev 命令 | 说明 |
+| --- | --- | --- |
+| Terminal 1 | `pnpm dev:backend` | 启动本地 Fastify Backend |
+| Terminal 2 | `pnpm dev:frontend` | 直接运行 `expo start`，显示 Metro 操作界面和 Expo 二维码 |
+| Terminal 3 | `pnpm dev:admin` | 启动连接本地 Backend 的 Admin |
+
+pro 环境不启动本地 Backend，另外打开两个终端：
+
+| 终端 | pro 命令 | 说明 |
+| --- | --- | --- |
+| Terminal 1 | `pnpm pro:frontend` | 运行 `expo start` 并连接 Render API，显示 Expo 二维码 |
+| Terminal 2 | `pnpm pro:admin` | 本地启动 Admin 并连接 Render API |
+
+第一次使用开发数据库时可按需运行 `pnpm db:seed:dev`。
+
+其他数据库命令：
 
 ```bash
 pnpm dev:db
 pnpm db:migrate:dev
 pnpm db:seed:dev
-pnpm dev
+pnpm dev:db:down
 ```
 
 - `pnpm dev:db`：启动只监听 `127.0.0.1:5432` 的 PostgreSQL 17 开发容器。
 - `pnpm db:migrate:dev`：将 `backend/src/db/migrations` 中尚未执行的迁移应用到开发库。
 - `pnpm db:seed:dev`：幂等写入两个虚构产品 SKU 和各自可复用的产品初始化二维码，不创建账户。
-- `pnpm dev`：同时启动 Fastify 热更新服务和 Expo 开发服务。
-- `pnpm dev:admin`：启动使用 `API_BASE_URL_DEVELOPMENT` 的 Next.js 管理后台。
-- `pnpm --filter @uniclife/admin dev:remote`：以 `APP_ENV=dev` 启动管理后台并使用 `API_BASE_URL_DEV`。
 - `pnpm dev:db:down`：停止开发数据库但保留 Docker volume 中的数据。
 
-前端运行时直接调用 `EXPO_PUBLIC_API_BASE_URL` 指向的后端，原型 Mock 数据只保留给单元测试，不再挂载到应用。首次启动后请注册账户，再扫描开发 seed 对应的产品二维码（`docs/demo-qr-codes/bg5163-product.png` 或 `docs/demo-qr-codes/bg0680-product.png`）初始化新柜体；加入已有柜体必须扫描其设置页生成的一次性加入二维码。仅启动 Expo 而未启动后端时，登录和业务数据不会回退到 Demo。
+前端运行时根据 `EXPO_PUBLIC_APP_ENV=dev|pro` 调用对应的 API 地址，原型 Mock 数据只保留给单元测试，不再挂载到应用。首次启动后请注册账户，再扫描开发 seed 对应的产品二维码（`docs/demo-qr-codes/bg5163-product.png` 或 `docs/demo-qr-codes/bg0680-product.png`）初始化新柜体；加入已有柜体必须扫描其设置页生成的一次性加入二维码。仅启动 Expo 而未启动对应后端时，登录和业务数据不会回退到 Demo。
 
 开发 seed 只用于本地测试，生产数据库不运行 seed。生产 SKU 在 Admin 的“产品与二维码”中创建：SKU 与生成的产品二维码永久不变，图片、名称和描述等展示资料可继续修改；二维码可下载为高清 PNG 或 SVG 后交付批量印刷。产品原图会先在管理员浏览器中缩放、转 WebP、压缩并清除元数据，后端只接收不超过 700 KiB 的结果，避免占用 Render 免费实例做图片处理。
 
-后端按 `NODE_ENV` 加载对应的 `.env.<environment>`，生产环境由 Render 注入变量。Expo 本地开发统一使用被 Git 忽略的 `frontend/.env.local`，生产构建使用 EAS 的 production 环境。不要提交真实 `.env`、数据库密码、设备密钥、Token、Cookie 或证书。
+后端本地按 `NODE_ENV=development` 加载 `.env.development`；Render 直接注入生产变量。Expo 本地启动使用被 Git 忽略的 `frontend/.env.local`，EAS 生产构建使用 production 环境中的 pro 变量。不要提交真实 `.env`、数据库密码、设备密钥、Token、Cookie 或证书。
 
 ## 验证
 

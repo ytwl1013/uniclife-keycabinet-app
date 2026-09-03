@@ -32,21 +32,21 @@ export default function SettingsPage() {
           </Card.Header>
           <Card.Content className="px-5 pb-5 pt-6">
             <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
-              <div className={`rounded-2xl border p-4 ${environment === 'development' ? 'border-blue-200 bg-blue-50/70' : 'border-zinc-200 bg-zinc-50'}`}>
-                <div className="flex items-center gap-2">
-                  <DatabaseZap aria-hidden="true" className={environment === 'development' ? 'text-blue-600' : 'text-zinc-400'} size={18} />
-                  <span className="text-sm font-semibold text-zinc-800">本地开发</span>
-                </div>
-                <p className="mt-2 text-xs leading-5 text-zinc-500">APP_ENV=development</p>
-                <code className="mt-3 block rounded-lg bg-white/80 px-2.5 py-2 text-[10px] text-zinc-500">API_BASE_URL_DEVELOPMENT</code>
-              </div>
               <div className={`rounded-2xl border p-4 ${environment === 'dev' ? 'border-blue-200 bg-blue-50/70' : 'border-zinc-200 bg-zinc-50'}`}>
                 <div className="flex items-center gap-2">
-                  <ServerCog aria-hidden="true" className={environment === 'dev' ? 'text-blue-600' : 'text-zinc-400'} size={18} />
-                  <span className="text-sm font-semibold text-zinc-800">Dev 服务器</span>
+                  <DatabaseZap aria-hidden="true" className={environment === 'dev' ? 'text-blue-600' : 'text-zinc-400'} size={18} />
+                  <span className="text-sm font-semibold text-zinc-800">本地开发</span>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-zinc-500">APP_ENV=dev（强制 HTTPS）</p>
+                <p className="mt-2 text-xs leading-5 text-zinc-500">APP_ENV=dev</p>
                 <code className="mt-3 block rounded-lg bg-white/80 px-2.5 py-2 text-[10px] text-zinc-500">API_BASE_URL_DEV</code>
+              </div>
+              <div className={`rounded-2xl border p-4 ${environment === 'pro' ? 'border-emerald-200 bg-emerald-50/70' : 'border-zinc-200 bg-zinc-50'}`}>
+                <div className="flex items-center gap-2">
+                  <ServerCog aria-hidden="true" className={environment === 'pro' ? 'text-emerald-600' : 'text-zinc-400'} size={18} />
+                  <span className="text-sm font-semibold text-zinc-800">Render 生产后端</span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-zinc-500">APP_ENV=pro（强制 HTTPS）</p>
+                <code className="mt-3 block rounded-lg bg-white/80 px-2.5 py-2 text-[10px] text-zinc-500">API_BASE_URL_PRO</code>
               </div>
             </div>
             <div className="mt-4 rounded-2xl border border-zinc-100 bg-white p-4">
@@ -56,7 +56,7 @@ export default function SettingsPage() {
                   <p className="text-xs font-semibold text-zinc-700">切换命令</p>
                   <div className="mt-2 space-y-1.5 font-mono text-[11px] text-zinc-500">
                     <p>pnpm dev:admin</p>
-                    <p>pnpm --filter @uniclife/admin dev:remote</p>
+                    <p>pnpm pro:admin</p>
                   </div>
                 </div>
               </div>

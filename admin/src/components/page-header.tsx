@@ -10,7 +10,7 @@ export function PageHeader({
 }: {
   title: string;
   description: string;
-  environment: 'development' | 'dev';
+  environment: 'dev' | 'pro';
   actions?: ReactNode;
 }) {
   return (
@@ -18,9 +18,9 @@ export function PageHeader({
       <div>
         <div className="mb-2 flex items-center gap-2.5">
           <h1 className="text-[26px] font-semibold tracking-[-0.035em] text-zinc-950">{title}</h1>
-          <Chip color={environment === 'dev' ? 'accent' : 'default'} size="sm" variant="soft">
+          <Chip color={environment === 'pro' ? 'success' : 'accent'} size="sm" variant="soft">
             <Radio aria-hidden="true" className="mr-1" size={11} />
-            {environment === 'dev' ? 'DEV SERVER' : 'LOCAL DEV'}
+            {environment === 'pro' ? 'PRO SERVER' : 'LOCAL DEV'}
           </Chip>
         </div>
         <p className="text-[13px] leading-5 text-zinc-500">{description}</p>

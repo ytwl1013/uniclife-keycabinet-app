@@ -10,19 +10,24 @@
     "shared"
   ],
   "scripts": {
-    "dev": "pnpm --parallel --filter @uniclife/backend --filter @uniclife/frontend dev",
+    "dev:prepare": "pnpm dev:db && pnpm db:migrate:dev",
     "dev:admin": "pnpm --filter @uniclife/admin dev",
+    "pro:admin": "pnpm --filter @uniclife/admin pro",
     "dev:db": "docker compose -f deploy/docker/compose.dev.yml up -d --wait",
     "dev:db:down": "docker compose -f deploy/docker/compose.dev.yml down",
     "dev:db:logs": "docker compose -f deploy/docker/compose.dev.yml logs -f postgres",
-    "dev:frontend": "pnpm --filter @uniclife/frontend dev",
     "dev:backend": "pnpm --filter @uniclife/backend dev",
+    "dev:frontend": "pnpm --filter @uniclife/frontend start",
+    "pro:frontend": "pnpm --filter @uniclife/frontend start:pro",
     "db:migrate:dev": "pnpm --filter @uniclife/backend db:migrate:dev",
     "db:seed:dev": "pnpm --filter @uniclife/backend db:seed:dev",
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "pro:admin:build": "pnpm --filter @uniclife/admin build:pro",
+    "pro:admin:start": "pnpm --filter @uniclife/admin start:pro",
+    "pro:frontend:start": "pnpm --filter @uniclife/frontend start:pro"
   }
 }

@@ -63,13 +63,15 @@ async function main(): Promise<void> {
 
   const passwordHash = await hash(password, 12);
   const sessionSecret = generateSecret();
-  const apiToken = generateSecret();
+  const devApiToken = generateSecret();
+  const proApiToken = generateSecret();
 
-  process.stdout.write('\n生成完成。请手动复制以下三行到 admin/.env.local：\n\n');
+  process.stdout.write('\n生成完成。请手动复制以下四行到 admin/.env.local：\n\n');
   process.stdout.write(`ADMIN_PASSWORD_HASH=${passwordHash}\n`);
   process.stdout.write(`ADMIN_SESSION_SECRET=${sessionSecret}\n`);
-  process.stdout.write(`ADMIN_API_TOKEN=${apiToken}\n`);
-  process.stdout.write('\n其中 ADMIN_API_TOKEN 还需要复制到后端环境变量，且必须完全一致。\n');
+  process.stdout.write(`ADMIN_API_TOKEN_DEV=${devApiToken}\n`);
+  process.stdout.write(`ADMIN_API_TOKEN_PRO=${proApiToken}\n`);
+  process.stdout.write('\n将 DEV 令牌复制到本地后端 ADMIN_API_TOKEN，将 PRO 令牌复制到 Render ADMIN_API_TOKEN。\n');
 }
 
 void main().catch((error: unknown) => {

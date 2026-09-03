@@ -39,7 +39,7 @@ export async function requestAdminApi<T>(
       method: options.method ?? 'GET',
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${environment.ADMIN_API_TOKEN}`,
+        Authorization: `Bearer ${environment.adminApiToken}`,
         ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
       },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),

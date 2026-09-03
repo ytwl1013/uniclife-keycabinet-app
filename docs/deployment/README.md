@@ -17,7 +17,7 @@
 - `HOST`：后端监听地址
 - `LOG_LEVEL`：日志级别
 - `FRONTEND_ORIGIN`：允许跨域访问的前端地址
-- `ADMIN_API_TOKEN`：可选的服务端管理 API 令牌，至少 32 字符；启用管理后台时必填，并与管理后台同名变量保持一致。只能由 Secret 注入，不得加 `NEXT_PUBLIC_` 前缀
+- `ADMIN_API_TOKEN`：可选的服务端管理 API 令牌，至少 32 字符；本地 Backend 与 Admin 的 `ADMIN_API_TOKEN_DEV` 一致，Render 与 Admin 的 `ADMIN_API_TOKEN_PRO` 一致。只能由 Secret 注入，不得加 `NEXT_PUBLIC_` 前缀
 - `AUTH_TOKEN_PEPPER`：至少 32 字符的独立随机密钥，用于会话、验证码和重置 Token 摘要；开发和生产环境都必填且不得随意轮换，否则全部会话与重置挑战会失效
 - `AUTH_SESSION_TTL_DAYS`：会话有效天数，范围 1–90
 - `AUTH_RESET_TTL_MINUTES`：验证码和重置 Token 有效分钟数，范围 5–60
@@ -44,15 +44,17 @@
 
 前端通用变量参考 `frontend/.env.example`，环境模板分别为：
 
-- `frontend/.env.development.example`：复制为被忽略的 `.env.local`，将 API 地址改为开发电脑的局域网 IPv4 地址。
+- `frontend/.env.example`：复制为被忽略的 `.env.local`，同时配置 dev/pro 两个 API 地址。
+- `frontend/.env.development.example`：本地开发变量示例，将 dev API 地址改为开发电脑的局域网 IPv4 地址。
 - `frontend/.env.production.example`：EAS production 环境的变量名和格式参考。
 
-- `EXPO_PUBLIC_API_BASE_URL`：后端 API v1 基础地址
-- `EXPO_PUBLIC_APP_ENV`：`development` 或 `production`
+- `EXPO_PUBLIC_API_BASE_URL_DEV`：本地 Backend 的 API v1 基础地址
+- `EXPO_PUBLIC_API_BASE_URL_PRO`：Render Backend 的 API v1 基础地址
+- `EXPO_PUBLIC_APP_ENV`：`dev` 或 `pro`，通常由 `pnpm dev:frontend` / `pnpm pro:frontend` 自动设置
 - `EXPO_PUBLIC_EAS_PROJECT_ID`：EAS project UUID；仅在构建未自动注入 `extra.eas.projectId` 时作为系统推送注册的公开回退值
 - `EXPO_PUBLIC_SUPPORT_EMAIL`：账户页“邮箱联系”展示和复制的公开客服邮箱地址
 
-Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。生产模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地使用 `.env.local`，EAS 构建使用 EAS 对应环境。
+Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。pro 模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地命令通过 `EXPO_PUBLIC_APP_ENV` 选择地址，EAS 构建使用 EAS production 环境中的 pro 变量。
 
 ### 手机系统通知
 
@@ -64,18 +66,19 @@ Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不�
 
 管理后台模板位于 `admin/.env.example`，复制为被 Git 忽略的 `admin/.env.local` 后配置：
 
-- `APP_ENV`：`development` 使用本地地址，`dev` 使用远端开发服务器地址
-- `API_BASE_URL_DEVELOPMENT`：本地 Fastify 地址，例如 `http://127.0.0.1:4000`
-- `API_BASE_URL_DEV`：远端 Dev API 地址；为避免管理令牌被窃听，代码强制要求 HTTPS
+- `APP_ENV`：`dev` 使用本地 Backend，`pro` 使用 Render Backend；通常由启动命令自动设置
+- `API_BASE_URL_DEV`：本地 Fastify 地址，例如 `http://127.0.0.1:4000`
+- `API_BASE_URL_PRO`：Render API 根地址，不附加 `/api/v1`；为避免管理令牌被窃听，代码强制要求 HTTPS
 - `ADMIN_USERNAME`：单一初始管理员邮箱，仅在 Next.js 服务端读取
 - `ADMIN_PASSWORD_HASH`：bcrypt cost 12 哈希；运行 `pnpm --filter @uniclife/admin generate-env-secrets` 交互输入并确认原始登录密码后生成，禁止在环境变量中保存明文密码
 - `ADMIN_SESSION_SECRET`：至少 32 字符的独立随机值，用于签名 HttpOnly 管理会话
 - `ADMIN_SESSION_TTL_HOURS`：管理会话时长，范围 1–24 小时，默认 8 小时
-- `ADMIN_API_TOKEN`：Next.js 到 Fastify 的服务端令牌，必须与后端配置一致
+- `ADMIN_API_TOKEN_DEV`：Next.js 到本地 Fastify 的服务端令牌，必须与本地 Backend 的 `ADMIN_API_TOKEN` 一致
+- `ADMIN_API_TOKEN_PRO`：Next.js 到 Render Fastify 的服务端令牌，必须与 Render 的 `ADMIN_API_TOKEN` 一致
 
-`generate-env-secrets` 会同时生成密码哈希、随机会话密钥和随机管理 API Token，只输出到当前终端供手动复制，不会自动写入或覆盖任何 `.env`。管理员在登录页输入原始密码，服务端负责与哈希校验。
+`generate-env-secrets` 会同时生成密码哈希、随机会话密钥和两套随机管理 API Token，只输出到当前终端供手动复制，不会自动写入或覆盖任何 `.env`。管理员在登录页输入原始密码，服务端负责与哈希校验。旧的单一 `ADMIN_API_TOKEN` 仅作为现有本地配置的兼容回退值，新配置应使用 DEV/PRO 两个变量。
 
-浏览器只访问 Next.js 同源路由，API Base URL 与 `ADMIN_API_TOKEN` 都不会进入客户端 bundle。生产部署还应在入口网关增加跨实例登录限流、TLS/HSTS 和可信代理头配置；应用内存限流只作为单实例的基础保护。
+浏览器只访问 Next.js 同源路由，API Base URL 与管理 API Token 都不会进入客户端 bundle。生产部署还应在入口网关增加跨实例登录限流、TLS/HSTS 和可信代理头配置；应用内存限流只作为单实例的基础保护。
 
 ## Render 后端与数据库
 
@@ -103,7 +106,9 @@ Health Check Path:  /api/v1/health
 4. Blueprint 首次创建时填写 `DATABASE_URL` 和 `FRONTEND_ORIGIN`。`DATABASE_URL` 使用第 1 步的内部连接串；`FRONTEND_ORIGIN` 只填写允许使用浏览器访问 API 的 HTTPS Origin。
 5. 确认服务的 Repository Branch 为 `main`，Auto-Deploy 为 **After CI Checks Pass**。
 6. 等待迁移和 API 部署完成，再访问 `https://<service>.onrender.com/api/v1/health`。成功响应必须为 `code: "OK"`。
-7. 将最终 API 地址加上 `/api/v1`，写入 EAS production 环境的 `EXPO_PUBLIC_API_BASE_URL` 后重新构建移动端。
+7. 将最终 API 地址加上 `/api/v1`，写入 EAS production 环境的 `EXPO_PUBLIC_API_BASE_URL_PRO`，同时设置 `EXPO_PUBLIC_APP_ENV=pro`，然后重新构建移动端。
+8. 本地部署 Admin 时把 `API_BASE_URL_PRO` 指向该 API 根地址（不要附加 `/api/v1`），并确保 Admin 的 `ADMIN_API_TOKEN_PRO` 与 Render 的 `ADMIN_API_TOKEN` 完全一致；管理员登录密钥只放被忽略的本地环境文件。
+9. 登录 Admin 的“产品与二维码”，创建生产 SKU、上传图片并下载印刷文件。生产环境不要执行 `db:seed:dev`。
 
 `AUTH_TOKEN_PEPPER` 和 `ADMIN_API_TOKEN` 由 Render 首次创建时生成。`DATABASE_URL` 作为 Render Secret 手动注入，不会同步回仓库。生产数据库不运行开发 seed。
 

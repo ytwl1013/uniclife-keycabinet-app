@@ -72,20 +72,25 @@ override.
 ## Commands
 
 ```bash
-cp .env.development.example .env.local
-pnpm --filter @uniclife/frontend dev
+cp .env.example .env.local
+pnpm dev:frontend
+pnpm pro:frontend
 pnpm --filter @uniclife/frontend lint
 pnpm --filter @uniclife/frontend typecheck
 pnpm --filter @uniclife/frontend test
 pnpm --filter @uniclife/frontend exec expo export --platform web
 ```
 
-For device development, set `EXPO_PUBLIC_API_BASE_URL` in `.env.local` to the
+For device development, set `EXPO_PUBLIC_API_BASE_URL_DEV` in `.env.local` to the
 development Mac's LAN IPv4 address, for example
-`http://192.168.1.100:4000/api/v1`. The device and Mac must use the same local
-network. Production builds obtain the same public variable names from the EAS
-production environment and require an HTTPS API URL. Never store a secret in an
-`EXPO_PUBLIC_*` variable because Expo embeds it in the client bundle.
+`http://192.168.1.100:4000/api/v1`, and set `EXPO_PUBLIC_API_BASE_URL_PRO` to the
+Render API. Both commands run `expo start` directly so Metro keeps its interactive
+terminal UI and Expo QR code. Run the frontend in its own terminal instead of a
+combined parallel workspace command. The device and Mac must use the same local
+network. Production builds obtain the pro public
+variables from the EAS production environment and require an HTTPS API URL. Never
+store a secret in an `EXPO_PUBLIC_*` variable because Expo embeds it in the client
+bundle.
 
 Customer-support replies use `expo-notifications` for a system banner, app-icon
 badge, and deep link into the conversation. Run `eas init`, configure APNs/FCM

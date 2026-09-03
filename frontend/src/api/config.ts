@@ -1,19 +1,22 @@
-export type AppEnvironment = 'development' | 'production';
+export type AppEnvironment = 'dev' | 'pro';
 
 const configuredAppEnvironment = process.env.EXPO_PUBLIC_APP_ENV?.trim();
-const configuredApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
 
-if (configuredAppEnvironment !== 'development' && configuredAppEnvironment !== 'production') {
-  throw new Error('EXPO_PUBLIC_APP_ENV must be set to development or production');
+if (configuredAppEnvironment !== 'dev' && configuredAppEnvironment !== 'pro') {
+  throw new Error('EXPO_PUBLIC_APP_ENV must be set to dev or pro');
 }
 
+const configuredApiBaseUrl = (configuredAppEnvironment === 'pro'
+  ? process.env.EXPO_PUBLIC_API_BASE_URL_PRO
+  : process.env.EXPO_PUBLIC_API_BASE_URL_DEV)?.trim();
+
 if (!configuredApiBaseUrl) {
-  throw new Error('EXPO_PUBLIC_API_BASE_URL is required');
+  throw new Error(`EXPO_PUBLIC_API_BASE_URL_${configuredAppEnvironment.toUpperCase()} is required`);
 }
 
 const parsedApiBaseUrl = new URL(configuredApiBaseUrl);
 
-if (configuredAppEnvironment === 'production' && parsedApiBaseUrl.protocol !== 'https:') {
+if (configuredAppEnvironment === 'pro' && parsedApiBaseUrl.protocol !== 'https:') {
   throw new Error('The production API base URL must use HTTPS');
 }
 

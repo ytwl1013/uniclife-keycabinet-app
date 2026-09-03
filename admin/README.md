@@ -11,17 +11,18 @@ pnpm dev:backend
 pnpm dev:admin
 ```
 
-`generate-env-secrets` 会在终端中隐藏地询问两次管理员登录密码，然后输出 `ADMIN_PASSWORD_HASH`、`ADMIN_SESSION_SECRET` 和 `ADMIN_API_TOKEN` 三行。手动复制到 `admin/.env.local`；其中 `ADMIN_API_TOKEN` 还要复制到后端被忽略的 `.env.development.local`，并保持完全一致。命令不会自动修改环境文件。
+`generate-env-secrets` 会在终端中隐藏地询问两次管理员登录密码，然后输出 `ADMIN_PASSWORD_HASH`、`ADMIN_SESSION_SECRET`、`ADMIN_API_TOKEN_DEV` 和 `ADMIN_API_TOKEN_PRO`。手动复制到 `admin/.env.local`；DEV 令牌还要作为 `ADMIN_API_TOKEN` 写入本地后端，PRO 令牌则写入 Render 的同名变量。命令不会自动修改环境文件。
 
 登录页面输入的是你刚才设置的原始密码，不是哈希值。服务端使用 bcrypt 将输入密码与 `ADMIN_PASSWORD_HASH` 校验，因此不需要记住哈希。
 
-默认 `pnpm dev:admin` 使用 `APP_ENV=development` 对应的 `API_BASE_URL_DEVELOPMENT`。需要连接远端 Dev 后端时运行：
+Admin 的两个本地启动命令分别选择本机和 Render 后端：
 
 ```bash
-pnpm --filter @uniclife/admin dev:remote
+pnpm dev:admin
+pnpm pro:admin
 ```
 
-远端 `API_BASE_URL_DEV` 必须使用 HTTPS。
+`pnpm dev:admin` 使用 `APP_ENV=dev`、`API_BASE_URL_DEV` 和 `ADMIN_API_TOKEN_DEV`；`pnpm pro:admin` 使用对应的 `*_PRO` 变量，并强制生产 API 使用 HTTPS。旧的单一 `ADMIN_API_TOKEN` 暂时作为兼容回退值。
 
 ## 产品 SKU 与生产二维码
 

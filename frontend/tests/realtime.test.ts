@@ -9,7 +9,7 @@ import {
 
 jest.mock('../src/api/config', () => ({
   apiConfig: {
-    appEnvironment: 'development',
+    appEnvironment: 'dev',
     baseUrl: 'http://localhost:4000/api/v1',
   },
 }));
