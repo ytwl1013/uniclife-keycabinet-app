@@ -14,6 +14,7 @@ import { useTranslation } from '@/i18n';
 
 const signInRoute = '/(auth)/sign-in' as Href;
 const homeRoute = '/(tabs)' as Href;
+const importGuideRoute = '/(details)/workspace-import-guide' as Href;
 
 export default function OnboardingRoute() {
   const { t } = useTranslation();
@@ -88,6 +89,12 @@ export default function OnboardingRoute() {
           }}
         />
       }
+      headerAction={{
+        accessibilityLabel: t('onboarding.importGuide.openAction'),
+        icon: 'guide',
+        label: t('onboarding.importGuide.openAction'),
+        onPress: () => router.push(importGuideRoute),
+      }}
       onBack={
         isPreview
           ? () => {

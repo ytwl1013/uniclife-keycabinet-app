@@ -28,6 +28,7 @@ export default function DetailRoutesLayout() {
       <Stack.Screen name="account/feedback/[feedbackId]" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="scan" />
+      <Stack.Screen name="workspace-import-guide" />
       <Stack.Screen name="loans/index" />
       <Stack.Screen name="cabinets/manage" />
       <Stack.Screen name="cabinets/[cabinetId]/index" />

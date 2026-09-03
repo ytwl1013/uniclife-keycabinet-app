@@ -14,6 +14,12 @@ type AuthScreenProps = PropsWithChildren<{
 type StandaloneAuthScreenProps = AuthScreenProps & {
   title: string;
   backLabel?: string;
+  headerAction?: {
+    accessibilityLabel: string;
+    icon: AppIconName;
+    label?: string;
+    onPress: () => void;
+  };
   onBack?: () => void;
 };
 
@@ -78,6 +84,7 @@ export function StandaloneAuthScreen({
   children,
   description,
   footer,
+  headerAction,
   onBack,
   title,
 }: StandaloneAuthScreenProps) {
@@ -100,9 +107,25 @@ export function StandaloneAuthScreen({
               <View className="h-11 w-11" />
             )}
 
-            <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
-              <AppIcon name="cabinet" size={24} tone="brand" />
-            </View>
+            {headerAction ? (
+              <Pressable
+                accessibilityLabel={headerAction.accessibilityLabel}
+                accessibilityRole="button"
+                className="min-h-11 flex-row items-center justify-center gap-2 rounded-pill bg-brand-soft px-3 active:opacity-70"
+                hitSlop={8}
+                onPress={headerAction.onPress}>
+                <AppIcon name={headerAction.icon} size={21} tone="brand" />
+                {headerAction.label ? (
+                  <AppText variant="caption" tone="brand">
+                    {headerAction.label}
+                  </AppText>
+                ) : null}
+              </Pressable>
+            ) : (
+              <View className="h-11 w-11 items-center justify-center rounded-pill bg-brand-soft">
+                <AppIcon name="cabinet" size={24} tone="brand" />
+              </View>
+            )}
           </View>
 
           <View className="gap-2">

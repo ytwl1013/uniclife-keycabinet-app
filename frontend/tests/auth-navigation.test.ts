@@ -52,4 +52,20 @@ describe('authentication navigation', () => {
     expect(onboarding).toContain('router.back()');
     expect(scan).toContain("<ScreenHeader onBack={() => router.back()} title={t('scan.title')} />");
   });
+
+  it('opens cabinet import help from workspace setup and provides a return action', () => {
+    const onboarding = source('src/app/onboarding.tsx');
+    const guideRoute = source('src/app/(details)/workspace-import-guide.tsx');
+    const guideScreen = source('src/features/auth/components/workspace-import-guide-screen.tsx');
+    const detailsLayout = source('src/app/(details)/_layout.tsx');
+
+    expect(onboarding).toContain("const importGuideRoute = '/(details)/workspace-import-guide' as Href");
+    expect(onboarding).toContain("accessibilityLabel: t('onboarding.importGuide.openAction')");
+    expect(onboarding).toContain("icon: 'guide'");
+    expect(onboarding).toContain("label: t('onboarding.importGuide.openAction')");
+    expect(guideRoute).toContain('<WorkspaceImportGuideScreen />');
+    expect(guideScreen).toContain('onBack={() => router.back()}');
+    expect(guideScreen).toContain("require('@/assets/images/cabinet-settings-invite-guide.png')");
+    expect(detailsLayout).toContain('<Stack.Screen name="workspace-import-guide" />');
+  });
 });

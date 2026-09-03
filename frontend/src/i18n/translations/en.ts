@@ -169,6 +169,11 @@ export const en = {
     sessionRequiredTitle: 'Sign in required', sessionRequiredDescription: 'Use an account before connecting a cabinet.', goToSignIn: 'Go to sign in', signedInAs: 'Signed in as %{email}',
     initializeTitle: 'Initialize a new cabinet', initializeDescription: 'Scan the reusable product QR; each confirmed scan creates a new cabinet.', joinTitle: 'Join an existing cabinet', joinDescription: 'Scan the one-time invitation shown by a current Admin in Cabinet Settings.', laterTitle: 'Do this later', laterDescription: 'Open the app with no cabinet changes.',
     qrSafetyNotice: 'Product QRs are shared by SKU. Invitation QRs identify one cabinet and expire after use.', signOut: 'Sign out', signingOut: 'Signing out…',
+    importGuide: {
+      openAction: 'How to import a cabinet', title: 'How to import a cabinet', description: 'Choose the instructions that match whether this cabinet is new or already managed by someone else.', back: 'Back to workspace setup',
+      initializeTitle: 'Initialize a new cabinet', initializeBody: 'Find the product QR supplied with your purchased cabinet. It is printed in the product manual or on the back of the cabinet.', initializeSteps: 'On Set up your workspace, tap Initialize a new cabinet, scan the product QR, and confirm the cabinet name.',
+      joinTitle: 'Join an existing cabinet', joinBody: 'Ask a current Admin to open this cabinet and generate a one-time invitation QR. Then return to workspace setup, tap Join an existing cabinet, and scan it.', joinPathLabel: 'Path for the current Admin', joinPath: 'Home > Select the cabinet > Settings > Invite an Admin', imageAccessibilityLabel: 'Cabinet page with the Settings tab highlighted', imageCaption: 'The Settings tab is at the top of the cabinet page. The invitation QR is shown under Invite an Admin.',
+    },
   },
   account: {
     title: 'Account', subtitle: 'Profile, preferences, and security', profileTitle: 'Profile', signedInAs: 'Signed in as %{email}', roleHint: 'All bound accounts are Admins.', cabinetAccess: '%{count} connected cabinets', preferencesTitle: 'Preferences', adminRole: 'Role',
