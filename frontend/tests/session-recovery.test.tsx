@@ -1,6 +1,6 @@
-import { act, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import type { CurrentUserAccount } from '@uniclife/shared';
-import { Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { ApiError } from '../src/api/client';
 import { AppProvider, useApp } from '../src/app-state/provider';
@@ -34,6 +34,10 @@ const mockListCabinets = jest.fn();
 const mockListLoans = jest.fn();
 const mockListEvents = jest.fn();
 const mockListFeedbackHistory = jest.fn();
+const mockUpdateProfile = jest.fn();
+const mockLoadLocalProfileAvatar = jest.fn<Promise<string | undefined>, [string]>();
+const mockRemoveLocalProfileAvatar = jest.fn<Promise<void>, [string]>();
+const mockSaveLocalProfileAvatar = jest.fn<Promise<string>, [string, string]>();
 
 jest.mock('@/api/session-token', () => ({
   clearSessionToken: () => mockClearSessionToken(),
@@ -48,7 +52,14 @@ jest.mock('@/api/backend', () => ({
     listFeedbackHistory: (...args: unknown[]) => mockListFeedbackHistory(...args),
     listLoans: (...args: unknown[]) => mockListLoans(...args),
     session: (...args: unknown[]) => mockSession(...args),
+    updateProfile: (...args: unknown[]) => mockUpdateProfile(...args),
   },
+}));
+
+jest.mock('@/api/profile-avatar-storage', () => ({
+  loadLocalProfileAvatar: (...args: [string]) => mockLoadLocalProfileAvatar(...args),
+  removeLocalProfileAvatar: (...args: [string]) => mockRemoveLocalProfileAvatar(...args),
+  saveLocalProfileAvatar: (...args: [string, string]) => mockSaveLocalProfileAvatar(...args),
 }));
 
 const user: CurrentUserAccount = {
@@ -64,11 +75,29 @@ const user: CurrentUserAccount = {
 };
 
 function SessionStateProbe() {
-  const { state } = useApp();
+  const { currentUser, state } = useApp();
   return (
-    <Text testID="session-state">
-      {`${state.hydrated}:${state.sessionStatus}:${state.online}`}
-    </Text>
+    <>
+      <Text testID="session-state">
+        {`${state.hydrated}:${state.sessionStatus}:${state.online}`}
+      </Text>
+      <Text testID="avatar-state">{currentUser?.avatarUri ?? 'none'}</Text>
+    </>
+  );
+}
+
+function ProfileUpdateProbe() {
+  const { actions, currentUser, state } = useApp();
+  return (
+    <Pressable
+      testID="update-profile"
+      onPress={() => actions.updateProfile({
+        avatarUri: 'file:///picker-cache/avatar.png',
+        displayName: 'Local Avatar',
+        expectedVersion: state.version,
+      })}>
+      <Text>{currentUser?.avatarUri ?? 'none'}</Text>
+    </Pressable>
   );
 }
 
@@ -82,6 +111,12 @@ describe('persisted session recovery', () => {
     mockListLoans.mockResolvedValue({ items: [] });
     mockListEvents.mockResolvedValue({ items: [], actors: [] });
     mockListFeedbackHistory.mockResolvedValue({ items: [] });
+    mockLoadLocalProfileAvatar.mockResolvedValue(undefined);
+    mockRemoveLocalProfileAvatar.mockResolvedValue();
+    mockSaveLocalProfileAvatar.mockResolvedValue(
+      'file:///documents/profile-avatars/user-session-recovery.jpg',
+    );
+    mockUpdateProfile.mockResolvedValue({ ...user, displayName: 'Local Avatar' });
   });
 
   afterEach(() => {
@@ -130,5 +165,60 @@ describe('persisted session recovery', () => {
       expect(screen.getByTestId('session-state').props.children).toBe('true:anonymous:true');
     });
     expect(mockClearSessionToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('restores the current avatar from local storage instead of a backend URI', async () => {
+    mockSession.mockResolvedValue({
+      user: { ...user, avatarUri: 'file:///another-device/avatar.jpg' },
+    });
+    mockLoadLocalProfileAvatar.mockResolvedValue(
+      'file:///documents/profile-avatars/user-session-recovery.jpg',
+    );
+
+    const screen = await render(
+      <AppProvider>
+        <SessionStateProbe />
+      </AppProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('avatar-state').props.children).toBe(
+        'file:///documents/profile-avatars/user-session-recovery.jpg',
+      );
+    });
+  });
+
+  it('persists a selected avatar locally and never sends its URI to the backend', async () => {
+    mockSession.mockResolvedValue({ user });
+
+    const screen = await render(
+      <AppProvider>
+        <SessionStateProbe />
+        <ProfileUpdateProbe />
+      </AppProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('session-state').props.children).toBe('true:authenticated:true');
+    });
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('update-profile'));
+    });
+
+    expect(mockUpdateProfile).toHaveBeenCalledWith(
+      'persisted-session-token',
+      expect.objectContaining({ avatarUri: null, displayName: 'Local Avatar' }),
+    );
+    expect(mockUpdateProfile.mock.calls[0]?.[1]).not.toEqual(
+      expect.objectContaining({ avatarUri: 'file:///picker-cache/avatar.png' }),
+    );
+    expect(mockSaveLocalProfileAvatar).toHaveBeenCalledWith(
+      'user-session-recovery',
+      'file:///picker-cache/avatar.png',
+    );
+    expect(screen.getByTestId('avatar-state').props.children).toBe(
+      'file:///documents/profile-avatars/user-session-recovery.jpg',
+    );
   });
 });

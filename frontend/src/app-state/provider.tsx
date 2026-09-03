@@ -12,6 +12,11 @@ import {
 import { backendApi } from '@/api/backend';
 import { ApiError, isApiError } from '@/api/client';
 import {
+  loadLocalProfileAvatar,
+  removeLocalProfileAvatar,
+  saveLocalProfileAvatar,
+} from '@/api/profile-avatar-storage';
+import {
   clearRegisteredPushToken,
   loadRegisteredPushToken,
 } from '@/api/push-token-storage';
@@ -64,6 +69,14 @@ const SESSION_RESTORE_RETRY_MS = 5_000;
 function isSessionError(error: unknown): boolean {
   return isApiError(error) &&
     (error.status === 401 || error.code === 'SESSION_REQUIRED' || error.code === 'SESSION_EXPIRED');
+}
+
+async function withLocalProfileAvatar(
+  user: CurrentUserAccount,
+): Promise<CurrentUserAccount> {
+  const { avatarUri: _remoteAvatarUri, ...userWithoutAvatar } = user;
+  const avatarUri = await loadLocalProfileAvatar(user.id);
+  return avatarUri ? { ...userWithoutAvatar, avatarUri } : userWithoutAvatar;
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
@@ -177,7 +190,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const token = requireToken();
     try {
       const { user } = await backendApi.session(token);
-      await loadWorkspace(token, user);
+      await loadWorkspace(token, await withLocalProfileAvatar(user));
     } catch (error) {
       await handleAuthorizedError(error);
     }
@@ -237,7 +250,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         }
         tokenRef.current = token;
         const { user } = await backendApi.session(token);
-        await loadWorkspace(token, user);
+        await loadWorkspace(token, await withLocalProfileAvatar(user));
       } catch (error) {
         if (isSessionError(error)) {
           await clearAuthentication(false);
@@ -285,15 +298,17 @@ export function AppProvider({ children }: PropsWithChildren) {
       const result = await backendApi.signIn(input);
       await saveSessionToken(result.session.token);
       tokenRef.current = result.session.token;
-      await loadWorkspace(result.session.token, result.user);
-      return result.user;
+      const user = await withLocalProfileAvatar(result.user);
+      await loadWorkspace(result.session.token, user);
+      return user;
     },
     async register(input) {
       const result = await backendApi.register(input);
       await saveSessionToken(result.session.token);
       tokenRef.current = result.session.token;
-      await loadWorkspace(result.session.token, result.user);
-      return result.user;
+      const user = await withLocalProfileAvatar(result.user);
+      await loadWorkspace(result.session.token, user);
+      return user;
     },
     async signOut() {
       const token = tokenRef.current;
@@ -312,9 +327,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     async markHomeGuidePrompted() {
       const token = requireToken();
       try {
-        const user = await backendApi.markHomeGuidePrompted(token, {
+        const remoteUser = await backendApi.markHomeGuidePrompted(token, {
           requestId: 'home-guide-prompted',
         });
+        const user = await withLocalProfileAvatar(remoteUser);
         updateState((current) => ({
           ...current,
           currentUser: user,
@@ -347,7 +363,21 @@ export function AppProvider({ children }: PropsWithChildren) {
     async updateProfile(input) {
       const token = requireToken();
       try {
-        const user = await backendApi.updateProfile(token, input);
+        const { avatarUri, ...profileInput } = input;
+        const remoteUser = await backendApi.updateProfile(token, {
+          ...profileInput,
+          // Clear device-local paths left by older app versions.
+          avatarUri: null,
+        });
+        const localAvatarUri = avatarUri === undefined
+          ? await loadLocalProfileAvatar(remoteUser.id)
+          : avatarUri === null
+            ? await removeLocalProfileAvatar(remoteUser.id).then(() => undefined)
+            : await saveLocalProfileAvatar(remoteUser.id, avatarUri);
+        const { avatarUri: _remoteAvatarUri, ...userWithoutAvatar } = remoteUser;
+        const user = localAvatarUri
+          ? { ...userWithoutAvatar, avatarUri: localAvatarUri }
+          : userWithoutAvatar;
         updateState((current) => ({
           ...current,
           currentUser: user,
@@ -362,7 +392,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     async updateEmail(input) {
       const token = requireToken();
       try {
-        const user = await backendApi.updateEmail(token, input);
+        const remoteUser = await backendApi.updateEmail(token, input);
+        const user = await withLocalProfileAvatar(remoteUser);
         updateState((current) => ({
           ...current,
           currentUser: user,
@@ -386,6 +417,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       const token = requireToken();
       try {
         await backendApi.deleteAccount(token, input);
+        if (stateRef.current.currentUserId) {
+          await removeLocalProfileAvatar(stateRef.current.currentUserId);
+        }
         await clearAuthentication(false);
       } catch (error) {
         await handleAuthorizedError(error);
