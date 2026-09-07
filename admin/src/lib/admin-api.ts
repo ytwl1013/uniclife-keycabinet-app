@@ -21,6 +21,24 @@ type RequestOptions = {
   body?: unknown;
 };
 
+const initialRequestTimeoutMs = 8_000;
+const coldStartRetryTimeoutMs = 60_000;
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
+}
+
+function transportError(error: unknown): AdminApiError {
+  if (isTimeoutError(error)) {
+    return new AdminApiError(
+      'ADMIN_API_TIMEOUT',
+      '后端服务唤醒或响应超时，请稍后重试',
+      504,
+    );
+  }
+  return new AdminApiError('ADMIN_API_UNAVAILABLE', '后端服务暂时无法连接', 503);
+}
+
 export async function requestAdminApi<T>(
   path: string,
   dataSchema: z.ZodType<T>,
@@ -33,21 +51,38 @@ export async function requestAdminApi<T>(
     throw new AdminApiError('ADMIN_CONFIGURATION_INVALID', '后台环境变量尚未正确配置', 503);
   }
 
+  const method = options.method ?? 'GET';
+  const request = (timeoutMs: number) => fetch(`${environment.apiBaseUrl}/api/v1/admin${path}`, {
+    method,
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${environment.adminApiToken}`,
+      ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+
   let response: Response;
   try {
-    response = await fetch(`${environment.apiBaseUrl}/api/v1/admin${path}`, {
-      method: options.method ?? 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${environment.adminApiToken}`,
-        ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
-      },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
-      cache: 'no-store',
-      signal: AbortSignal.timeout(8_000),
+    response = await request(initialRequestTimeoutMs);
+  } catch (error) {
+    if (method !== 'GET') throw transportError(error);
+
+    console.warn('[admin-api] GET request failed; retrying for a cold backend', {
+      path,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
     });
-  } catch {
-    throw new AdminApiError('ADMIN_API_UNAVAILABLE', '后端服务暂时无法连接', 503);
+    try {
+      response = await request(coldStartRetryTimeoutMs);
+    } catch (retryError) {
+      console.error('[admin-api] GET request failed after cold-start retry', {
+        path,
+        errorName: retryError instanceof Error ? retryError.name : 'UnknownError',
+      });
+      throw transportError(retryError);
+    }
   }
 
   let body: ApiEnvelope<unknown>;

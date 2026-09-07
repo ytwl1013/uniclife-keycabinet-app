@@ -24,6 +24,8 @@ pnpm pro:admin
 
 `pnpm dev:admin` 使用 `APP_ENV=dev`、`API_BASE_URL_DEV` 和 `ADMIN_API_TOKEN_DEV`；`pnpm pro:admin` 使用对应的 `*_PRO` 变量，并强制生产 API 使用 HTTPS。旧的单一 `ADMIN_API_TOKEN` 暂时作为兼容回退值。
 
+管理页面的只读 GET 请求首次 8 秒内未连上后端时，会再执行一次最长 60 秒的冷启动重试，用于兼容 Render 免费实例休眠后的唤醒。POST/PATCH 写操作不会自动重试，避免重复写入。
+
 ## 产品 SKU 与生产二维码
 
 “产品与二维码”页面用于初始化和维护生产数据库中的产品型号：
