@@ -103,15 +103,15 @@ describe('simplified mobile navigation architecture', () => {
     expect(refreshControl).toContain('<RefreshControl');
     expect(refreshHook).toContain('actions.refresh()');
     expect(account).toContain('onRefresh={onRefresh}');
-    expect(accountUi).toContain('<AppRefreshControl');
-    expect(home).toContain('<AppRefreshControl');
-    expect(activity).toContain('<AppRefreshControl');
-    expect(notifications).toContain('<AppRefreshControl');
+    expect(accountUi).toContain('refreshControl={refreshControl}');
+    expect(home).toContain('refreshControl={refreshControl}');
+    expect(activity).toContain('refreshControl={refreshControl}');
+    expect(notifications).toContain('refreshControl={refreshControl}');
     expect(cabinet).toContain('<CabinetKeys');
     expect(cabinet).toContain('<CabinetActivity');
     expect(cabinet).toContain('<CabinetSettings');
-    expect(cabinetSections.match(/<AppRefreshControl/g)).toHaveLength(2);
-    expect(keyGrid).toContain('<AppRefreshControl');
+    expect(cabinetSections.match(/refreshControl=\{refreshControl\}/g)).toHaveLength(2);
+    expect(keyGrid).toContain('refreshControl={refreshControl}');
   });
 
   it('keeps the entire Home viewport pullable when the cabinet list is short', () => {

@@ -6,7 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 
 import { useApp } from '@/app-state';
 import { AppIcon } from '@/components/ui/app-icon';
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { ProductImage } from '@/components/ui/product-image';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -24,6 +24,7 @@ export function ManualsScreen() {
   const { t } = useTranslation();
   const { selectors } = useApp();
   const { onRefresh, refreshing } = useAppRefresh();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const { palette } = useAppTheme();
   const [openingCabinetId, setOpeningCabinetId] = useState<string>();
   const manuals = selectCabinetManuals(
@@ -75,7 +76,7 @@ export function ManualsScreen() {
               title={t('manuals.emptyTitle')}
             />
           )}
-          refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+          refreshControl={refreshControl}
           renderItem={({ item }) => {
             const opening = openingCabinetId === item.cabinet.id;
             return (

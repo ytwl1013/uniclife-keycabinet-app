@@ -51,6 +51,20 @@ i18n.locale = resolveLocale(initialSystemLocale?.languageTag, initialSystemLocal
 type TranslateOptions = NonNullable<Parameters<I18n['t']>[1]>;
 export function translate(key: TranslationKey, options?: TranslateOptions) { return i18n.t(key, options); }
 
+export function formatLocalizedDateTime(
+  locale: SupportedLocale,
+  value: string | Date,
+  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' },
+): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  try {
+    return new Intl.DateTimeFormat(locale, options).format(date);
+  } catch {
+    return '';
+  }
+}
+
 type I18nContextValue = {
   locale: SupportedLocale;
   preference: LocalePreference;
@@ -79,14 +93,29 @@ export function I18nProvider({ children }: PropsWithChildren) {
     try { await AsyncStorage.setItem(localeStorageKey, next); } catch { /* Keep the in-memory choice when storage is unavailable. */ }
   }, []);
 
-  const value = useMemo<I18nContextValue>(() => {
+  useEffect(() => {
     i18n.locale = locale;
+  }, [locale]);
+
+  const localeI18n = useMemo(() => {
+    const instance = new I18n(translations);
+    instance.defaultLocale = 'en-US';
+    instance.enableFallback = true;
+    instance.locale = locale;
+    return instance;
+  }, [locale]);
+  const t = useCallback<typeof translate>(
+    (key, options) => localeI18n.t(key, options),
+    [localeI18n],
+  );
+
+  const value = useMemo<I18nContextValue>(() => {
     return {
-      locale, preference, setLocalePreference, t: translate,
+      locale, preference, setLocalePreference, t,
       formatNumber: (number) => new Intl.NumberFormat(locale).format(number),
-      formatDateTime: (date, options) => new Intl.DateTimeFormat(locale, options ?? { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(date)),
+      formatDateTime: (date, options) => formatLocalizedDateTime(locale, date, options),
     };
-  }, [locale, preference, setLocalePreference]);
+  }, [locale, preference, setLocalePreference, t]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

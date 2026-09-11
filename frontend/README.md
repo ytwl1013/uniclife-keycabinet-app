@@ -1,6 +1,6 @@
 # UnicLife Key Cabinet Frontend
 
-Expo SDK 54 React Native app for the UnicLife key cabinet product.
+Expo SDK 57 React Native app for the UnicLife key cabinet product.
 
 The app uses the unified backend request layer for accounts, cabinet access,
 loans, and audit events. Validated local mock data remains for isolated tests and
@@ -113,6 +113,19 @@ the API is unreachable, startup completes on the sign-in screen with an offline
 notice instead of displaying an indefinite loader. The stored token is only
 removed when the backend explicitly rejects it, so a temporary outage is not
 misreported as an expired session.
+
+When connectivity returns, `NetworkRecovery` refreshes read-only workspace data or
+rechecks a stored session. While offline and in the foreground, it retries every
+five seconds with at most one recovery request in flight; it also handles returning
+from system settings. It never resubmits registration or cabinet write actions.
+The scanner rechecks camera permission and recreates its preview after returning
+to the foreground, clears stale camera failures, and offers an offline retry action.
+Registration links to public Privacy Policy and Terms of Use screens; opening a
+document does not grant consent and returning preserves the registration form.
+
+The native app icon is `src/assets/images/keycabinet_app_logo.png` (1024 × 1024,
+opaque PNG), configured in `app.json`. Icon and native permission/module changes
+require a new binary; Metro reloads do not update the installed app icon.
 
 Customer-support replies use `expo-notifications` for a system banner, app-icon
 badge, and deep link into the conversation. Run `eas init`, configure APNs/FCM

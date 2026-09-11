@@ -129,3 +129,46 @@ Health Check Path:  /api/v1/health
 生产环境的 API、数据库、应用日志、对象存储和所有灾备副本必须部署并存储在美国境内。禁止将生产数据、日志、附件、备份或灾备副本跨境复制到美国以外区域。
 
 本仓库当前不提供云厂商生产模板，也不在运行时自动校验区域。正式部署前必须由基础设施和安全负责人验证所有主区域、只读副本、日志接收端、对象存储复制规则、备份保管库及灾难恢复目标均位于美国境内，并将验证结果纳入发布检查清单。
+
+## iOS TestFlight 更新
+
+`frontend/eas.json` 的 production 构建使用 EAS production 环境，远端自动递增
+buildNumber。production 提交配置中的 `ascAppId` 指向现有 UnicLife 应用，属于
+公开应用标识；Apple 签名和 App Store Connect API Key 仍由 EAS 凭据服务管理。
+
+在前端目录完成 lint、typecheck、test、Expo Doctor 与 iOS export 后运行：
+
+```bash
+pnpm dlx eas-cli@latest build --platform ios --profile production --auto-submit
+```
+
+若构建成功但提交配置有误，修复配置后针对同一个 build ID 运行：
+
+```bash
+pnpm dlx eas-cli@latest submit --platform ios --profile production --id <build-id>
+```
+
+无需重复消耗构建号和构建额度。提交完成后到 App Store Connect → UnicLife →
+TestFlight 确认 Apple 处理结果，先验证内部测试，再处理外部测试审核。新构建不会
+自动解决前一版的审核拒绝意见。
+
+SDK 57 测试重点：安装后的钥匙柜图标、首次允许相机后扫码、在系统设置允许相机后
+返回 App、首次允许联网和断网重连后的数据恢复，以及注册前查看协议再返回表单。
+图标来自 `frontend/src/assets/images/keycabinet_app_logo.png`，原生资源更新必须安装新构建。
+
+## Android APK 直接安装包
+
+`frontend/eas.json` 的 `apk` profile 继承 production 的环境、Node/pnpm 版本和
+自动递增版本号配置，使用 `distribution: internal` 与 `android.buildType: apk`
+生成可直接安装的 release APK。该安装包连接生产 API，包含 JavaScript 资源，
+无需 Expo Go 或本地 Metro。Android 签名由 EAS 凭据服务管理。
+
+在 `frontend/` 运行：
+
+```bash
+pnpm dlx eas-cli@latest build --platform android --profile apk
+```
+
+构建成功后从 EAS 构建详情页下载 APK，在 Android 手机上打开安装。
+该流程只生成直接分发的安装包，不运行 EAS Submit，也不提交 Google Play。
+后续更新应沿用相同包名与签名并递增 versionCode，以支持覆盖安装。

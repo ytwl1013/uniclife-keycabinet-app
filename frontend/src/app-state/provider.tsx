@@ -116,40 +116,117 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [updateState]);
 
   const loadWorkspace = useCallback(async (token: string, currentUser: CurrentUserAccount) => {
-    const summaries = await backendApi.listCabinets(token);
-    const [details, loansResult, eventsResult, feedbackResult] = await Promise.all([
-      Promise.all(summaries.map(({ cabinet }) => backendApi.getCabinet(token, cabinet.id))),
-      backendApi.listLoans(token),
-      backendApi.listEvents(token),
-      backendApi.listFeedbackHistory(token),
-    ]);
+    let summaries;
+    try {
+      summaries = await backendApi.listCabinets(token);
+    } catch (error) {
+      if (isSessionError(error)) throw error;
 
-    const memberships = details.flatMap((detail) =>
-      detail.members.map(({ membership }) => membership),
+      const refreshedAt = Date.now();
+      updateState((current) => ({
+        ...current,
+        hydrated: true,
+        currentUserId: currentUser.id,
+        currentUser,
+        sessionStatus: 'authenticated',
+        online: false,
+        now: new Date(refreshedAt).toISOString(),
+        users: uniqueById([currentUser, ...current.users]),
+        version: current.version + 1,
+      }));
+      return;
+    }
+
+    const detailRequests = summaries.map(({ cabinet }) =>
+      backendApi.getCabinet(token, cabinet.id),
     );
-    const memberUsers = details.flatMap((detail) => detail.members.map(({ user }) => user));
-    const retainedQrs = stateRef.current.qrs;
+    const [detailResults, loansResult, eventsResult, feedbackResult] = await Promise.all([
+      Promise.allSettled(detailRequests),
+      backendApi.listLoans(token).then(
+        (value) => ({ status: 'fulfilled', value }) as const,
+        (reason: unknown) => ({ status: 'rejected', reason }) as const,
+      ),
+      backendApi.listEvents(token).then(
+        (value) => ({ status: 'fulfilled', value }) as const,
+        (reason: unknown) => ({ status: 'rejected', reason }) as const,
+      ),
+      backendApi.listFeedbackHistory(token).then(
+        (value) => ({ status: 'fulfilled', value }) as const,
+        (reason: unknown) => ({ status: 'rejected', reason }) as const,
+      ),
+    ]);
+    const failures = [
+      ...detailResults.flatMap((result) => result.status === 'rejected' ? [result.reason] : []),
+      ...(loansResult.status === 'rejected' ? [loansResult.reason] : []),
+      ...(eventsResult.status === 'rejected' ? [eventsResult.reason] : []),
+      ...(feedbackResult.status === 'rejected' ? [feedbackResult.reason] : []),
+    ];
+    const sessionFailure = failures.find(isSessionError);
+    if (sessionFailure) throw sessionFailure;
+
+    const details = detailResults.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : [],
+    );
+    const failedDetailCabinetIds = new Set(
+      detailResults.flatMap((result, index) =>
+        result.status === 'rejected' ? [summaries[index]!.cabinet.id] : [],
+      ),
+    );
+    const previous = stateRef.current;
+    const retainedMemberships = previous.memberships.filter((membership) =>
+      failedDetailCabinetIds.has(membership.cabinetId),
+    );
+    const retainedMemberUsers = retainedMemberships.flatMap((membership) => {
+      const user = previous.users.find((candidate) => candidate.id === membership.userId);
+      return user ? [user] : [];
+    });
+    const memberships = [
+      ...details.flatMap((detail) => detail.members.map(({ membership }) => membership)),
+      ...retainedMemberships,
+    ];
+    const memberUsers = [
+      ...details.flatMap((detail) => detail.members.map(({ user }) => user)),
+      ...retainedMemberUsers,
+    ];
+    const currentCabinetIds = new Set(summaries.map(({ cabinet }) => cabinet.id));
+    const retainedQrs = previous.qrs;
 
     const refreshedAt = Date.now();
-    lastSuccessfulRefreshAtRef.current = refreshedAt;
+    if (failures.length === 0) lastSuccessfulRefreshAtRef.current = refreshedAt;
     updateState((current) => ({
       hydrated: true,
       currentUserId: currentUser.id,
       currentUser,
       sessionStatus: 'authenticated',
-      online: true,
+      online: failures.length === 0,
       now: new Date(refreshedAt).toISOString(),
       version: current.version + 1,
-      users: uniqueById([currentUser, ...memberUsers, ...eventsResult.actors]),
+      users: uniqueById([
+        currentUser,
+        ...memberUsers,
+        ...(eventsResult.status === 'fulfilled' ? eventsResult.value.actors : []),
+      ]),
       skus: uniqueById(summaries.map(({ sku }) => sku)),
       qrs: retainedQrs,
       cabinets: summaries.map(({ cabinet }) => cabinet),
       memberships: uniqueById(memberships),
-      slots: uniqueById(details.flatMap((detail) => detail.slots)),
-      keys: uniqueById(details.flatMap((detail) => detail.keys)),
-      loans: loansResult.items,
-      events: eventsResult.items,
-      feedbackThreads: feedbackResult.items.map((thread) => {
+      slots: uniqueById([
+        ...details.flatMap((detail) => detail.slots),
+        ...previous.slots.filter((slot) => failedDetailCabinetIds.has(slot.cabinetId)),
+      ]),
+      keys: uniqueById([
+        ...details.flatMap((detail) => detail.keys),
+        ...previous.keys.filter((key) => failedDetailCabinetIds.has(key.cabinetId)),
+      ]),
+      loans: loansResult.status === 'fulfilled'
+        ? loansResult.value.items
+        : previous.loans.filter((loan) => currentCabinetIds.has(loan.cabinetId)),
+      events: eventsResult.status === 'fulfilled'
+        ? eventsResult.value.items
+        : previous.events.filter((event) => currentCabinetIds.has(event.cabinetId)),
+      feedbackThreads: (feedbackResult.status === 'fulfilled'
+        ? feedbackResult.value.items
+        : previous.feedbackThreads).map((thread) => {
         const locallyReadAt = locallyReadSupportAtRef.current.get(thread.id);
         if (
           locallyReadAt &&
@@ -244,7 +321,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       try {
         const token = await loadSessionToken();
         if (!token) {
-          updateState((current) => ({ ...current, hydrated: true, sessionStatus: 'anonymous' }));
+          updateState((current) => ({ ...current, hydrated: true, online: true, sessionStatus: 'anonymous' }));
           return;
         }
         tokenRef.current = token;

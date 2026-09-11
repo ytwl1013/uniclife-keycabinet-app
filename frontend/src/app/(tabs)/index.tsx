@@ -1,11 +1,11 @@
 import { Href, router, useLocalSearchParams } from 'expo-router';
 import { Dialog } from 'heroui-native/dialog';
-import { createRef, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutChangeEvent, Pressable, ScrollView, View } from 'react-native';
 
 import { Cabinet, ProductSku, useApp } from '@/app-state';
 import { AppIcon } from '@/components/ui/app-icon';
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { ProductImage } from '@/components/ui/product-image';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -25,6 +25,7 @@ export default function HomeRoute() {
   const { actions, currentUser, selectors, state } = useApp();
   const { unreadCount } = useNotifications();
   const { onRefresh, refreshing } = useAppRefresh();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const cabinets = selectors.cabinetsForCurrentUser();
   const manuals = selectCabinetManuals(cabinets, selectors.skuById);
   const borrowedKeys = selectors.borrowedKeys();
@@ -33,7 +34,9 @@ export default function HomeRoute() {
   const [guideVisible, setGuideVisible] = useState(false);
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect>();
   const scrollRef = useRef<ScrollView>(null);
-  const guideTargetRefs = useRef([createRef<View>(), createRef<View>(), createRef<View>()]).current;
+  const activeLoansGuideRef = useRef<View>(null);
+  const cabinetsGuideRef = useRef<View>(null);
+  const addCabinetGuideRef = useRef<View>(null);
   const sectionY = useRef<number[]>([]);
   const guideRequest = useRef(0);
   const guideFrame = useRef<number | undefined>(undefined);
@@ -60,7 +63,11 @@ export default function HomeRoute() {
     const measureWhenReady = () => {
       guideFrame.current = requestAnimationFrame(() => {
         if (request !== guideRequest.current) return;
-        const target = guideTargetRefs[step].current;
+        const target = step === 0
+          ? activeLoansGuideRef.current
+          : step === 1
+            ? cabinetsGuideRef.current
+            : addCabinetGuideRef.current;
         if (!target) {
           if (attempts++ < 4) measureWhenReady();
           return;
@@ -77,7 +84,7 @@ export default function HomeRoute() {
       });
     };
     guideFrame.current = requestAnimationFrame(measureWhenReady);
-  }, [guideTargetRefs]);
+  }, []);
   const acknowledgeAutomaticGuidePrompt = useCallback(() => {
     if (!currentUser || currentUser.homeGuidePromptedAt !== null) return;
     void actions.markHomeGuidePrompted().catch(() => undefined);
@@ -110,7 +117,8 @@ export default function HomeRoute() {
     ) return;
     if (!currentUser) return;
     automaticGuideUserId.current = currentUser.id;
-    setGuideConfirmationVisible(true);
+    const frame = requestAnimationFrame(() => setGuideConfirmationVisible(true));
+    return () => cancelAnimationFrame(frame);
   }, [currentUser, state.hydrated]);
   useEffect(() => () => {
     guideRequest.current += 1;
@@ -130,9 +138,15 @@ export default function HomeRoute() {
       params: { cabinetId: cabinet.id, guide: 'register-key' },
     } as Href);
   };
-  const sectionLayout = (index: number) => (event: LayoutChangeEvent) => {
-    sectionY.current[index] = event.nativeEvent.layout.y;
-  };
+  const handleActiveLoansLayout = useCallback((event: LayoutChangeEvent) => {
+    sectionY.current[0] = event.nativeEvent.layout.y;
+  }, []);
+  const handleCabinetsLayout = useCallback((event: LayoutChangeEvent) => {
+    sectionY.current[1] = event.nativeEvent.layout.y;
+  }, []);
+  const handleAddCabinetLayout = useCallback((event: LayoutChangeEvent) => {
+    sectionY.current[2] = event.nativeEvent.layout.y;
+  }, []);
 
   if (!state.hydrated) {
     return (
@@ -209,9 +223,9 @@ export default function HomeRoute() {
         contentContainerClassName="mx-auto w-full max-w-content gap-6 px-screen pb-screen pt-screen"
         contentContainerStyle={{ flexGrow: 1 }}
         ref={scrollRef}
-        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+        refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}>
-        <View className="gap-3" collapsable={false} onLayout={sectionLayout(0)} ref={guideTargetRefs[0]}>
+        <View className="gap-3" collapsable={false} onLayout={handleActiveLoansLayout} ref={activeLoansGuideRef}>
           <AppText className="px-1" variant="title" tone="foreground">{t('home.activeLoansTitle')}</AppText>
           <Pressable
             accessibilityRole="button"
@@ -239,7 +253,7 @@ export default function HomeRoute() {
           </Pressable>
         </View>
 
-        <View className="gap-3" collapsable={false} onLayout={sectionLayout(1)} ref={guideTargetRefs[1]}>
+        <View className="gap-3" collapsable={false} onLayout={handleCabinetsLayout} ref={cabinetsGuideRef}>
           <AppText className="px-1" variant="title" tone="foreground">
             {t('home.cabinetsTitle')}
           </AppText>
@@ -255,9 +269,9 @@ export default function HomeRoute() {
             accessibilityRole="button"
             className="min-h-[50px] flex-row items-center justify-center gap-2 rounded-control border border-brand bg-brand-soft px-4 active:opacity-75"
             collapsable={false}
-            onLayout={sectionLayout(2)}
+            onLayout={handleAddCabinetLayout}
             onPress={() => router.push('/(details)/scan' as Href)}
-            ref={guideTargetRefs[2]}
+            ref={addCabinetGuideRef}
             testID="home-add-cabinet">
             <AppIcon name="scan" size={21} tone="brand" />
             <AppText variant="label" tone="brand">{t('home.addCabinet')}</AppText>

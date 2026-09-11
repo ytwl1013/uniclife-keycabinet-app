@@ -7,7 +7,6 @@
     "icon": "./src/assets/images/keycabinet_app_logo.png",
     "scheme": "uniclife-keycabinet",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -32,7 +31,6 @@
         "backgroundColor": "#2F67F5",
         "foregroundImage": "./src/assets/images/keycabinet_app_logo.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [],
       "package": "com.youliusteam.keycabinetapp"
@@ -106,10 +104,14 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-asset",
+      "expo-font",
+      "expo-web-browser",
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {
-      "autolinkingModuleResolution": true,
       "typedRoutes": true,
       "reactCompiler": true
     },

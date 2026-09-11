@@ -75,3 +75,16 @@ Webhook Secret 和 GitLab Bot Token 只保存在 Bot 运行环境中，不进入
 - GitLab `backup/github-main` 和 `backup/github-dev` 能按需快进更新。
 
 不得提交生产密钥、Webhook Secret、GitHub/GitLab Token、设备密钥、数据库密码、Cookie、私钥或真实 `.env` 文件。
+
+## iOS TestFlight 构建与提交
+
+移动端使用 `frontend/eas.json` 的 production profile 生成 App Store 签名的测试包，
+由 EAS 自动递增构建号并向配置的 UnicLife App Store Connect 应用提交。
+`ascAppId` 只标识提交目标，签名及 API Key 由 EAS 凭据服务提供。
+具体命令及提交失败后的复用构建流程见 [部署说明](deployment/README.md#ios-testflight-更新)。
+TestFlight 上传不代表 Apple 外部测试审核通过；先验证内部测试，再处理外部审核。
+移动端实现改动仍通过 GitHub PR 合入 `dev`，生产发布仍遵循 `dev -> main` PR 流程。
+
+Android 直接安装测试使用 `frontend/eas.json` 的 `apk` profile，继承 production
+环境并生成 release APK；仅执行 EAS Build，不触发 Google Play 提交。下载及更新
+说明见 [部署说明](deployment/README.md#android-apk-直接安装包)。

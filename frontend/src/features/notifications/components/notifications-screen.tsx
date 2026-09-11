@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
@@ -18,6 +18,7 @@ export function NotificationsScreen() {
   const { formatDateTime, t } = useTranslation();
   const { markAllRead, markRead, notifications, unreadCount } = useNotifications();
   const { onRefresh, refreshing } = useAppRefresh();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const [tab, setTab] = useState<NotificationTab>('unread');
   const items = useMemo(
     () => notifications.filter((notification) => tab === 'read' ? notification.read : !notification.read),
@@ -75,7 +76,7 @@ export function NotificationsScreen() {
               </AppText>
             </View>
           )}
-          refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+          refreshControl={refreshControl}
           renderItem={({ item }) => (
             <NotificationRow
               item={item}

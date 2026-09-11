@@ -5,7 +5,7 @@ import QRCode from 'react-native-qrcode-svg';
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { Pill, PillTone } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
@@ -28,7 +28,7 @@ type RefreshProps = {
 };
 
 export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: CabinetView }) {
-  const { locale, t } = useTranslation();
+  const { formatDateTime, t } = useTranslation();
   const [showProductInfo, setShowProductInfo] = useState(false);
   const cabinetKeys = app.keys.filter((key) => key.cabinetId === cabinet.id);
   const activeLoans = cabinetKeys.filter((key) => key.activeLoan);
@@ -99,7 +99,7 @@ export function CabinetOverview({ app, cabinet }: { app: PrototypeApp; cabinet: 
           onPress={() => setShowProductInfo((value) => !value)}>
           <View className="min-w-0 flex-1">
             <AppText variant="title" tone="foreground">{t(trKey('cabinet.productTitle'))}</AppText>
-            <AppText variant="caption" tone="muted">{t(trKey('cabinet.lastSynced'), { time: new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(cabinet.lastSyncedAt)) })}</AppText>
+            <AppText variant="caption" tone="muted">{t(trKey('cabinet.lastSynced'), { time: formatDateTime(cabinet.lastSyncedAt) })}</AppText>
           </View>
           <View style={{ transform: [{ rotate: showProductInfo ? '180deg' : '0deg' }] }}>
             <AppIcon name="chevronDown" size={22} tone="muted" />
@@ -194,6 +194,7 @@ export function CabinetActivity({
   refreshing,
 }: RefreshProps & { app: PrototypeApp; cabinet: CabinetView }) {
   const { t } = useTranslation();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const [kind, setKind] = useState<'all' | CabinetEventKind | 'admin'>('all');
   const [time, setTime] = useState<'all' | 'week' | 'month'>('all');
   const [actorId, setActorId] = useState('all');
@@ -269,7 +270,7 @@ export function CabinetActivity({
         ListHeaderComponentStyle={{ marginBottom: 12 }}
         onEndReached={hasMore ? loadMore : undefined}
         onEndReachedThreshold={0.35}
-        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+        refreshControl={refreshControl}
         renderItem={({ item }) => (
           <SectionCard>
             <ActivityTimelineItem event={item} />
@@ -305,21 +306,26 @@ export function CabinetSettings({
   refreshing,
 }: RefreshProps & { app: PrototypeApp; cabinet: CabinetView }) {
   const { t } = useTranslation();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const [busyId, setBusyId] = useState<string>();
   const [openMemberMenu, setOpenMemberMenu] = useState<string>();
+  const [cabinetNameSource, setCabinetNameSource] = useState(cabinet.name);
   const [cabinetName, setCabinetName] = useState(cabinet.name);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteCountdown, setDeleteCountdown] = useState(5);
   const [joinInvitation, setJoinInvitation] = useState<
     Awaited<ReturnType<PrototypeApp['createJoinInvitation']>>
   >();
-  const [invitationClock, setInvitationClock] = useState(Date.now());
+  const [invitationClock, setInvitationClock] = useState(() => Date.now());
   const visibleMembers = app.members.filter((member) => member.cabinetId === cabinet.id);
   const configuredKeys = app.keys.filter((key) => key.cabinetId === cabinet.id);
   const isSuperAdmin = cabinet.role === 'superAdmin';
   const confirmation = usePrototypeDialog();
 
-  useEffect(() => setCabinetName(cabinet.name), [cabinet.name]);
+  if (cabinetNameSource !== cabinet.name) {
+    setCabinetNameSource(cabinet.name);
+    setCabinetName(cabinet.name);
+  }
   useEffect(() => {
     if (!deleteAllOpen || deleteCountdown <= 0) return undefined;
     const timer = setTimeout(() => setDeleteCountdown((value) => Math.max(0, value - 1)), 1000);
@@ -595,7 +601,7 @@ export function CabinetSettings({
             </SectionCard>
           </View>
         )}
-        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+        refreshControl={refreshControl}
         renderItem={({ item: member }) => {
           const canManageMember =
             isSuperAdmin &&

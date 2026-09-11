@@ -1,7 +1,6 @@
-import { useIsFocused } from '@react-navigation/native';
-import { CameraView, scanFromURLAsync, useCameraPermissions } from 'expo-camera';
+import { CameraView, scanFromURLAsync } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -20,6 +19,7 @@ import {
   StatePanel,
 } from '@/features/cabinet-prototype/components/prototype-ui';
 import { useTranslation } from '@/i18n';
+import { useCameraAccess } from '@/features/scan/use-camera-access';
 import {
   getScanModeMismatch,
   ScanMode,
@@ -227,11 +227,17 @@ function ProductConfirmation({
 export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: boolean }) {
   const router = useRouter();
   const isFocused = useIsFocused();
-  const [permission, requestPermission] = useCameraPermissions();
+  const { active: cameraActive, generation: cameraGeneration, permission, requestPermission } = useCameraAccess();
   const { actions, currentUser, state } = useApp();
   const { t } = useTranslation();
-  const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
-  const [cameraMountError, setCameraMountError] = useState<string | null>(null);
+  const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(() =>
+    Platform.OS === 'web' ? null : true,
+  );
+  const [cameraError, setCameraError] = useState<{ generation: number; message: string } | null>(null);
+  const cameraMountError = cameraError?.generation === cameraGeneration ? cameraError.message : null;
+  const setCameraMountError = useCallback((message: string | null) => {
+    setCameraError(message ? { generation: cameraGeneration, message } : null);
+  }, [cameraGeneration]);
   const [resolution, setResolution] = useState<QrResolution | null>(null);
   const [errorKind, setErrorKind] = useState<ScanErrorKind | null>(null);
   const [resolving, setResolving] = useState(false);
@@ -245,10 +251,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const actionRequestIdRef = useRef('');
 
   useEffect(() => {
-    if (Platform.OS !== 'web') {
-      setCameraAvailable(true);
-      return undefined;
-    }
+    if (Platform.OS !== 'web') return undefined;
 
     let active = true;
     void CameraView.isAvailableAsync()
@@ -275,18 +278,6 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   }, [state.qrs]);
   const alreadyBound = resolution?.kind === 'join' && resolution.alreadyMember;
 
-  useEffect(() => {
-    if (!resolution) {
-      setCabinetName('');
-      return;
-    }
-    setCabinetName(
-      resolution.kind === 'initialize'
-        ? `Uniclife ${resolution.sku.capacity} Position Key Cabinet`
-        : '',
-    );
-  }, [resolution]);
-
   const openCabinet = useCallback(
     (cabinetId: string) => {
       router.push({
@@ -308,7 +299,32 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     setCabinetName('');
     setScannedCode('');
     actionRequestIdRef.current = '';
-  }, []);
+  }, [setCameraMountError]);
+
+  const recoverScanner = useCallback(() => {
+    // A timed-out write may already have succeeded on the server. Keep its
+    // confirmation and request ID so retrying remains idempotent.
+    if (resolution) setErrorKind(null);
+    else resetScanner();
+  }, [resetScanner, resolution]);
+
+  const wasOnline = useRef(state.online);
+  useEffect(() => {
+    const recovered = !wasOnline.current && state.online;
+    if (recovered && errorKind === 'offline' && !binding && !resolving) {
+      recoverScanner();
+    }
+    if (!binding && !resolving) wasOnline.current = state.online;
+  }, [binding, errorKind, recoverScanner, resolving, state.online]);
+
+  const retryNetwork = async () => {
+    try {
+      await actions.refreshIfStale();
+      recoverScanner();
+    } catch {
+      setErrorKind('offline');
+    }
+  };
 
   useEffect(() => {
     if (errorKind !== 'invalid') return undefined;
@@ -360,6 +376,11 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
         actionRequestIdRef.current = `scan-${Date.now()}-${requestSequenceRef.current}`;
         setScannedCode(code);
         setResolution(nextResolution);
+        setCabinetName(
+          nextResolution.kind === 'initialize'
+            ? `Uniclife ${nextResolution.sku.capacity} Position Key Cabinet`
+            : '',
+        );
       } catch (error) {
         setErrorKind(classifyError(error));
       } finally {
@@ -393,7 +414,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
       systemScannerSubscriptionRef.current = undefined;
       setCameraMountError('system-scanner');
     }
-  }, [binding, resolveCode, resolving]);
+  }, [binding, resolveCode, resolving, setCameraMountError]);
 
   const selectQrImage = useCallback(async () => {
     if (resolving || binding || readingImage) return;
@@ -440,7 +461,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     } finally {
       setReadingImage(false);
     }
-  }, [binding, readingImage, resolveCode, resolving]);
+  }, [binding, readingImage, resolveCode, resolving, setCameraMountError]);
 
   const confirmQrAction = useCallback(async () => {
     if (
@@ -482,7 +503,8 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     if (!sample || !demoCode || !state.hydrated || !state.online || sessionUnavailable || resolution || resolving || binding) {
       return;
     }
-    void resolveCode(demoCode);
+    const timer = setTimeout(() => void resolveCode(demoCode), 0);
+    return () => clearTimeout(timer);
   }, [binding, demoCode, resolution, resolveCode, resolving, sample, sessionUnavailable, state.hydrated, state.online]);
 
   let mainContent;
@@ -497,6 +519,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   } else if (!state.online || errorKind === 'offline') {
     mainContent = (
       <StatePanel
+        action={<ActionButton label={t('common.retry')} onPress={() => void retryNetwork()} />}
         description={t('scan.offlineDescription')}
         icon="error"
         title={t('scan.offlineTitle')}
@@ -620,7 +643,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
             <ActionButton
               icon="scan"
               label={t('scan.requestPermission')}
-              onPress={() => void requestPermission()}
+              onPress={() => void requestPermission().catch(() => setCameraMountError('permission-request'))}
             />
           ) : (
             <ActionButton
@@ -637,12 +660,13 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
         title={t('scan.permissionTitle')}
       />
     );
-  } else if (!isFocused) {
+  } else if (!isFocused || !cameraActive) {
     mainContent = null;
   } else {
     mainContent = (
       <ScannerPreview
-        active={isFocused && !scanLockRef.current}
+        key={cameraGeneration}
+        active={isFocused && !resolving && !binding}
         instruction={
           mode === 'initialize'
             ? t('scan.initializeAlignCode')

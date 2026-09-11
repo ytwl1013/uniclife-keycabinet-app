@@ -5,7 +5,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { AppIcon } from '@/components/ui/app-icon';
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { ScrollableChipRow } from '@/components/ui/scrollable-chip-row';
 import { ActivityTimelineItem } from '@/features/activity/components/activity-timeline';
@@ -29,6 +29,7 @@ export default function ActivityRoute() {
   const params = useLocalSearchParams<{ filter?: string | string[] }>();
   const app = usePrototypeApp();
   const { onRefresh, refreshing } = useAppRefresh();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const requestedFilter = Array.isArray(params.filter) ? params.filter[0] : params.filter;
   const [kind, setKind] = useState<KindFilter>(requestedFilter === 'borrowed' ? 'borrowed' : 'all');
   const [actorId, setActorId] = useState('all');
@@ -133,7 +134,7 @@ export default function ActivityRoute() {
         ListHeaderComponentStyle={{ marginBottom: 12 }}
         onEndReached={hasMore ? loadMore : undefined}
         onEndReachedThreshold={0.35}
-        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+        refreshControl={refreshControl}
         renderItem={({ item }) => (
           <SectionCard>
             <ActivityTimelineItem event={item} />

@@ -24,6 +24,8 @@ export default function AuthLayout() {
       }}>
       <Stack.Screen name="sign-in" options={{ title: t('auth.signIn.title') }} />
       <Stack.Screen name="sign-up" options={{ title: t('auth.signUp.title') }} />
+      <Stack.Screen name="privacy" options={{ headerShown: false }} />
+      <Stack.Screen name="terms" options={{ headerShown: false }} />
       <Stack.Screen
         name="forgot-password"
         options={{ title: t('auth.forgotPassword.title') }}

@@ -1,5 +1,5 @@
 import { Dialog } from 'heroui-native/dialog';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppText } from '@/components/ui/app-text';
@@ -21,7 +21,12 @@ export type DateRangePickerModalProps = {
   visible: boolean;
 };
 
-export function DateRangePickerModal({
+export function DateRangePickerModal(props: DateRangePickerModalProps) {
+  const draftKey = props.visible ? `${props.from}:${props.to}` : 'closed';
+  return <DateRangePickerDialog key={draftKey} {...props} />;
+}
+
+function DateRangePickerDialog({
   applyLabel,
   clearLabel,
   errorLabel,
@@ -39,12 +44,6 @@ export function DateRangePickerModal({
   const [draftFrom, setDraftFrom] = useState(from);
   const [draftTo, setDraftTo] = useState(to);
   const rangeValid = Date.parse(draftFrom) <= Date.parse(draftTo);
-
-  useEffect(() => {
-    if (!visible) return;
-    setDraftFrom(from);
-    setDraftTo(to);
-  }, [from, to, visible]);
 
   return (
     <Dialog isOpen={visible} onOpenChange={(open) => { if (!open) onClose(); }}>

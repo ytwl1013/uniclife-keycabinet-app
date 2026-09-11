@@ -11,6 +11,13 @@
     "preview": {
       "distribution": "internal"
     },
+    "apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "environment": "production",
       "node": "22.23.1",
@@ -19,6 +26,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6809292074"
+      }
+    }
   }
 }

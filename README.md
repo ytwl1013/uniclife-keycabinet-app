@@ -5,7 +5,7 @@ UnicLife 钥匙柜应用单仓库，统一维护 Expo 前端、Next.js 管理后
 ## 技术栈
 
 - 包管理：pnpm workspace
-- 前端：Expo SDK 54、React Native、Expo Router、TypeScript
+- 前端：Expo SDK 57、React Native、Expo Router、TypeScript
 - 前端样式与本地化：Uniwind + Tailwind CSS 4、HeroUI Native、统一设计令牌、expo-localization + i18n-js
 - 管理后台：Next.js 16、React 19、HeroUI 3、Tailwind CSS 4
 - 后端：Node.js、Fastify、Drizzle ORM、postgres.js、Zod

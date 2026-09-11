@@ -40,7 +40,7 @@ export function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
 }
 
 export function ActivityTimelineItem({ event }: { event: ActivityEvent }) {
-  const { locale, t } = useTranslation();
+  const { formatDateTime, t } = useTranslation();
   const style = eventConfig[event.kind];
   const personKey = event.kind === 'return'
     ? 'activity.returner'
@@ -62,10 +62,7 @@ export function ActivityTimelineItem({ event }: { event: ActivityEvent }) {
               selectable
               variant="caption"
               tone="muted">
-              {new Intl.DateTimeFormat(locale, {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              }).format(new Date(event.createdAt))}
+              {formatDateTime(event.createdAt)}
             </AppText>
           </View>
           <AppText selectable variant="caption" tone="muted">

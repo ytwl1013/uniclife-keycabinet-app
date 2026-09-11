@@ -79,8 +79,9 @@ export function createAppSelectors(state: AppState) {
       const user = state.users.find((candidate) => candidate.id === membership.userId);
       return user ? [{ membership, user }] : [];
     });
-  const cabinetsForCurrentUser = (): Cabinet[] =>
-    state.cabinets.filter((cabinet) => currentCabinetIds.has(cabinet.id));
+  // The backend list endpoint is already scoped to the authenticated user.
+  // Keep summaries visible even when one cabinet-detail request is unavailable.
+  const cabinetsForCurrentUser = (): Cabinet[] => state.cabinets;
   const canManageCabinet = (cabinetId: string): boolean =>
     Boolean(membershipForUser(cabinetId));
   const isCabinetSuperAdmin = (cabinetId: string): boolean =>

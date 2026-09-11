@@ -1,5 +1,4 @@
-import { ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import 'react-native-reanimated';
@@ -11,6 +10,7 @@ import { I18nProvider, useTranslation } from '@/i18n';
 import { NotificationsProvider } from '@/features/notifications/notifications-provider';
 import { SystemNotifications } from '@/features/notifications/system-notifications';
 import { AppAutoRefresh } from '@/features/app-refresh/app-auto-refresh';
+import { NetworkRecovery } from '@/features/app-refresh/network-recovery';
 import { useAppTheme } from '@/styles/theme';
 
 export const unstable_settings = {
@@ -80,6 +80,7 @@ export default function RootLayout() {
       <I18nProvider>
         <AppProvider>
           <AppAutoRefresh />
+          <NetworkRecovery />
           <NotificationsProvider>
             <SystemNotifications />
             <AppNavigationGate />
