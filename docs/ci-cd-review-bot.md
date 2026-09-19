@@ -32,8 +32,7 @@ inspect.
 
 ## CI Pipeline
 
-The current pipeline is intentionally small because this repository is still in
-the initialization planning stage. The `repository_policy` job verifies:
+The `repository_policy` job verifies:
 
 - `AGENTS.md` and `README.md` exist.
 - Secret-like files such as `.env`, private keys, and certificates are absent;
@@ -42,9 +41,18 @@ the initialization planning stage. The `repository_policy` job verifies:
 - Obvious private key material is absent.
 - Secret-like environment assignments are not committed.
 
-When frontend, backend, shared contract, or integration test directories are
-added, extend `.gitlab-ci.yml` with the relevant lint, type-check, test, build,
-and contract validation jobs.
+The `application_checks` job uses Node.js 22 and a fresh PostgreSQL 17 service.
+It installs the frozen pnpm lockfile, builds shared contracts, applies all migrations,
+loads the development catalog into the isolated test database, runs backend/frontend
+lint and type checks, runs tests with `RUN_DATABASE_TESTS=true`, and builds the backend.
+The PostgreSQL service uses trust authentication only inside the ephemeral CI network;
+no production database or email credentials are configured.
+
+Database integration tests include concurrent checkout/return, replayed request IDs,
+same-slot insertion, deletion/checkout races and the cabinet/key lock-order regression.
+The larger 32-user load runner is an explicit local command documented in
+`docs/testing-concurrency.md`; it refuses remote or non-test databases. App-store/native
+exports, real email delivery and hardware acceptance remain separate release checks.
 
 ## Operational Check
 

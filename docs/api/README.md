@@ -330,3 +330,10 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
 - `EXPECTED_RETURN_INVALID`、`VERSION_CONFLICT`、`REQUEST_IN_PROGRESS`
 
 请求/响应的稳定字段和校验 schema 定义在 `shared/src`；字段变化必须先改共享契约，再同步前端适配器和本文档。
+
+## 并发一致性补充
+
+- 同柜体写事务按“柜体 → 钥匙/借用/成员/加入码”顺序取得锁；`expectedVersion` 用于检测过期界面，不替代数据库一致性保护。
+- 同槽位并发新增返回 `409/SLOT_OCCUPIED` 或 `409/RESOURCE_CONFLICT`，不会把数据库唯一约束冲突暴露为 500。
+- 柜体详情在只读 repeatable-read 事务中返回柜体版本、钥匙、指标和全量 `activeLoans`。客户端必须使用这些活动借用，不能从最多 200 条的历史列表推断全部活动状态。
+- `/auth/password-resets` 在 SMTP 与开发验证码预览均未配置时返回 `503/PASSWORD_RESET_UNAVAILABLE`；SMTP 投递失败返回 `503/PASSWORD_RESET_DELIVERY_FAILED`，对应挑战失效并记录失败审计。正常响应、请求字段和验证码有效期保持不变。

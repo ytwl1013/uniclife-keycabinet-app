@@ -69,3 +69,5 @@ pnpm check
 ```
 
 前后端接口字段变更时，先更新 `shared/`，再更新接口文档和测试。
+
+真实 PostgreSQL 并发回归与 32 用户压力测试的运行方法、数据核对规则和最近结果见 [并发测试说明](docs/testing-concurrency.md)。

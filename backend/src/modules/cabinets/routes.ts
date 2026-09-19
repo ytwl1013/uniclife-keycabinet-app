@@ -119,46 +119,48 @@ export async function registerCabinetRoutes(
     const { cabinetId } = cabinetParamsSchema.parse(request.params);
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
-    await requireCabinetMember(database, cabinetId, currentUser.id);
-    const summary = await getCabinetSummary(database, cabinetId);
-    const [slotRows, keyRows, memberRows, loanRows] = await Promise.all([
-      database
-        .select()
-        .from(keySlots)
-        .where(eq(keySlots.cabinetId, cabinetId))
-        .orderBy(asc(keySlots.position)),
-      database.select().from(keys).where(eq(keys.cabinetId, cabinetId)),
-      database
-        .select({ membership: cabinetMemberships, user: users })
-        .from(cabinetMemberships)
-        .innerJoin(users, eq(cabinetMemberships.userId, users.id))
-        .where(
-          and(
-            eq(cabinetMemberships.cabinetId, cabinetId),
-            eq(cabinetMemberships.active, true),
+    return database.transaction(async (transaction) => {
+      await requireCabinetMember(transaction, cabinetId, currentUser.id);
+      const summary = await getCabinetSummary(transaction, cabinetId);
+      const [slotRows, keyRows, memberRows, loanRows] = await Promise.all([
+        transaction
+          .select()
+          .from(keySlots)
+          .where(eq(keySlots.cabinetId, cabinetId))
+          .orderBy(asc(keySlots.position)),
+        transaction.select().from(keys).where(eq(keys.cabinetId, cabinetId)),
+        transaction
+          .select({ membership: cabinetMemberships, user: users })
+          .from(cabinetMemberships)
+          .innerJoin(users, eq(cabinetMemberships.userId, users.id))
+          .where(
+            and(
+              eq(cabinetMemberships.cabinetId, cabinetId),
+              eq(cabinetMemberships.active, true),
+            ),
           ),
-        ),
-      database
-        .select()
-        .from(loans)
-        .where(and(eq(loans.cabinetId, cabinetId), eq(loans.status, 'active'))),
-    ]);
-    const keyIdBySlot = new Map(keyRows.map((key) => [key.slotId, key.id]));
-    return ok({
-      ...summary,
-      slots: slotRows.map((slot) => ({
-        id: slot.id,
-        cabinetId: slot.cabinetId,
-        position: slot.position,
-        keyId: keyIdBySlot.get(slot.id) ?? null,
-      })),
-      keys: keyRows.map(toKey),
-      members: memberRows.map((row) => ({
-        membership: toMembership(row.membership),
-        user: toUser(row.user),
-      })),
-      activeLoans: loanRows.map(toLoan),
-    });
+        transaction
+          .select()
+          .from(loans)
+          .where(and(eq(loans.cabinetId, cabinetId), eq(loans.status, 'active'))),
+      ]);
+      const keyIdBySlot = new Map(keyRows.map((key) => [key.slotId, key.id]));
+      return ok({
+        ...summary,
+        slots: slotRows.map((slot) => ({
+          id: slot.id,
+          cabinetId: slot.cabinetId,
+          position: slot.position,
+          keyId: keyIdBySlot.get(slot.id) ?? null,
+        })),
+        keys: keyRows.map(toKey),
+        members: memberRows.map((row) => ({
+          membership: toMembership(row.membership),
+          user: toUser(row.user),
+        })),
+        activeLoans: loanRows.map(toLoan),
+      });
+    }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
   });
 
   app.post('/resolve-qr', async (request) => {
@@ -349,11 +351,12 @@ export async function registerCabinetRoutes(
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
     try {
-      await requireCabinetMember(database, cabinetId, currentUser.id);
       const token = createOpaqueToken();
       const now = new Date().toISOString();
       const expiresAt = new Date(Date.now() + JOIN_INVITATION_TTL_MS).toISOString();
       const invitation = await database.transaction(async (transaction) => {
+        await lockCabinet(transaction, cabinetId);
+        await requireCabinetMember(transaction, cabinetId, currentUser.id);
         await transaction
           .update(cabinetJoinInvitations)
           .set({ revokedAt: now })
@@ -414,30 +417,33 @@ export async function registerCabinetRoutes(
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
     try {
-      await requireCabinetMember(database, cabinetId, currentUser.id);
-      const now = new Date().toISOString();
-      const [revoked] = await database
-        .update(cabinetJoinInvitations)
-        .set({ revokedAt: now })
-        .where(
-          and(
-            eq(cabinetJoinInvitations.id, invitationId),
-            eq(cabinetJoinInvitations.cabinetId, cabinetId),
-            isNull(cabinetJoinInvitations.usedAt),
-            isNull(cabinetJoinInvitations.revokedAt),
-          ),
-        )
-        .returning({ id: cabinetJoinInvitations.id });
-      if (!revoked) {
-        throw new AppError(404, 'JOIN_INVITATION_NOT_FOUND', '加入二维码不存在或已失效');
-      }
-      await appendAudit(database, {
-        actorId: currentUser.id,
-        action: 'cabinets.join_invitation_revoked',
-        targetType: 'cabinet',
-        targetId: cabinetId,
-        result: 'success',
-        metadata: { invitationId },
+      await database.transaction(async (transaction) => {
+        await lockCabinet(transaction, cabinetId);
+        await requireCabinetMember(transaction, cabinetId, currentUser.id);
+        const now = new Date().toISOString();
+        const [revoked] = await transaction
+          .update(cabinetJoinInvitations)
+          .set({ revokedAt: now })
+          .where(
+            and(
+              eq(cabinetJoinInvitations.id, invitationId),
+              eq(cabinetJoinInvitations.cabinetId, cabinetId),
+              isNull(cabinetJoinInvitations.usedAt),
+              isNull(cabinetJoinInvitations.revokedAt),
+            ),
+          )
+          .returning({ id: cabinetJoinInvitations.id });
+        if (!revoked) {
+          throw new AppError(404, 'JOIN_INVITATION_NOT_FOUND', '加入二维码不存在或已失效');
+        }
+        await appendAudit(transaction, {
+          actorId: currentUser.id,
+          action: 'cabinets.join_invitation_revoked',
+          targetType: 'cabinet',
+          targetId: cabinetId,
+          result: 'success',
+          metadata: { invitationId },
+        });
       });
       return ok({ revoked: true }, '加入二维码已失效');
     } catch (error) {
@@ -472,6 +478,7 @@ export async function registerCabinetRoutes(
             .where(eq(cabinetJoinInvitations.tokenHash, digestToken(parsed.token)))
             .limit(1);
           if (!row) throw new AppError(404, 'JOIN_INVITATION_NOT_FOUND', '加入二维码无效');
+          const lockedCabinet = await lockCabinet(transaction, row.cabinet.id);
           const [existingMembership] = await transaction
             .select()
             .from(cabinetMemberships)
@@ -484,7 +491,7 @@ export async function registerCabinetRoutes(
             .limit(1);
           if (existingMembership?.active) {
             return ok({
-              cabinet: toCabinet(row.cabinet),
+              cabinet: toCabinet(lockedCabinet),
               membership: toMembership(existingMembership),
             });
           }
@@ -583,6 +590,7 @@ export async function registerCabinetRoutes(
           requestId: input.requestId,
         },
         async (transaction) => {
+          await lockCabinet(transaction, cabinetId);
           await requireCabinetMember(transaction, cabinetId, currentUser.id);
           const [current] = await transaction
             .select()

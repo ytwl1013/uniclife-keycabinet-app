@@ -3,7 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 
 import { toCabinet, toMembership, toSku } from '../../common/domain/mappers.js';
 import { AppError } from '../../common/http/errors.js';
-import type { DbExecutor } from '../../db/client.js';
+import type { AppTransaction, DbExecutor } from '../../db/client.js';
 import {
   cabinetMemberships,
   cabinets,
@@ -47,7 +47,7 @@ export async function requireCabinetSuperAdmin(
 }
 
 export async function lockCabinet(
-  executor: DbExecutor,
+  executor: AppTransaction,
   cabinetId: string,
 ) {
   const [cabinet] = await executor
@@ -60,6 +60,19 @@ export async function lockCabinet(
     throw new AppError(404, 'CABINET_NOT_FOUND', '钥匙柜不存在');
   }
   return cabinet;
+}
+
+// All cabinet writes acquire the parent lock before touching child rows or
+// inserting rows whose foreign keys reference the cabinet.
+export async function lockKeyCabinet(transaction: AppTransaction, keyId: string) {
+  const [reference] = await transaction.select({ cabinetId: keys.cabinetId })
+    .from(keys).where(eq(keys.id, keyId)).limit(1);
+  if (!reference) throw new AppError(404, 'KEY_NOT_FOUND', '钥匙不存在');
+  await lockCabinet(transaction, reference.cabinetId);
+  // The key may have been changed or deleted while the parent lock was pending.
+  const [current] = await transaction.select().from(keys).where(eq(keys.id, keyId)).limit(1);
+  if (!current) throw new AppError(404, 'KEY_NOT_FOUND', '钥匙不存在');
+  return current;
 }
 
 export async function touchCabinet(

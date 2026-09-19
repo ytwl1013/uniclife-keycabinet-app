@@ -71,6 +71,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const hydratePromiseRef = useRef<Promise<void> | null>(null);
   const offlineOverrideRef = useRef(false);
   const pendingRefreshCountRef = useRef(0);
+  const refreshAgainRef = useRef(false);
   const refreshQueueRef = useRef<Promise<void>>(Promise.resolve());
   const resetPreviewCodes = useRef(new Map<string, string>());
 
@@ -122,13 +123,16 @@ export function AppProvider({ children }: PropsWithChildren) {
       now: new Date(refreshedAt).toISOString(),
       version: current.version + 1,
       users: uniqueById([currentUser, ...memberUsers, ...eventsResult.actors]),
-      skus: uniqueById(summaries.map(({ sku }) => sku)),
+      skus: uniqueById(details.map(({ sku }) => sku)),
       qrs: retainedQrs,
-      cabinets: summaries.map(({ cabinet }) => cabinet),
+      cabinets: details.map(({ cabinet }) => cabinet),
       memberships: uniqueById(memberships),
       slots: uniqueById(details.flatMap((detail) => detail.slots)),
       keys: uniqueById(details.flatMap((detail) => detail.keys)),
-      loans: loansResult.items,
+      loans: uniqueById([
+        ...details.flatMap((detail) => detail.activeLoans),
+        ...loansResult.items.filter((loan) => loan.status !== 'active'),
+      ]),
       events: eventsResult.items,
       feedbackThreads: feedbackResult.items,
     }));
@@ -167,7 +171,12 @@ export function AppProvider({ children }: PropsWithChildren) {
     pendingRefreshCountRef.current += 1;
     const operation = refreshQueueRef.current
       .catch(() => undefined)
-      .then(performRefresh);
+      .then(async () => {
+        do {
+          refreshAgainRef.current = false;
+          await performRefresh();
+        } while (refreshAgainRef.current && tokenRef.current);
+      });
 
     latestRefreshPromiseRef.current = operation;
     refreshQueueRef.current = operation.then(
@@ -194,6 +203,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const refreshIfStale = useCallback((input: { staleAfterMs?: number } = {}) => {
     if (pendingRefreshCountRef.current > 0 && latestRefreshPromiseRef.current) {
+      refreshAgainRef.current = true;
       return latestRefreshPromiseRef.current;
     }
 

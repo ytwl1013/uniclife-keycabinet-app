@@ -28,10 +28,7 @@ import {
   sessions,
   users,
 } from '../../db/schema.js';
-import {
-  noopPasswordResetNotifier,
-  type PasswordResetNotifier,
-} from '../../integrations/notifications/password-reset-notifier.js';
+import type { PasswordResetNotifier } from '../../integrations/notifications/password-reset-notifier.js';
 import { appendAudit } from '../audit/service.js';
 import type { RealtimePublisher } from '../realtime/hub.js';
 
@@ -48,7 +45,7 @@ export async function registerAuthRoutes(
   app: FastifyInstance,
   options: { notifier?: PasswordResetNotifier; realtime: RealtimePublisher },
 ): Promise<void> {
-  const notifier = options.notifier ?? noopPasswordResetNotifier;
+  const notifier = options.notifier;
 
   app.post('/register', publicWriteRateLimit, async (request, reply) => {
     const input = registerRequestSchema.parse(request.body);
@@ -199,6 +196,10 @@ export async function registerAuthRoutes(
 
   app.post('/password-resets', passwordResetRateLimit, async (request, reply) => {
     const input = passwordResetRequestSchema.parse(request.body);
+    const previewEnabled = env.NODE_ENV !== 'production' && env.AUTH_ALLOW_RESET_CODE_PREVIEW;
+    if (!notifier && !previewEnabled) {
+      throw new AppError(503, 'PASSWORD_RESET_UNAVAILABLE', '密码重置邮件服务暂不可用');
+    }
     const database = requireDatabase();
     const challengeId = createEntityId('reset');
     const code = createNumericCode();
@@ -234,7 +235,7 @@ export async function registerAuthRoutes(
         });
       });
       try {
-        await notifier.send({
+        await notifier?.send({
           userId: user.id,
           email: user.email,
           displayName: user.displayName,
@@ -242,6 +243,9 @@ export async function registerAuthRoutes(
           expiresAt,
         });
       } catch {
+        await database.update(passwordResetChallenges)
+          .set({ consumedAt: new Date().toISOString() })
+          .where(eq(passwordResetChallenges.id, challengeId));
         request.log.error({ userId: user.id }, 'password reset notification failed');
         await appendAudit(database, {
           actorId: user.id,
@@ -251,6 +255,7 @@ export async function registerAuthRoutes(
           result: 'failure',
           reasonCode: 'NOTIFICATION_FAILED',
         });
+        throw new AppError(503, 'PASSWORD_RESET_DELIVERY_FAILED', '验证码发送失败，请稍后重试');
       }
     }
 

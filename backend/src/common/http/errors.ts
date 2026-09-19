@@ -33,7 +33,7 @@ export function errorCode(error: unknown): string {
   if (error instanceof AppError) {
     return error.code;
   }
-  if (isPostgresError(error) && error.code === '23505') {
+  if (postgresErrorCode(error) === '23505') {
     return 'RESOURCE_CONFLICT';
   }
   return 'INTERNAL_ERROR';
@@ -51,7 +51,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       return reply.status(error.statusCode).send(fail(error.code, error.message, error.details ?? null));
     }
 
-    if (isPostgresError(error) && error.code === '23505') {
+    if (postgresErrorCode(error) === '23505') {
       return reply.status(409).send(fail('RESOURCE_CONFLICT', '资源已存在或状态已变化'));
     }
 
@@ -71,13 +71,18 @@ export function registerErrorHandler(app: FastifyInstance): void {
   });
 }
 
-function isPostgresError(error: unknown): error is { code: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    typeof (error as { code?: unknown }).code === 'string'
-  );
+export function postgresErrorCode(error: unknown): string | undefined {
+  const seen = new Set<unknown>();
+  let current = error;
+  while (current && typeof current === 'object' && !seen.has(current)) {
+    seen.add(current);
+    const candidate = current as { code?: unknown; cause?: unknown };
+    if (typeof candidate.code === 'string' && /^[0-9A-Z]{5}$/.test(candidate.code)) {
+      return candidate.code;
+    }
+    current = candidate.cause;
+  }
+  return undefined;
 }
 
 function getStatusCode(error: unknown): number {

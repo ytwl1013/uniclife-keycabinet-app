@@ -121,7 +121,7 @@ export function AppAutoRefresh() {
       }
     });
     const fallbackInterval = setInterval(() => {
-      if (active && socket?.readyState !== WebSocket.OPEN) {
+      if (active) {
         refreshQuietly(REALTIME_FALLBACK_REFRESH_INTERVAL_MS);
       }
     }, REALTIME_FALLBACK_REFRESH_INTERVAL_MS);
