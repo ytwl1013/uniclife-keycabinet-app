@@ -55,7 +55,7 @@ pnpm dev
 - `pnpm --filter @uniclife/admin dev:remote`：以 `APP_ENV=dev` 启动管理后台并使用 `API_BASE_URL_DEV`。
 - `pnpm dev:db:down`：停止开发数据库但保留 Docker volume 中的数据。
 
-前端运行时直接调用 `EXPO_PUBLIC_API_BASE_URL` 指向的后端，原型 Mock 数据只保留给单元测试，不再挂载到应用。首次启动后请注册账户，再扫描开发 seed 对应的产品二维码（`docs/demo-qr-codes/bg5163-product.png` 或 `docs/demo-qr-codes/bg0680-product.png`）初始化新柜体；加入已有柜体必须扫描其设置页生成的一次性加入二维码。仅启动 Expo 而未启动后端时，登录和业务数据不会回退到 Demo。
+前端运行时直接调用 `EXPO_PUBLIC_API_BASE_URL` 指向的后端；`EXPO_PUBLIC_APP_ENV=production` 时优先使用 `EXPO_PUBLIC_API_BASE_URL_PRO`，原型 Mock 数据只保留给单元测试，不再挂载到应用。首次启动后请注册账户，再扫描开发 seed 对应的产品二维码（`docs/demo-qr-codes/bg5163-product.png` 或 `docs/demo-qr-codes/bg0680-product.png`）初始化新柜体；加入已有柜体必须扫描其设置页生成的一次性加入二维码。仅启动 Expo 而未启动后端时，登录和业务数据不会回退到 Demo。
 
 后端按 `NODE_ENV` 加载对应的 `.env.<environment>`，生产环境由 Render 注入变量。Expo 本地开发统一使用被 Git 忽略的 `frontend/.env.local`，生产构建使用 EAS 的 production 环境。不要提交真实 `.env`、数据库密码、设备密钥、Token、Cookie 或证书。
 

@@ -47,11 +47,14 @@
 - `frontend/.env.development.example`：复制为被忽略的 `.env.local`，将 API 地址改为开发电脑的局域网 IPv4 地址。
 - `frontend/.env.production.example`：EAS production 环境的变量名和格式参考。
 
-- `EXPO_PUBLIC_API_BASE_URL`：后端 API v1 基础地址
+- `EXPO_PUBLIC_API_BASE_URL`：开发环境地址，同时作为生产环境的兼容回退。
+- `EXPO_PUBLIC_API_BASE_URL_PRO`：当 `EXPO_PUBLIC_APP_ENV=production` 时优先使用的 HTTPS API v1 地址。
 - `EXPO_PUBLIC_APP_ENV`：`development` 或 `production`
 - `EXPO_PUBLIC_SUPPORT_EMAIL`：账户页“邮箱联系”展示和复制的公开客服邮箱地址
 
 Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。生产模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地使用 `.env.local`，EAS 构建使用 EAS 对应环境。
+
+本地连接远端服务器时，在被忽略的 `frontend/.env.local` 设置 `EXPO_PUBLIC_APP_ENV=production` 和 `EXPO_PUBLIC_API_BASE_URL_PRO`，然后重启 Expo（必要时 `pnpm --filter @uniclife/frontend start --clear`）。不要将真实部署地址写进源码或环境模板。
 
 ## 管理后台环境变量
 
@@ -94,7 +97,7 @@ Health Check Path:  /api/v1/health
 3. 在 Render Dashboard 选择 **New > Blueprint**，关联镜像仓库和根目录 `render.yaml`。
 4. Blueprint 首次创建时填写 `FRONTEND_ORIGIN`。这里只填写允许使用浏览器访问 API 的 HTTPS Origin；不要填写 Token、Cookie 或数据库地址。
 5. 确认 Blueprint 后等待数据库、迁移和 API 部署完成，再访问 `https://<service>.onrender.com/api/v1/health`。成功响应必须为 `code: "OK"`。
-6. 将最终 API 地址加上 `/api/v1`，写入 EAS production 环境的 `EXPO_PUBLIC_API_BASE_URL` 后重新构建移动端。
+6. 将最终 API 地址加上 `/api/v1`，写入 EAS production 环境的 `EXPO_PUBLIC_API_BASE_URL_PRO` 后重新构建移动端。
 
 `AUTH_TOKEN_PEPPER` 和 `ADMIN_API_TOKEN` 由 Render 首次创建时生成。`DATABASE_URL` 自动引用同区数据库内部连接串。生产数据库不运行开发 seed。
 
