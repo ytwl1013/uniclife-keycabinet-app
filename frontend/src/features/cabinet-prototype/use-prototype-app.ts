@@ -150,7 +150,7 @@ export function usePrototypeApp(): PrototypeApp {
         const dueAt = activeLoan?.expectedReturnAt ? new Date(activeLoan.expectedReturnAt) : undefined;
         const status: Exclude<KeyStatus, 'empty'> = activeLoan
           ? dueAt && dueAt.getTime() < now.getTime() ? 'overdue' : 'checkedOut'
-          : 'available';
+          : text(key.status) === 'borrowed' ? 'checkedOut' : 'available';
         const slot = rawSlots.find((candidate) => text(candidate.id) === text(key.slotId));
         return {
           id: text(key.id),

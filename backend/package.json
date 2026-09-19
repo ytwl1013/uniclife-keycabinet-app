@@ -14,6 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "pretest": "pnpm --filter @uniclife/shared build",
     "test": "vitest run",
+    "test:load": "NODE_ENV=test tsx tests/concurrency-load.ts",
     "db:generate": "NODE_ENV=development drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:dev": "NODE_ENV=development drizzle-kit migrate",

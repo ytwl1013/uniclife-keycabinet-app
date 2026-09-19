@@ -5,10 +5,12 @@ on:
     branches:
       - dev
       - main
+      - backend_main
   push:
     branches:
       - dev
       - main
+      - backend_main
 
 permissions:
   contents: read
@@ -22,6 +24,25 @@ jobs:
     name: check
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: keycabinet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://postgres@127.0.0.1:5432/keycabinet_test
+      RUN_DATABASE_TESTS: 'true'
+      FRONTEND_ORIGIN: http://192.168.50.53:8081
+      LOG_LEVEL: silent
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -62,5 +83,17 @@ jobs:
           cache: true
           require-lockfile: true
 
+      - name: Generate ephemeral test admin token
+        run: node -e "require('node:fs').appendFileSync(process.env.GITHUB_ENV, 'ADMIN_API_TOKEN=' + require('node:crypto').randomBytes(32).toString('hex') + '\n')"
+
+      - name: Prepare isolated test database
+        run: |
+          pnpm --filter @uniclife/shared build
+          pnpm --filter @uniclife/backend exec drizzle-kit migrate
+          pnpm --filter @uniclife/backend exec tsx src/db/seed.ts
+
       - name: Run project checks
         run: pnpm check
+
+      - name: Build backend
+        run: pnpm --filter @uniclife/backend build

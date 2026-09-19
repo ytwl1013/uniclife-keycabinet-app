@@ -31,3 +31,11 @@ export interface JsonObject {
 }
 
 export type JsonArray = readonly JsonValue[];
+
+/** Public health metadata; revision is present only for an identified Git deployment. */
+export const healthStatusSchema = z.object({
+  service: z.literal('uniclife-keycabinet-backend'),
+  status: z.literal('ok'),
+  revision: z.string().regex(/^[a-f0-9]{40}$/i).optional(),
+});
+export type HealthStatus = z.infer<typeof healthStatusSchema>;

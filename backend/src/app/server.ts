@@ -27,7 +27,10 @@ import {
   createExpoPushNotifier,
   type ExpoPushNotifier,
 } from '../integrations/notifications/expo-push-notifier.js';
-import type { PasswordResetNotifier } from '../integrations/notifications/password-reset-notifier.js';
+import {
+  createSmtpPasswordResetNotifier,
+  type PasswordResetNotifier,
+} from '../integrations/notifications/password-reset-notifier.js';
 
 export type BuildServerOptions = {
   feedbackNotifier?: FeedbackNotifier;
@@ -85,7 +88,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   });
   await app.register(registerAuthRoutes, {
     prefix: '/api/v1/auth',
-    notifier: options.passwordResetNotifier,
+    notifier: options.passwordResetNotifier ?? createSmtpPasswordResetNotifier(),
     realtime,
   });
   await app.register(registerUserRoutes, { prefix: '/api/v1/users', realtime });

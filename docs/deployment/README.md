@@ -36,7 +36,7 @@
 - 生产：`NODE_ENV=production`，由 `pnpm --filter @uniclife/backend start` 自动设置；`DATABASE_URL`、`PORT` 等真实值由 Render 注入。
 
 除测试环境外，缺少 `DATABASE_URL` 时后端会拒绝启动，避免线上服务在未连接数据库的情况下误运行。
-生产环境缺少 `AUTH_TOKEN_PEPPER` 时同样拒绝启动。默认密码重置通知适配器不会发送邮件；发布前必须注入真实 `PasswordResetNotifier`，并确认邮件服务、退信处理、速率限制和数据驻留要求。
+生产环境缺少 `AUTH_TOKEN_PEPPER` 时同样拒绝启动。密码重置默认使用已配置的 SMTP 适配器；缺少适配器时返回 503，发布前必须配置可用通知服务，并确认邮件服务、退信处理、速率限制和数据驻留要求。
 
 反馈邮件只有在 `MAIL_SERVER`、`MAIL_USERNAME`、`MAIL_PASSWORD` 三项全部配置后启用；只配置其中一部分会导致启动配置校验失败。反馈正文和附件可能包含用户提交的数据，邮件服务商、邮箱存储与备份也必须满足下述生产数据驻留要求。不得把真实 SMTP 密码写入任何已跟踪文件。
 
@@ -84,7 +84,7 @@ Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不�
 
 根目录的 `render.yaml` 创建以下资源：
 
-- `uniclife-keycabinet-api`：Virginia 区域的免费 Node.js Web Service，跟踪 GitHub `main` 分支，并等待 GitHub Actions 检查通过后自动部署。
+- `uniclife-keycabinet-api`：Virginia 区域的免费 Node.js Web Service，跟踪 GitHub `backend_main` 分支，推送提交后自动部署。
 
 数据库继续使用已经在 Render 创建的 PostgreSQL。建议数据库与 Web Service 位于同一区域，并使用 Render 提供的 Internal Database URL，避免公网连接和跨区延迟。
 
@@ -98,17 +98,13 @@ Health Check Path:  /api/v1/health
 
 升级到付费 Web Service 后，应把 `db:migrate` 从 Build Command 移到 `preDeployCommand`，使迁移与构建职责分离。健康检查会执行轻量数据库查询，数据库不可用时不会返回成功。
 
-### 首次部署步骤
+### 部署步骤
 
-1. 在 Render 中确认已创建的 PostgreSQL 可用，并复制它的 **Internal Database URL**。不要把连接串写入仓库、Issue、Pull Request 或日志。
-2. 将部署改动通过 GitHub Pull Request 依次合入 `dev` 和 `main`，确认 `CI / check` 通过，禁止直接推送这两个分支。
-3. 在 Render Dashboard 选择 **New > Blueprint**，关联 GitHub 仓库 `nimo07126/uniclife-keycabinet-app` 和根目录 `render.yaml`。若已有同名 Web Service，应更新现有服务而不是再创建一个重复服务。
-4. Blueprint 首次创建时填写 `DATABASE_URL` 和 `FRONTEND_ORIGIN`。`DATABASE_URL` 使用第 1 步的内部连接串；`FRONTEND_ORIGIN` 只填写允许使用浏览器访问 API 的 HTTPS Origin。
-5. 确认服务的 Repository Branch 为 `main`，Auto-Deploy 为 **After CI Checks Pass**。
-6. 等待迁移和 API 部署完成，再访问 `https://<service>.onrender.com/api/v1/health`。成功响应必须为 `code: "OK"`。
-7. 将最终 API 地址加上 `/api/v1`，写入 EAS production 环境的 `EXPO_PUBLIC_API_BASE_URL_PRO`，同时设置 `EXPO_PUBLIC_APP_ENV=pro`，然后重新构建移动端。
-8. 本地部署 Admin 时把 `API_BASE_URL_PRO` 指向该 API 根地址（不要附加 `/api/v1`），并确保 Admin 的 `ADMIN_API_TOKEN_PRO` 与 Render 的 `ADMIN_API_TOKEN` 完全一致；管理员登录密钥只放被忽略的本地环境文件。
-9. 登录 Admin 的“产品与二维码”，创建生产 SKU、上传图片并下载印刷文件。生产环境不要执行 `db:seed:dev`。
+1. Render 连接 `ytwl1013/uniclife-keycabinet-app` 的 `backend_main`，Auto-Deploy 使用 **On Commit**。
+2. 合并待发布改动到最新 `backend_main` 基线，在本地完成相关 lint、类型检查、测试和后端构建。`dev` 和 `main` 的 PR 规则不变。
+3. 经用户授权后正常推送 `backend_main`，触发部署。生产数据库使用现有的 Secret `DATABASE_URL`，不运行开发 seed。
+4. 在 Render 或 GitHub 部署状态中确认本次 SHA 完成部署，然后检查健康接口及独立测试用户业务流程。单独 HTTP 200 不证明新提交已部署。
+5. 将 API 地址加 `/api/v1` 写入被忽略的客户端配置 `EXPO_PUBLIC_API_BASE_URL_PRO`，以 `pnpm pro:frontend` 启动或重新构建 App。
 
 `AUTH_TOKEN_PEPPER` 和 `ADMIN_API_TOKEN` 由 Render 首次创建时生成。`DATABASE_URL` 作为 Render Secret 手动注入，不会同步回仓库。生产数据库不运行开发 seed。
 
@@ -129,3 +125,6 @@ Health Check Path:  /api/v1/health
 生产环境的 API、数据库、应用日志、对象存储和所有灾备副本必须部署并存储在美国境内。禁止将生产数据、日志、附件、备份或灾备副本跨境复制到美国以外区域。
 
 本仓库当前不提供云厂商生产模板，也不在运行时自动校验区域。正式部署前必须由基础设施和安全负责人验证所有主区域、只读副本、日志接收端、对象存储复制规则、备份保管库及灾难恢复目标均位于美国境内，并将验证结果纳入发布检查清单。
+
+
+健康接口会返回 Render 自动注入的 `RENDER_GIT_COMMIT`，字段为可选的 `data.revision`。用其核对刚推送的提交；本地未设置时维持原响应。变量来源见 [Render 默认环境变量](https://render.com/docs/environment-variables#render_git_commit)，无需手动保存部署密钥或提交号。

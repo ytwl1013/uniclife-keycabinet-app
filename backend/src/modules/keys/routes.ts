@@ -19,7 +19,7 @@ import { createEntityId } from '../../common/security/ids.js';
 import { requireDatabase, type AppDatabase } from '../../db/client.js';
 import { cabinetEvents, keys, keySlots, loans } from '../../db/schema.js';
 import { appendAudit } from '../audit/service.js';
-import { requireCabinetMember, touchCabinet } from '../cabinets/service.js';
+import { lockCabinet, lockKeyCabinet, requireCabinetMember, touchCabinet } from '../cabinets/service.js';
 import {
   publishRealtimeChange,
   type CabinetRealtimeChange,
@@ -69,6 +69,7 @@ export async function registerKeyRoutes(
           requestId: input.requestId,
         },
         async (transaction) => {
+          await lockCabinet(transaction, cabinetId);
           await requireCabinetMember(transaction, cabinetId, currentUser.id);
           const [slot] = await transaction
             .select()
@@ -155,10 +156,7 @@ export async function registerKeyRoutes(
           requestId: input.requestId,
         },
         async (transaction) => {
-          const [current] = await transaction.select().from(keys).where(eq(keys.id, keyId)).limit(1);
-          if (!current) {
-            throw new AppError(404, 'KEY_NOT_FOUND', '钥匙不存在');
-          }
+          const current = await lockKeyCabinet(transaction, keyId);
           await requireCabinetMember(transaction, current.cabinetId, currentUser.id);
           const [updated] = await transaction
             .update(keys)
@@ -234,10 +232,7 @@ export async function registerKeyRoutes(
           requestId: input.requestId,
         },
         async (transaction) => {
-          const [current] = await transaction.select().from(keys).where(eq(keys.id, keyId)).limit(1);
-          if (!current) {
-            throw new AppError(404, 'KEY_NOT_FOUND', '钥匙不存在');
-          }
+          const current = await lockKeyCabinet(transaction, keyId);
           await requireCabinetMember(transaction, current.cabinetId, currentUser.id);
           const [activeLoan] = await transaction
             .select({ id: loans.id })
@@ -304,10 +299,7 @@ export async function registerKeyRoutes(
           requestId: input.requestId,
         },
         async (transaction) => {
-          const [current] = await transaction.select().from(keys).where(eq(keys.id, keyId)).limit(1);
-          if (!current) {
-            throw new AppError(404, 'KEY_NOT_FOUND', '钥匙不存在');
-          }
+          const current = await lockKeyCabinet(transaction, keyId);
           await requireCabinetMember(transaction, current.cabinetId, currentUser.id);
           if (current.status !== 'available') {
             throw new AppError(409, 'KEY_NOT_AVAILABLE', '钥匙当前不可领取');
@@ -410,10 +402,7 @@ export async function registerKeyRoutes(
           requestId: input.requestId,
         },
         async (transaction) => {
-          const [current] = await transaction.select().from(keys).where(eq(keys.id, keyId)).limit(1);
-          if (!current) {
-            throw new AppError(404, 'KEY_NOT_FOUND', '钥匙不存在');
-          }
+          const current = await lockKeyCabinet(transaction, keyId);
           await requireCabinetMember(transaction, current.cabinetId, currentUser.id);
           if (current.status !== 'borrowed') {
             throw new AppError(409, 'KEY_NOT_BORROWED', '钥匙当前未被领取');

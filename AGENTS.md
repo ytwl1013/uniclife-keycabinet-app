@@ -106,10 +106,10 @@ backend/tests/                后端单测、集成测试和契约测试
 ## CI/CD 与 PR 规则
 
 - GitHub 是权威主仓库，本地远端名为 `origin`；自建 GitLab 仅作备份，本地远端名为 `gitlab`。
-- `dev` 是日常集成分支，`main` 是生产发布分支。所有实现改动必须通过 GitHub Pull Request 合入 `dev`，发布必须通过 `dev -> main` Pull Request 完成。
+- `dev` 是日常集成分支，`main` 保留 PR 发布流程；当前 Render 后端部署分支为 `backend_main`。经用户明确授权的后端发布可推送 `backend_main`，其他实现改动通过 GitHub Pull Request 合入 `dev`。
 - 禁止直接推送到 `dev` 或 `main`，也禁止绕过 GitHub 审核与 Actions 检查直接合并。
-- GitHub Actions 必须在 `dev`、`main` 的 Pull Request 和推送上运行仓库规范检查、lint、类型检查和测试；检查失败不得合并。
-- Render 只跟踪 GitHub `main`，并在 GitHub 检查全部通过后部署。不得把日常开发分支直接连接生产服务。
+- GitHub Actions 必须在 `dev`、`main`、`backend_main` 的 Pull Request 和推送上运行仓库规范检查、lint、类型检查和测试；检查失败不得合并。
+- Render 跟踪 GitHub `ytwl1013/uniclife-keycabinet-app` 的 `backend_main`，推送提交自动部署。推送前必须完成相关本地检查；`dev`、`main` 仍保持原有 PR 限制。
 - GitLab 不接收独立实现改动，不允许形成与 GitHub 不同的提交历史。人工备份使用 `backup/github-main` 和 `backup/github-dev`，或配置从 GitHub 拉取的单向镜像。
 - 原 GitLab Codex review bot 和 GitLab CI 仅保留给历史 GitLab Merge Request 或灾备演练，不能替代 GitHub 主流程的审核与检查。
 - 修改 CI/CD、分支保护、webhook、review bot 或合并策略时，必须同步更新 `docs/ci-cd-review-bot.md`。

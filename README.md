@@ -31,11 +31,11 @@ tests/            跨端契约测试和集成测试预留
 GitHub 是日常开发和发布的主仓库，GitLab 只保留为备份仓库。本地远端固定为：
 
 ```text
-origin  -> git@github.com:nimo07126/uniclife-keycabinet-app.git
+origin  -> https://github.com/ytwl1013/uniclife-keycabinet-app.git
 gitlab  -> https://gitlab.uniclife.cn/ai-strategy-department/uniclife-keycabinet-app.git
 ```
 
-`dev` 是日常集成分支，`main` 是生产发布分支。禁止直接向这两个分支推送；实现改动通过 GitHub Pull Request 合入 `dev`，准备发布时再通过 GitHub Pull Request 将 `dev` 合入 `main`。GitHub Actions 通过后，Render 才会从 `main` 自动部署后端。
+`dev` 是日常集成分支，`main` 是生产发布分支。禁止直接向这两个分支推送；实现改动通过 GitHub Pull Request 合入 `dev`，准备发布时再通过 GitHub Pull Request 将 `dev` 合入 `main`。当前 Render 从 `backend_main` 的推送自动部署后端；向该分支发布需要用户明确授权并在推送前完成检查。
 
 ### 开始一项工作
 
@@ -56,11 +56,11 @@ git push -u origin feat/short-description
 
 ### 发布到 Render
 
-1. 确认 `dev` 的功能、迁移和测试已经完成。
-2. 在 GitHub 创建 `dev -> main` 的 Pull Request。
-3. `CI / check` 通过并审核后合并；不要直接推送 `main`。
-4. 若本次提交涉及 `backend/`、`shared/` 或 `render.yaml`，Render 会在 GitHub 检查通过后自动部署。
-5. 部署结束后访问 `https://<service>.onrender.com/api/v1/health`，确认响应中的 `code` 为 `OK`。
+1. 获取 GitHub `backend_main` 最新提交，在其基础上合并待发布改动，保留已有功能。
+2. 本地完成 lint、类型检查、数据库集成测试和后端构建。
+3. 经用户授权后正常推送 `backend_main`（不强制覆盖），触发 Render 自动部署。
+4. 确认 Render 部署对应提交成功，再检查 `/api/v1/health` 和业务流程；健康检查单独通过不能证明版本已更新。
+5. 并发回归与线上测试的范围及对账规则见 [并发测试说明](docs/testing-concurrency.md)。
 
 ### 偶尔备份到 GitLab
 

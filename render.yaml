@@ -6,8 +6,8 @@ services:
     runtime: node
     plan: free
     region: virginia
-    branch: main
-    autoDeployTrigger: checksPass
+    branch: backend_main
+    autoDeployTrigger: commit
     buildCommand: pnpm install --frozen-lockfile && pnpm --filter @uniclife/backend build && pnpm --filter @uniclife/backend db:migrate
     startCommand: pnpm --filter @uniclife/backend start
     healthCheckPath: /api/v1/health

@@ -37,3 +37,30 @@ repository_policy:
         echo "Secret-like environment assignments must not be committed."
         exit 1
       fi
+
+application_checks:
+  stage: validate
+  image: node:22-bookworm
+  services:
+    - name: postgres:17-alpine
+      alias: postgres
+  variables:
+    NODE_ENV: test
+    POSTGRES_HOST_AUTH_METHOD: trust
+    POSTGRES_DB: keycabinet_test
+    DATABASE_URL: postgres://postgres@postgres:5432/keycabinet_test
+    RUN_DATABASE_TESTS: "true"
+    FRONTEND_ORIGIN: http://192.168.50.53:8081
+    LOG_LEVEL: silent
+  before_script:
+    - export ADMIN_API_TOKEN="$(node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))")"
+    - corepack enable
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm --filter @uniclife/shared build
+    - pnpm --filter @uniclife/backend exec drizzle-kit migrate
+    - pnpm --filter @uniclife/backend exec tsx src/db/seed.ts
+    - pnpm --filter @uniclife/backend --filter @uniclife/frontend lint
+    - pnpm --filter @uniclife/backend --filter @uniclife/frontend typecheck
+    - pnpm --filter @uniclife/backend --filter @uniclife/frontend test
+    - pnpm --filter @uniclife/backend build

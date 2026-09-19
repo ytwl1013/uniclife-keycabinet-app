@@ -368,3 +368,17 @@ SKU 在创建时转为大写，创建后没有修改或删除接口；产品二�
 - `EXPECTED_RETURN_INVALID`、`VERSION_CONFLICT`、`REQUEST_IN_PROGRESS`
 
 请求/响应的稳定字段和校验 schema 定义在 `shared/src`；字段变化必须先改共享契约，再同步前端适配器和本文档。
+
+## 并发一致性补充
+
+- 同柜体写事务按“柜体 → 钥匙/借用/成员/加入码”顺序取得锁；`expectedVersion` 用于检测过期界面，不替代数据库一致性保护。
+- 同槽位并发新增返回 `409/SLOT_OCCUPIED` 或 `409/RESOURCE_CONFLICT`，不会把数据库唯一约束冲突暴露为 500。
+- 柜体详情在只读 repeatable-read 事务中返回柜体版本、钥匙、指标和全量 `activeLoans`。客户端必须使用这些活动借用，不能从最多 200 条的历史列表推断全部活动状态。
+- `/auth/password-resets` 在 SMTP 与开发验证码预览均未配置时返回 `503/PASSWORD_RESET_UNAVAILABLE`；SMTP 投递失败返回 `503/PASSWORD_RESET_DELIVERY_FAILED`，对应挑战失效并记录失败审计。正常响应、请求字段和验证码有效期保持不变。
+
+
+## 健康检查与部署版本
+
+`GET /api/v1/health` 不要求身份认证。成功时为 HTTP 200 / `OK`，`data` 包含 `service: "uniclife-keycabinet-backend"`、`status: "ok"`。在 Render 提供有效 Git SHA 时，另返回可选的 `revision`（40 位提交 SHA）；客户端必须兼容该字段缺省。共享契约为 `healthStatusSchema`。数据库查询失败仍走统一错误处理，不返回健康成功。
+
+部署核验应将 `data.revision` 与刚推送的提交比较，避免把旧实例的 HTTP 200 当作新版已发布。该字段只公开提交标识，不公开环境变量或配置明文。
