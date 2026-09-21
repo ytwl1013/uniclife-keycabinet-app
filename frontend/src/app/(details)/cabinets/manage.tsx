@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
 import { type Cabinet, useApp } from '@/app-state';
 import { AppIcon } from '@/components/ui/app-icon';
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText } from '@/components/ui/app-text';
 import { Pill } from '@/components/ui/pill';
 import { ProductImage } from '@/components/ui/product-image';
@@ -26,6 +26,7 @@ export default function CabinetManagementRoute() {
   const { actions, selectors, state } = useApp();
   const { palette } = useAppTheme();
   const { onRefresh, refreshing } = useAppRefresh();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const cabinets = selectors.cabinetsForCurrentUser();
   const [selectedCabinet, setSelectedCabinet] = useState<Cabinet>();
   const [removingCabinetId, setRemovingCabinetId] = useState<string>();
@@ -97,7 +98,7 @@ export default function CabinetManagementRoute() {
         className="min-w-0 flex-1"
         contentContainerClassName="mx-auto w-full max-w-content gap-4 px-screen pb-screen pt-screen"
         contentInsetAdjustmentBehavior="automatic"
-        refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+        refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}>
         {!state.online ? (
           <Notice

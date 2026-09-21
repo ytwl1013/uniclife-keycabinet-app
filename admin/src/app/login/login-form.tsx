@@ -2,11 +2,9 @@
 
 import { Button, Input, Label, Spinner, TextField } from '@heroui/react';
 import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
 export function LoginForm() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +28,7 @@ export function LoginForm() {
         setError(body.message ?? '登录失败，请稍后再试');
         return;
       }
-      router.replace('/');
-      router.refresh();
+      window.location.replace('/');
     } catch {
       setError('网络连接异常，请稍后再试');
     } finally {
@@ -40,7 +37,7 @@ export function LoginForm() {
   }
 
   return (
-    <form className="mt-7 space-y-5" onSubmit={onSubmit}>
+    <form action="/api/auth/login" className="mt-7 space-y-5" method="post" onSubmit={onSubmit}>
       <TextField fullWidth isRequired name="username" type="email">
         <Label>管理员邮箱</Label>
         <div className="relative mt-2">

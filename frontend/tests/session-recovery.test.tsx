@@ -1,5 +1,5 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import type { CurrentUserAccount } from '@uniclife/shared';
+import type { CabinetSummary, CurrentUserAccount } from '@uniclife/shared';
 import { Pressable, Text } from 'react-native';
 
 import { ApiError } from '../src/api/client';
@@ -24,6 +24,9 @@ jest.mock('@/api/client', () => {
   return {
     ApiError: MockApiError,
     isApiError: (error: unknown) => error instanceof MockApiError,
+    isNetworkApiError: (error: unknown) =>
+      error instanceof MockApiError &&
+      (error.code === 'OFFLINE' || error.code === 'REQUEST_TIMEOUT'),
   };
 });
 
@@ -31,6 +34,7 @@ const mockLoadSessionToken = jest.fn<Promise<string | null>, []>();
 const mockClearSessionToken = jest.fn<Promise<void>, []>();
 const mockSession = jest.fn();
 const mockListCabinets = jest.fn();
+const mockGetCabinet = jest.fn();
 const mockListLoans = jest.fn();
 const mockListEvents = jest.fn();
 const mockListFeedbackHistory = jest.fn();
@@ -47,6 +51,7 @@ jest.mock('@/api/session-token', () => ({
 
 jest.mock('@/api/backend', () => ({
   backendApi: {
+    getCabinet: (...args: unknown[]) => mockGetCabinet(...args),
     listCabinets: (...args: unknown[]) => mockListCabinets(...args),
     listEvents: (...args: unknown[]) => mockListEvents(...args),
     listFeedbackHistory: (...args: unknown[]) => mockListFeedbackHistory(...args),
@@ -82,6 +87,7 @@ function SessionStateProbe() {
         {`${state.hydrated}:${state.sessionStatus}:${state.online}`}
       </Text>
       <Text testID="avatar-state">{currentUser?.avatarUri ?? 'none'}</Text>
+      <Text testID="cabinet-count">{state.cabinets.length}</Text>
     </>
   );
 }
@@ -181,6 +187,60 @@ describe('persisted session recovery', () => {
         'file:///documents/profile-avatars/user-session-recovery.jpg',
       );
     });
+  });
+
+  it('keeps the account and cabinet summary visible when cabinet details fail to load', async () => {
+    const summary: CabinetSummary = {
+      cabinet: {
+        id: 'cabinet-partial-load',
+        skuId: 'sku-partial-load',
+        deviceUuid: '39d8fab3-fbf5-4d98-8f37-1033c790e657',
+        name: 'Android Cabinet',
+        location: '',
+        timeZone: 'Asia/Shanghai',
+        status: 'offline',
+        lastSyncedAt: '2026-09-10T08:00:00.000Z',
+        createdAt: '2026-09-10T08:00:00.000Z',
+        version: 1,
+      },
+      sku: {
+        id: 'sku-partial-load',
+        sku: 'ANDROID-24',
+        model: 'Android 24',
+        name: 'Android Cabinet',
+        color: 'Black',
+        capacity: 24,
+        description: '',
+        imageAsset: 'cabinet-bg5163-bk',
+      },
+      metrics: {
+        capacity: 24,
+        occupied: 0,
+        available: 0,
+        borrowed: 0,
+        empty: 24,
+        overdue: 0,
+      },
+    };
+    mockSession.mockResolvedValue({ user });
+    mockListCabinets.mockResolvedValue([summary]);
+    mockGetCabinet.mockRejectedValue(
+      new ApiError(0, 'REQUEST_TIMEOUT', 'Request timed out'),
+    );
+
+    const screen = await render(
+      <AppProvider>
+        <SessionStateProbe />
+      </AppProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('session-state').props.children).toBe(
+        'true:authenticated:false',
+      );
+    });
+    expect(screen.getByTestId('cabinet-count').props.children).toBe(1);
+    expect(mockClearSessionToken).not.toHaveBeenCalled();
   });
 
   it('persists a selected avatar locally and never sends its URI to the backend', async () => {

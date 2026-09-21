@@ -18,6 +18,7 @@ jest.mock('@/components/ui/app-icon', () => {
 
 jest.mock('@/i18n', () => ({
   useTranslation: () => ({
+    formatDateTime: (value: string) => value,
     locale: 'zh-CN',
     t: (key: string, options?: { name?: string }) => {
       if (key === 'activity.operator') return `操作人：${options?.name}`;

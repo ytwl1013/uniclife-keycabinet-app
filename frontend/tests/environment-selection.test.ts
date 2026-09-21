@@ -12,8 +12,8 @@ describe('frontend environment selection', () => {
     expect(packageJson.scripts).toMatchObject({
       start: 'EXPO_PUBLIC_APP_ENV=dev expo start --clear',
       'start:pro': 'EXPO_PUBLIC_APP_ENV=pro expo start --clear',
-      android: 'EXPO_PUBLIC_APP_ENV=dev expo start --clear --android',
-      'android:pro': 'EXPO_PUBLIC_APP_ENV=pro expo start --clear --android',
+      android: 'EXPO_LOCAL_ANDROID=1 EXPO_PUBLIC_APP_ENV=dev expo run:android --app-id com.youliusteam.keycabinetapp.debug',
+      'android:pro': 'EXPO_LOCAL_ANDROID=1 EXPO_PUBLIC_APP_ENV=pro expo run:android --app-id com.youliusteam.keycabinetapp.debug',
       ios: 'EXPO_PUBLIC_APP_ENV=dev expo start --clear --ios',
       'ios:pro': 'EXPO_PUBLIC_APP_ENV=pro expo start --clear --ios',
       web: 'EXPO_PUBLIC_APP_ENV=dev expo start --clear --web',

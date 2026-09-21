@@ -4,7 +4,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { SwipeSegmentPager } from '@/components/ui/swipe-segment-pager';
 import { CabinetActivity, CabinetKeys, CabinetSettings } from '@/features/cabinet-prototype/components/cabinet-sections';
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
@@ -23,6 +23,7 @@ export default function CabinetDetailRoute() {
   const insets = useSafeAreaInsets();
   const app = usePrototypeApp();
   const { onRefresh, refreshing } = useAppRefresh();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const [segment, setSegment] = useState<CabinetSegment>('keys');
   const [guideRect, setGuideRect] = useState<SpotlightRect>();
   const [guideVisible, setGuideVisible] = useState(params.guide === 'register-key');
@@ -37,7 +38,7 @@ export default function CabinetDetailRoute() {
           className="flex-1"
           contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
           contentInsetAdjustmentBehavior="automatic"
-          refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+          refreshControl={refreshControl}
           showsVerticalScrollIndicator={false}>
           <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.loadingTitle'))} />
           <StatePanel description={t(trKey('cabinet.loadingDescription'))} loading title={t(trKey('cabinet.loadingTitle'))} />
@@ -54,7 +55,7 @@ export default function CabinetDetailRoute() {
           className="flex-1"
           contentContainerClassName="mx-auto w-full max-w-content gap-section px-screen pb-screen pt-screen"
           contentInsetAdjustmentBehavior="automatic"
-          refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+          refreshControl={refreshControl}
           showsVerticalScrollIndicator={false}>
           <ScreenHeader onBack={() => router.back()} title={t(trKey('cabinet.notFoundTitle'))} />
           <StatePanel

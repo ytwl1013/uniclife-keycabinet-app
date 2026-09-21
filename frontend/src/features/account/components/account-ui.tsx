@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
 import { AppIcon, AppIconName } from '@/components/ui/app-icon';
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
 import { useAppTheme } from '@/styles/theme';
 
@@ -84,6 +84,7 @@ export function AccountPage({
   trailing,
 }: AccountPageProps) {
   const scrollViewRef = useRef<ScrollView>(null);
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
@@ -133,9 +134,7 @@ export function AccountPage({
           }
         }}
         ref={scrollViewRef}
-        refreshControl={onRefresh ? (
-          <AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />
-        ) : undefined}
+        refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}>
         <View className="mx-auto w-full max-w-content gap-6 px-screen">
           {children}

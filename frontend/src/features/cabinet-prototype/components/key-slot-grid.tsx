@@ -3,7 +3,7 @@ import { ReactElement, useCallback, useLayoutEffect, useRef } from 'react';
 import { FlatList, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { AppIcon, AppIconTone } from '@/components/ui/app-icon';
-import { AppRefreshControl } from '@/components/ui/app-refresh-control';
+import { useAppRefreshControl } from '@/components/ui/app-refresh-control';
 import { AppText, AppTextTone } from '@/components/ui/app-text';
 import { SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { TranslationKey, useTranslation } from '@/i18n';
@@ -39,6 +39,7 @@ export function PrototypeKeySlotGrid({
   spotlightSlotId?: string;
 }) {
   const { width } = useWindowDimensions();
+  const refreshControl = useAppRefreshControl({ onRefresh, refreshing });
   const columns = width <= 375 ? 2 : 3;
 
   return (
@@ -55,7 +56,7 @@ export function PrototypeKeySlotGrid({
       ListHeaderComponent={header}
       ListHeaderComponentStyle={{ marginBottom: 18 }}
       numColumns={columns}
-      refreshControl={<AppRefreshControl onRefresh={onRefresh} refreshing={refreshing} />}
+      refreshControl={refreshControl}
       renderItem={({ item }) => (
         <SlotCell
           cabinetId={cabinetId}

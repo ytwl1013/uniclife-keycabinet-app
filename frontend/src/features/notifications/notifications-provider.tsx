@@ -35,6 +35,7 @@ type NotificationsContextValue = {
 };
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
+const emptyReadIds = new Set<string>();
 
 const eventIcon = {
   checkOut: { icon: 'checkOut', tone: 'warning' },
@@ -58,27 +59,31 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
   const app = usePrototypeApp();
   const { actions, currentUser, state } = useApp();
   const { t } = useTranslation();
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
+  const [storedReadState, setStoredReadState] = useState<{
+    ids: Set<string>;
+    storageKey: string | null;
+  }>({ ids: emptyReadIds, storageKey: null });
   const storageKey = `uniclife.notifications.read.v1.${currentUser?.id ?? 'anonymous'}`;
+  const readIds = storedReadState.storageKey === storageKey
+    ? storedReadState.ids
+    : emptyReadIds;
 
   useEffect(() => {
     let active = true;
-    setReadIds(new Set());
-    setLoadedStorageKey(null);
     void AsyncStorage.getItem(storageKey)
       .then((stored) => {
         if (!active) return;
+        let ids = emptyReadIds;
         if (stored) {
           const parsed: unknown = JSON.parse(stored);
           if (Array.isArray(parsed)) {
-            setReadIds(new Set(parsed.filter((id): id is string => typeof id === 'string')));
+            ids = new Set(parsed.filter((id): id is string => typeof id === 'string'));
           }
         }
-        setLoadedStorageKey(storageKey);
+        setStoredReadState({ ids, storageKey });
       })
       .catch(() => {
-        if (active) setLoadedStorageKey(storageKey);
+        if (active) setStoredReadState({ ids: emptyReadIds, storageKey });
       });
     return () => {
       active = false;
@@ -86,10 +91,10 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
   }, [storageKey]);
 
   const saveReadIds = useCallback((next: Set<string>) => {
-    if (loadedStorageKey !== storageKey) return;
-    setReadIds(next);
+    if (storedReadState.storageKey !== storageKey) return;
+    setStoredReadState({ ids: next, storageKey });
     void AsyncStorage.setItem(storageKey, JSON.stringify([...next])).catch(() => undefined);
-  }, [loadedStorageKey, storageKey]);
+  }, [storageKey, storedReadState.storageKey]);
 
   const supportThreadsByNotificationId = useMemo(() => new Map(
     state.feedbackThreads.map((thread) => [`support:${thread.id}`, thread]),

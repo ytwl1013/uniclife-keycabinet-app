@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 
@@ -20,15 +20,18 @@ export default function KeyDetailRoute() {
   const app = usePrototypeApp();
   const cabinet = app.cabinets.find((candidate) => candidate.id === cabinetId);
   const key = app.keys.find((candidate) => candidate.id === keyId && candidate.cabinetId === cabinetId);
+  const keyDraftSource = JSON.stringify([key?.id, key?.name, key?.note]);
+  const [draftSource, setDraftSource] = useState(keyDraftSource);
   const [name, setName] = useState(key?.name ?? '');
   const [note, setNote] = useState(key?.note ?? '');
   const [busy, setBusy] = useState(false);
   const confirmation = usePrototypeDialog();
 
-  useEffect(() => {
+  if (draftSource !== keyDraftSource) {
+    setDraftSource(keyDraftSource);
     setName(key?.name ?? '');
     setNote(key?.note ?? '');
-  }, [key?.name, key?.note]);
+  }
 
   if (!cabinet || !key) {
     return (

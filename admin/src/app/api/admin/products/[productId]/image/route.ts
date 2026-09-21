@@ -40,7 +40,7 @@ export async function GET(
             : {}),
         },
         cache: 'no-store',
-        signal: AbortSignal.timeout(8_000),
+        signal: AbortSignal.timeout(60_000),
       },
     );
     if (response.status === 304) return new NextResponse(null, { status: 304 });

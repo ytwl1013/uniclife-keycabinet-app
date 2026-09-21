@@ -19,9 +19,12 @@ export function AppAutoRefresh() {
   const { actions, state } = useApp();
   const authenticated = state.sessionStatus === 'authenticated';
   const cabinetVersions = useRef(new Map<string, number>());
-  cabinetVersions.current = new Map(
-    state.cabinets.map((cabinet) => [cabinet.id, cabinet.version]),
-  );
+
+  useEffect(() => {
+    cabinetVersions.current = new Map(
+      state.cabinets.map((cabinet) => [cabinet.id, cabinet.version]),
+    );
+  }, [state.cabinets]);
 
   useEffect(() => {
     if (!authenticated) return;

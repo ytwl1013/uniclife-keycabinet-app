@@ -2,16 +2,16 @@ import { RefreshControl } from 'react-native';
 
 import { useAppTheme } from '@/styles/theme';
 
-export function AppRefreshControl({
+export function useAppRefreshControl({
   onRefresh,
   refreshing,
 }: {
-  onRefresh: () => void;
+  onRefresh?: () => void;
   refreshing: boolean;
 }) {
   const { palette } = useAppTheme();
 
-  return (
+  return onRefresh ? (
     <RefreshControl
       colors={[palette.brand]}
       onRefresh={onRefresh}
@@ -19,5 +19,5 @@ export function AppRefreshControl({
       refreshing={refreshing}
       tintColor={palette.brand}
     />
-  );
+  ) : undefined;
 }

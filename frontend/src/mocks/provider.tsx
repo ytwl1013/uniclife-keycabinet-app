@@ -4,7 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
+  useState,
   useSyncExternalStore,
 } from 'react';
 
@@ -36,11 +36,9 @@ export function MockAppProvider({
   service: injectedService,
   serviceOptions,
 }: MockAppProviderProps) {
-  const serviceRef = useRef<MockAppService | null>(null);
-  if (!serviceRef.current) {
-    serviceRef.current = injectedService ?? createMockAppService(serviceOptions);
-  }
-  const service = serviceRef.current;
+  const [service] = useState(
+    () => injectedService ?? createMockAppService(serviceOptions),
+  );
   const state = useSyncExternalStore(service.subscribe, service.getState, service.getState);
 
   useEffect(() => {

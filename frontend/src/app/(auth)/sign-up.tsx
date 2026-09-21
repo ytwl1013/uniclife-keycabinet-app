@@ -162,6 +162,11 @@ export default function SignUpRoute() {
             setConsentError('');
           }}
         />
+        <AuthTextButton
+          align="start"
+          label={t('legal.termsTitle')}
+          onPress={() => router.push('/(auth)/terms' as Href)}
+        />
         <ConsentRow
           checked={acceptedPrivacy}
           label={t('auth.signUp.acceptPrivacy')}
@@ -169,6 +174,11 @@ export default function SignUpRoute() {
             setAcceptedPrivacy((value) => !value);
             setConsentError('');
           }}
+        />
+        <AuthTextButton
+          align="start"
+          label={t('legal.privacyTitle')}
+          onPress={() => router.push('/(auth)/privacy' as Href)}
         />
       </View>
 

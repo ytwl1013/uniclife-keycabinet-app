@@ -1,6 +1,6 @@
 import { I18n } from 'i18n-js';
 
-import { supportedLocales, resolveLocale } from '../src/i18n';
+import { formatLocalizedDateTime, supportedLocales, resolveLocale } from '../src/i18n';
 import { de } from '../src/i18n/translations/de';
 import { en } from '../src/i18n/translations/en';
 import { enGB } from '../src/i18n/translations/en-gb';
@@ -66,6 +66,12 @@ describe('eleven-region localisation', () => {
     expect(resolveLocale('zh-Hant-TW', 'zh')).toBe('zh-TW');
     expect(resolveLocale('zh-HK', 'zh')).toBe('zh-TW');
     expect(resolveLocale('sv-SE', 'sv')).toBe('en-US');
+  });
+
+  it('does not throw when an API date is missing or malformed', () => {
+    expect(formatLocalizedDateTime('zh-CN', '')).toBe('');
+    expect(formatLocalizedDateTime('zh-CN', 'not-a-date')).toBe('');
+    expect(formatLocalizedDateTime('zh-CN', '2026-09-10T08:00:00.000Z')).toBeTruthy();
   });
 
   it('localises account settings in every selectable language', () => {

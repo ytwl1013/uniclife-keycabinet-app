@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
@@ -29,31 +29,23 @@ export function BottomSheet({
   const fixedSheetHeight = getFixedBottomSheetHeight(height);
   const [mounted, setMounted] = useState(visible);
   const [contentVisible, setContentVisible] = useState(visible);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
+    let closeTimer: ReturnType<typeof setTimeout> | undefined;
+    const frame = requestAnimationFrame(() => {
+      if (visible) {
+        setMounted(true);
+        setContentVisible(true);
+        return;
+      }
 
-    if (visible) {
-      setMounted(true);
-      setContentVisible(true);
-      return undefined;
-    }
-
-    setContentVisible(false);
-    closeTimerRef.current = setTimeout(() => {
-      setMounted(false);
-      closeTimerRef.current = null;
-    }, SHEET_EXIT_DURATION);
+      setContentVisible(false);
+      closeTimer = setTimeout(() => setMounted(false), SHEET_EXIT_DURATION);
+    });
 
     return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-        closeTimerRef.current = null;
-      }
+      cancelAnimationFrame(frame);
+      if (closeTimer) clearTimeout(closeTimer);
     };
   }, [visible]);
 
