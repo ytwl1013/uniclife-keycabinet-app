@@ -75,6 +75,12 @@ function ScannerPreview({
   const { t } = useTranslation();
   const [ready, setReady] = useState(false);
 
+  useEffect(() => {
+    if (!active || ready) return undefined;
+    const timeout = setTimeout(() => onMountError('camera-ready-timeout'), 4_000);
+    return () => clearTimeout(timeout);
+  }, [active, onMountError, ready]);
+
   return (
     <View className="aspect-[4/5] w-full overflow-hidden rounded-card border border-line bg-foreground shadow-card">
       <CameraView
@@ -230,6 +236,8 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const { active: cameraActive, generation: cameraGeneration, permission, requestPermission } = useCameraAccess();
   const { actions, currentUser, state } = useApp();
   const { t } = useTranslation();
+  const sessionUnavailable =
+    state.sessionStatus !== 'authenticated' || currentUser === null;
   const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(() =>
     Platform.OS === 'web' ? null : true,
   );
@@ -247,8 +255,13 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   const [scannedCode, setScannedCode] = useState('');
   const scanLockRef = useRef(false);
   const systemScannerSubscriptionRef = useRef<ReturnType<typeof CameraView.onModernBarcodeScanned> | undefined>(undefined);
+  const systemScannerLaunchingRef = useRef(false);
+  const systemScannerPresentedRef = useRef(false);
+  const autoSystemScannerGenerationRef = useRef<number | null>(null);
   const requestSequenceRef = useRef(0);
   const actionRequestIdRef = useRef('');
+  const prefersSystemScanner =
+    Platform.OS === 'ios' && CameraView.isModernBarcodeScannerAvailable;
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
@@ -271,7 +284,14 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     };
   }, []);
 
-  useEffect(() => () => systemScannerSubscriptionRef.current?.remove(), []);
+  useEffect(() => () => {
+    systemScannerSubscriptionRef.current?.remove();
+    systemScannerSubscriptionRef.current = undefined;
+    if (Platform.OS === 'ios' && systemScannerPresentedRef.current) {
+      systemScannerPresentedRef.current = false;
+      void CameraView.dismissScanner().catch(() => undefined);
+    }
+  }, []);
 
   const demoCode = useMemo(() => {
     return state.qrs.find((qr) => qr.status === 'active')?.code;
@@ -290,6 +310,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
 
   const resetScanner = useCallback(() => {
     scanLockRef.current = false;
+    autoSystemScannerGenerationRef.current = null;
     setResolution(null);
     setCameraMountError(null);
     setErrorKind(null);
@@ -391,7 +412,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
   );
 
   const launchSystemScanner = useCallback(async () => {
-    if (Platform.OS === 'web' || resolving || binding) return;
+    if (Platform.OS === 'web' || resolving || binding || systemScannerLaunchingRef.current) return;
     if (!CameraView.isModernBarcodeScannerAvailable) {
       setCameraMountError('system-scanner-unavailable');
       return;
@@ -401,20 +422,64 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     setCameraMountError(null);
 
     systemScannerSubscriptionRef.current?.remove();
+    systemScannerLaunchingRef.current = true;
     try {
       systemScannerSubscriptionRef.current = CameraView.onModernBarcodeScanned(({ data }) => {
         systemScannerSubscriptionRef.current?.remove();
         systemScannerSubscriptionRef.current = undefined;
-        void CameraView.dismissScanner();
+        systemScannerPresentedRef.current = false;
+        void CameraView.dismissScanner().catch(() => undefined);
         void resolveCode(data);
       });
       await CameraView.launchScanner({ barcodeTypes: ['qr'] });
+      systemScannerPresentedRef.current = Platform.OS === 'ios';
     } catch {
       systemScannerSubscriptionRef.current?.remove();
       systemScannerSubscriptionRef.current = undefined;
       setCameraMountError('system-scanner');
+    } finally {
+      systemScannerLaunchingRef.current = false;
     }
   }, [binding, resolveCode, resolving, setCameraMountError]);
+
+  useEffect(() => {
+    if (
+      !prefersSystemScanner ||
+      !isFocused ||
+      !cameraActive ||
+      !permission?.granted ||
+      !state.hydrated ||
+      !state.online ||
+      sessionUnavailable ||
+      resolution ||
+      resolving ||
+      binding ||
+      errorKind ||
+      cameraMountError ||
+      autoSystemScannerGenerationRef.current === cameraGeneration
+    ) {
+      return undefined;
+    }
+
+    autoSystemScannerGenerationRef.current = cameraGeneration;
+    void launchSystemScanner();
+    return undefined;
+  }, [
+    binding,
+    cameraActive,
+    cameraGeneration,
+    cameraMountError,
+    errorKind,
+    isFocused,
+    launchSystemScanner,
+    permission?.granted,
+    prefersSystemScanner,
+    resolution,
+    resolving,
+    sessionUnavailable,
+    state.hydrated,
+    state.online,
+  ]);
 
   const selectQrImage = useCallback(async () => {
     if (resolving || binding || readingImage) return;
@@ -495,9 +560,6 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
       setBinding(false);
     }
   }, [actions, binding, cabinetName, classifyError, resolution, router, scannedCode]);
-
-  const sessionUnavailable =
-    state.sessionStatus !== 'authenticated' || currentUser === null;
 
   useEffect(() => {
     if (!sample || !demoCode || !state.hydrated || !state.online || sessionUnavailable || resolution || resolving || binding) {
@@ -662,6 +724,21 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
     );
   } else if (!isFocused || !cameraActive) {
     mainContent = null;
+  } else if (prefersSystemScanner) {
+    mainContent = (
+      <StatePanel
+        action={
+          <ActionButton
+            icon="scan"
+            label={t('scan.systemScanner')}
+            onPress={() => void launchSystemScanner()}
+          />
+        }
+        description={t('scan.systemScannerDescription')}
+        icon="scan"
+        title={t('scan.systemScannerTitle')}
+      />
+    );
   } else {
     mainContent = (
       <ScannerPreview
@@ -675,7 +752,7 @@ export function ScanFlow({ mode, sample = false }: { mode: ScanMode; sample?: bo
               : t('scan.alignCode')
         }
         onCode={(code) => void resolveCode(code)}
-        onMountError={(message) => setCameraMountError(message)}
+        onMountError={setCameraMountError}
       />
     );
   }

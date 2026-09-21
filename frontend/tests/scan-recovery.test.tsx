@@ -7,8 +7,13 @@ const mockCode = 'uniclife://cabinet/v1/init/TEST/TESTPRODUCT';
 const mockResolve = jest.fn();
 const mockInitialize = jest.fn();
 const mockRefresh = jest.fn();
+const mockLaunchScanner = jest.fn();
+const mockDismissScanner = jest.fn();
+const mockScannerSubscriptionRemove = jest.fn();
 const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() };
 let mockOnline = true;
+let mockModernScannerAvailable = false;
+let mockModernScannerListener: ((event: { data: string }) => void) | undefined;
 const mockActions = { resolveQr: mockResolve, initializeCabinet: mockInitialize, refreshIfStale: mockRefresh };
 jest.mock('@/app-state', () => ({
   useApp: () => ({
@@ -28,8 +33,21 @@ jest.mock('@/features/scan/use-camera-access', () => ({
   useCameraAccess: () => ({ active: true, generation: 1, permission: { granted: true }, requestPermission: jest.fn() }),
 }));
 jest.mock('expo-camera', () => {
+  const React = jest.requireActual('react');
   const { View } = jest.requireActual('react-native');
-  return { CameraView: View };
+  const MockCameraView = (props: Record<string, unknown>) => React.createElement(View, props);
+  Object.defineProperty(MockCameraView, 'isModernBarcodeScannerAvailable', {
+    get: () => mockModernScannerAvailable,
+  });
+  Object.assign(MockCameraView, {
+    dismissScanner: (...args: unknown[]) => mockDismissScanner(...args),
+    launchScanner: (...args: unknown[]) => mockLaunchScanner(...args),
+    onModernBarcodeScanned: (listener: (event: { data: string }) => void) => {
+      mockModernScannerListener = listener;
+      return { remove: mockScannerSubscriptionRemove };
+    },
+  });
+  return { CameraView: MockCameraView };
 });
 jest.mock('expo-image-picker', () => ({}));
 jest.mock('@/components/ui/product-image', () => ({ ProductImage: () => null }));
@@ -37,12 +55,50 @@ jest.mock('@/components/ui/product-image', () => ({ ProductImage: () => null }))
 beforeEach(() => {
   jest.clearAllMocks();
   mockOnline = true;
+  mockModernScannerAvailable = false;
+  mockModernScannerListener = undefined;
+  mockLaunchScanner.mockResolvedValue(undefined);
+  mockDismissScanner.mockResolvedValue(undefined);
   mockResolve.mockResolvedValue({
     kind: 'initialize',
     qr: { code: mockCode },
     sku: { name: 'Test cabinet', sku: 'TEST', model: 'TEST', color: 'Black', capacity: 10 },
   });
   mockRefresh.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+it('uses the native system scanner first when it is available on iOS', async () => {
+  mockModernScannerAvailable = true;
+  jest.useFakeTimers();
+  const screen = await render(<ScanFlow mode="initialize" />);
+
+  expect(screen.queryByTestId('product-qr-camera')).toBeNull();
+  expect(screen.getByText('scan.systemScannerTitle')).toBeTruthy();
+  await act(async () => {
+    await Promise.resolve();
+  });
+  expect(mockLaunchScanner).toHaveBeenCalledWith({ barcodeTypes: ['qr'] });
+
+  await act(async () => {
+    mockModernScannerListener?.({ data: mockCode });
+  });
+  expect(mockDismissScanner).toHaveBeenCalled();
+  expect(mockResolve).toHaveBeenCalledWith({ code: mockCode });
+});
+
+it('stops waiting and offers recovery when the embedded camera never becomes ready', async () => {
+  jest.useFakeTimers();
+  const screen = await render(<ScanFlow mode="initialize" />);
+
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(4_000);
+  });
+  expect(screen.getByText('scan.cameraUnavailableTitle')).toBeTruthy();
+  expect(screen.queryByTestId('product-qr-camera')).toBeNull();
 });
 
 it('retains the confirmation and idempotency key after a timed-out cabinet creation', async () => {

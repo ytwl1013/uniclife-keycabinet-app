@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "UnicLife Key Cabinet",
+    "name": "UnicLife",
     "slug": "keycabinet-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -32,7 +32,6 @@
         "foregroundImage": "./src/assets/images/keycabinet_app_logo.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": [],
       "package": "com.youliusteam.keycabinetapp"
     },
     "web": {
@@ -59,7 +58,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow UnicLife to choose a profile photo. The selected photo is stored only on this device and is not uploaded.",
-          "cameraPermission": false,
+          "cameraPermission": "Allow UnicLife to scan a product QR code. Camera frames are not stored or uploaded by this app.",
           "microphonePermission": false
         }
       ],
@@ -109,7 +108,8 @@
       "expo-font",
       "expo-web-browser",
       "expo-image",
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/with-required-camera-permission"
     ],
     "experiments": {
       "typedRoutes": true,
