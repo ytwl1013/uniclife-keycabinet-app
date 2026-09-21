@@ -7,7 +7,7 @@ Authorization: Bearer <opaque-session-token>
 Content-Type: application/json
 ```
 
-会话 Token 只在注册或登录成功时返回一次，数据库仅保存带服务端 pepper 的摘要。Expo 前端将 Token 放入 iOS Keychain / Android Keystore（Expo SecureStore）；Web 开发仅保存在当前标签页的 sessionStorage，不写入普通日志或 AsyncStorage。`/admin/*` 是例外：它只接受部署平台注入的独立服务端令牌，由 Next.js 管理后台在服务端调用，浏览器不得直接请求或持有该令牌。
+会话 Token 只在注册或登录成功时返回一次，数据库仅保存带服务端 pepper 的摘要。Expo 前端将 Token 和最小账户快照放入 iOS Keychain / Android Keystore（Expo SecureStore）；Web 开发仅保存在当前标签页的 sessionStorage，不写入普通日志或 AsyncStorage。移动端注册/登录传入 `persistentSession: true`，会话没有时间到期点，但仍可由退出、密码重置、账户停用或删号撤销；在应用内修改密码会撤销其他设备会话。Web 会话不传该字段，继续使用 `AUTH_SESSION_TTL_DAYS`。`/admin/*` 是例外：它只接受部署平台注入的独立服务端令牌，由 Next.js 管理后台在服务端调用，浏览器不得直接请求或持有该令牌。
 
 ## 稳定返回格式
 
@@ -68,9 +68,12 @@ Zod 参数校验失败返回 HTTP 400 / `VALIDATION_ERROR`；无会话和会话�
   "displayName": "Example Person",
   "locale": "zh-CN",
   "acceptedTerms": true,
-  "acceptedPrivacy": true
+  "acceptedPrivacy": true,
+  "persistentSession": true
 }
 ```
+
+登录请求同样可传 `persistentSession: true`。响应中的 `session.expiresAt` 在持久移动会话中为 `null`，在限时 Web 会话中为 ISO 时间。该字段只控制时间过期，不影响服务端主动撤销。
 
 注册、登录、`GET /auth/session` 和当前账户写接口返回的本人资料还包含 `loginCount`、`lastLoginAt` 与 `homeGuidePromptedAt`。注册并创建会话计为第一次登录；每次密码登录在数据库事务内原子增加次数并更新时间。首页导航提示接口只接受 `prompted: true`，可携带 `requestId`，并记录成功审计。登录统计和导航状态不会出现在柜体成员或活动参与者资料中。
 

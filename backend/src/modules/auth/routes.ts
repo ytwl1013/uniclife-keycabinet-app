@@ -100,7 +100,9 @@ export async function registerAuthRoutes(
           locale: input.locale,
         },
       ]);
-      const session = await issueSession(transaction, userId);
+      const session = await issueSession(transaction, userId, {
+        persistent: input.persistentSession,
+      });
       await appendAudit(transaction, {
         actorId: userId,
         action: 'auth.register',
@@ -160,7 +162,9 @@ export async function registerAuthRoutes(
       if (!signedInUser) {
         throw new AppError(404, 'USER_NOT_FOUND', '账户不存在');
       }
-      const issued = await issueSession(transaction, user.id);
+      const issued = await issueSession(transaction, user.id, {
+        persistent: input.persistentSession,
+      });
       await appendAudit(transaction, {
         actorId: user.id,
         action: 'auth.sign_in',

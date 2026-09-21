@@ -32,6 +32,9 @@ jest.mock('@/api/client', () => {
 
 const mockLoadSessionToken = jest.fn<Promise<string | null>, []>();
 const mockClearSessionToken = jest.fn<Promise<void>, []>();
+const mockLoadSessionUser = jest.fn();
+const mockSaveSessionUser = jest.fn<Promise<void>, [CurrentUserAccount]>();
+const mockClearSessionUser = jest.fn<Promise<void>, []>();
 const mockSession = jest.fn();
 const mockListCabinets = jest.fn();
 const mockGetCabinet = jest.fn();
@@ -47,6 +50,12 @@ jest.mock('@/api/session-token', () => ({
   clearSessionToken: () => mockClearSessionToken(),
   loadSessionToken: () => mockLoadSessionToken(),
   saveSessionToken: jest.fn(),
+}));
+
+jest.mock('@/api/session-user-storage', () => ({
+  clearSessionUser: () => mockClearSessionUser(),
+  loadSessionUser: () => mockLoadSessionUser(),
+  saveSessionUser: (user: CurrentUserAccount) => mockSaveSessionUser(user),
 }));
 
 jest.mock('@/api/backend', () => ({
@@ -113,6 +122,9 @@ describe('persisted session recovery', () => {
     jest.clearAllMocks();
     mockLoadSessionToken.mockResolvedValue('persisted-session-token');
     mockClearSessionToken.mockResolvedValue();
+    mockLoadSessionUser.mockResolvedValue(user);
+    mockSaveSessionUser.mockResolvedValue();
+    mockClearSessionUser.mockResolvedValue();
     mockListCabinets.mockResolvedValue([]);
     mockListLoans.mockResolvedValue({ items: [] });
     mockListEvents.mockResolvedValue({ items: [], actors: [] });
@@ -139,8 +151,9 @@ describe('persisted session recovery', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('session-state').props.children).toBe('true:anonymous:false');
+      expect(screen.getByTestId('session-state').props.children).toBe('true:authenticated:false');
     });
+    expect(mockSession).toHaveBeenCalledWith('persisted-session-token', 4_000);
     expect(mockClearSessionToken).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -149,6 +162,7 @@ describe('persisted session recovery', () => {
 
     expect(mockSession).toHaveBeenCalledTimes(1);
     expect(mockClearSessionToken).not.toHaveBeenCalled();
+    expect(screen.getByTestId('avatar-state').props.children).toBe('none');
   });
 
   it('clears a persisted token only after the backend rejects the session', async () => {
@@ -166,6 +180,7 @@ describe('persisted session recovery', () => {
       expect(screen.getByTestId('session-state').props.children).toBe('true:anonymous:true');
     });
     expect(mockClearSessionToken).toHaveBeenCalledTimes(1);
+    expect(mockClearSessionUser).toHaveBeenCalledTimes(1);
   });
 
   it('restores the current avatar from local storage instead of a backend URI', async () => {

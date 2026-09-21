@@ -36,4 +36,32 @@ describe('Expo push notifier', () => {
     });
     expect(messages[0]).not.toHaveProperty('sound');
   });
+
+  it('sends a cabinet deep link only to the selected Super Admin tokens', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: [{ id: 'ticket-ok', status: 'ok' }],
+    }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createExpoPushNotifier().sendCabinetMemberJoined({
+      cabinetId: 'cabinet-test',
+      eventId: 'event-member-joined',
+      tokens: ['ExpoPushToken[super-admin]'],
+    });
+
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const messages = JSON.parse(String(request.body));
+    expect(messages).toEqual([
+      expect.objectContaining({
+        channelId: 'cabinet-alerts',
+        data: {
+          cabinetId: 'cabinet-test',
+          eventId: 'event-member-joined',
+          type: 'cabinet.member_joined',
+        },
+        priority: 'high',
+        to: 'ExpoPushToken[super-admin]',
+      }),
+    ]);
+  });
 });

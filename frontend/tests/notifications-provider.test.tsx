@@ -14,6 +14,18 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 const mockMarkFeedbackThreadRead = jest.fn().mockResolvedValue(undefined);
 const mockState = { feedbackThreads: [] as FeedbackThreadSummary[] };
+const mockApp = {
+  cabinets: [] as Array<{ id: string; name: string; role: 'superAdmin' | 'admin' }>,
+  currentUserId: 'user-notifications',
+  events: [],
+  keys: [] as Array<{
+    activeLoan?: { expectedReturnAt?: string; id: string };
+    cabinetId: string;
+    id: string;
+    name: string;
+    status: 'available' | 'checkedOut' | 'overdue';
+  }>,
+};
 
 jest.mock('@/app-state', () => ({
   useApp: () => ({
@@ -24,7 +36,7 @@ jest.mock('@/app-state', () => ({
 }));
 
 jest.mock('@/features/cabinet-prototype/use-prototype-app', () => ({
-  usePrototypeApp: () => ({ events: [] }),
+  usePrototypeApp: () => mockApp,
 }));
 
 jest.mock('@/i18n', () => ({
@@ -69,6 +81,7 @@ function Probe() {
       <Text testID="unread-count">{unreadCount}</Text>
       {notification ? (
         <Pressable testID="open-notification" onPress={() => markRead(notification.id)}>
+          <Text>{notification.title}</Text>
           <Text>{notification.read ? 'read' : 'unread'}</Text>
         </Pressable>
       ) : null}
@@ -81,6 +94,9 @@ describe('support notification read state', () => {
     jest.clearAllMocks();
     await AsyncStorage.clear();
     mockState.feedbackThreads = [supportThread('2026-09-02T08:01:00.000Z')];
+    mockApp.cabinets = [];
+    mockApp.events = [];
+    mockApp.keys = [];
   });
 
   it('marks the opened reply read immediately and treats a later reply as new', async () => {
@@ -110,5 +126,27 @@ describe('support notification read state', () => {
       </NotificationsProvider>,
     );
     expect(screen.getByTestId('unread-count').props.children).toBe(1);
+  });
+
+  it('creates a persistent in-app notification for an overdue key', async () => {
+    mockState.feedbackThreads = [];
+    mockApp.cabinets = [{ id: 'cabinet-overdue', name: 'Front Desk', role: 'superAdmin' }];
+    mockApp.keys = [{
+      activeLoan: { id: 'loan-overdue', expectedReturnAt: '2026-09-02T07:00:00.000Z' },
+      cabinetId: 'cabinet-overdue',
+      id: 'key-overdue',
+      name: 'Main Door',
+      status: 'overdue',
+    }];
+
+    const screen = await render(
+      <NotificationsProvider>
+        <Probe />
+      </NotificationsProvider>,
+    );
+
+    await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalled());
+    expect(screen.getByTestId('unread-count').props.children).toBe(1);
+    expect(screen.getByText('notifications.overdueTitle')).toBeTruthy();
   });
 });

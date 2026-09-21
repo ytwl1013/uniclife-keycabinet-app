@@ -30,6 +30,7 @@ export default function HomeRoute() {
   const manuals = selectCabinetManuals(cabinets, selectors.skuById);
   const borrowedKeys = selectors.borrowedKeys();
   const [guideConfirmationVisible, setGuideConfirmationVisible] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
   const [guideVisible, setGuideVisible] = useState(false);
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect>();
@@ -147,6 +148,17 @@ export default function HomeRoute() {
   const handleAddCabinetLayout = useCallback((event: LayoutChangeEvent) => {
     sectionY.current[2] = event.nativeEvent.layout.y;
   }, []);
+  const retryConnection = useCallback(async () => {
+    if (reconnecting) return;
+    setReconnecting(true);
+    try {
+      await actions.refresh();
+    } catch {
+      // The offline indicator remains visible and can be retried again.
+    } finally {
+      setReconnecting(false);
+    }
+  }, [actions, reconnecting]);
 
   if (!state.hydrated) {
     return (
@@ -160,7 +172,7 @@ export default function HomeRoute() {
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       <View className="bg-background">
         <View className="mx-auto w-full max-w-content px-screen py-3">
-          <View className="flex-row items-center justify-between gap-4">
+          <View className="flex-row items-center gap-3">
             <Pressable
               accessibilityLabel={t('navigation.account')}
               accessibilityRole="button"
@@ -180,7 +192,23 @@ export default function HomeRoute() {
                 </View>
               )}
             </Pressable>
-            <View className="flex-row items-center gap-2">
+            <View className="min-w-0 flex-1 items-center justify-center">
+              {!state.online ? (
+                <Pressable
+                  accessibilityLabel={`${t('common.offline')}, ${t('common.retry')}`}
+                  accessibilityRole="button"
+                  className="min-h-11 min-w-20 items-center justify-center rounded-control px-2 active:bg-surface"
+                  disabled={reconnecting}
+                  onPress={() => void retryConnection()}
+                  testID="home-offline-retry">
+                  <AppText variant="label" tone="danger">{t('common.offline')}</AppText>
+                  <AppText className="text-[10px] leading-3" tone="muted">
+                    {reconnecting ? t('common.loading') : t('common.retry')}
+                  </AppText>
+                </Pressable>
+              ) : null}
+            </View>
+            <View className="flex-row items-center justify-end gap-2">
               {manuals.length ? (
                 <Pressable
                   accessibilityLabel={t('manuals.title')}

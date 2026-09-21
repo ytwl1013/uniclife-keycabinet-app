@@ -30,6 +30,7 @@ export type ActivityEvent = {
   keyId?: string;
   keyName?: string;
   actorUserId: string;
+  initiatorUserId?: string;
   actorName: string;
   kind: ActivityEventKind;
   createdAt: string;

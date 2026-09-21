@@ -89,7 +89,11 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
     realtime,
   });
   await app.register(registerUserRoutes, { prefix: '/api/v1/users', realtime });
-  await app.register(registerCabinetRoutes, { prefix: '/api/v1/cabinets', realtime });
+  await app.register(registerCabinetRoutes, {
+    prefix: '/api/v1/cabinets',
+    pushNotifier,
+    realtime,
+  });
   await app.register(registerKeyRoutes, { prefix: '/api/v1', realtime });
   await app.register(registerRecordRoutes, { prefix: '/api/v1/records' });
   await app.register(registerSupportRoutes, {

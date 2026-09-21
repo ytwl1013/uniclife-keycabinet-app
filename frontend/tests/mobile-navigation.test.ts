@@ -121,6 +121,16 @@ describe('simplified mobile navigation architecture', () => {
     expect(home).toContain('contentContainerStyle={{ flexGrow: 1 }}');
   });
 
+  it('shows auto-login progress and an App Bar retry while offline', () => {
+    const rootLayout = source('src/app/_layout.tsx');
+    const home = source('src/app/(tabs)/index.tsx');
+
+    expect(rootLayout).toContain("t('auth.signIn.signingIn')");
+    expect(home).toContain('testID="home-offline-retry"');
+    expect(home).toContain('await actions.refresh()');
+    expect(home).toContain("t('common.offline')");
+  });
+
   it('keeps authenticated workspace data fresh through realtime events and lifecycle recovery', () => {
     const rootLayout = source('src/app/_layout.tsx');
     const autoRefresh = source('src/features/app-refresh/app-auto-refresh.tsx');

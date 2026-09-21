@@ -21,11 +21,13 @@ export const registerRequestSchema = z.object({
   locale: supportedLocaleSchema,
   acceptedTerms: z.literal(true),
   acceptedPrivacy: z.literal(true),
+  persistentSession: z.boolean().optional(),
 });
 
 export const signInRequestSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
+  persistentSession: z.boolean().optional(),
 });
 
 export const passwordResetRequestSchema = z.object({ email: emailSchema });

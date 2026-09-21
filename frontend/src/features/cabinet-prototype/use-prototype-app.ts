@@ -243,6 +243,7 @@ export function usePrototypeApp(): PrototypeApp {
           keyId: text(event.keyId) || undefined,
           keyName,
           actorUserId: text(event.actorId),
+          initiatorUserId: text(summary.invitationCreatedBy) || undefined,
           actorName,
           kind,
           createdAt: text(event.occurredAt, text(event.createdAt)),

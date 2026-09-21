@@ -26,8 +26,10 @@ import type {
 
 import { callApi } from './client';
 
-type Session = { token: string; expiresAt: string };
+type Session = { token: string; expiresAt: string | null };
 type AuthResult = { user: CurrentUserAccount; session: Session };
+
+const persistentSession = process.env.EXPO_OS !== 'web';
 
 function json(method: string, body?: unknown): RequestInit {
   return {
@@ -38,13 +40,13 @@ function json(method: string, body?: unknown): RequestInit {
 
 export const backendApi = {
   register: (input: RegisterRequest) =>
-    callApi<AuthResult>('/auth/register', json('POST', input)),
+    callApi<AuthResult>('/auth/register', json('POST', { ...input, persistentSession })),
   signIn: (input: SignInRequest) =>
-    callApi<AuthResult>('/auth/sign-in', json('POST', input)),
+    callApi<AuthResult>('/auth/sign-in', json('POST', { ...input, persistentSession })),
   signOut: (token: string) =>
     callApi<{ signedOut: boolean }>('/auth/sign-out', { ...json('POST'), token }),
-  session: (token: string) =>
-    callApi<{ user: CurrentUserAccount }>('/auth/session', { token }),
+  session: (token: string, timeoutMs?: number) =>
+    callApi<{ user: CurrentUserAccount }>('/auth/session', { token, timeoutMs }),
   requestPasswordReset: (email: string) =>
     callApi<{
       challengeId: string;
