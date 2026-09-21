@@ -64,6 +64,13 @@
       "when": 1788403003804,
       "tag": "0008_flimsy_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789957439986,
+      "tag": "0009_persistent_mobile_sessions",
+      "breakpoints": true
     }
   ]
 }

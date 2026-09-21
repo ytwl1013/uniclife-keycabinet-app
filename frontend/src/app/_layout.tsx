@@ -1,6 +1,6 @@
 import { Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import 'react-native-reanimated';
 import '../../global.css';
 
@@ -57,15 +57,11 @@ function AppNavigationGate() {
   if (!state.hydrated) {
     return (
       <View
-        style={[
-          styles.loading,
-          {
-            backgroundColor: palette.background,
-          },
-        ]}>
+        className="flex-1 items-center justify-center gap-3"
+        style={{ backgroundColor: palette.background }}>
         <ActivityIndicator color={palette.brand} size="large" />
-        <Text style={[styles.loadingText, { color: palette.foreground }]}>
-          {t('common.loading')}
+        <Text className="text-[15px] font-semibold" style={{ color: palette.foreground }}>
+          {t('auth.signIn.signingIn')}
         </Text>
       </View>
     );
@@ -90,16 +86,3 @@ export default function RootLayout() {
     </AppUiProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-});

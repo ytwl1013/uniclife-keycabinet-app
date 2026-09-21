@@ -1,5 +1,5 @@
 import type { PushPlatform } from '@uniclife/shared';
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNull, or } from 'drizzle-orm';
 
 import { createEntityId } from '../../common/security/ids.js';
 import type { DbExecutor } from '../../db/client.js';
@@ -56,7 +56,7 @@ export async function listUserPushTokens(
     .where(and(
       eq(pushTokens.userId, userId),
       isNull(sessions.revokedAt),
-      gt(sessions.expiresAt, new Date().toISOString()),
+      or(isNull(sessions.expiresAt), gt(sessions.expiresAt, new Date().toISOString())),
     ));
 }
 

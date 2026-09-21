@@ -28,6 +28,8 @@ export const en = {
   notifications: {
     title: 'Notifications', subtitle: 'Exceptions, support, and security alerts', back: 'Back', unreadTab: 'Unread (%{count})', readTab: 'Read', markAllRead: 'Mark all read',
     emptyUnreadTitle: 'You are all caught up', emptyUnreadDescription: 'New exceptions, support messages, and security alerts will appear here.', emptyReadTitle: 'No read notifications', emptyReadDescription: 'Notifications you have opened will move here.',
+    overdueTitle: '%{key} is overdue', overdueBody: 'Open %{cabinet} to review or return this key.',
+    supportChannelName: 'UnicLife Support', alertsChannelName: 'Key and cabinet alerts',
   },
   manuals: {
     title: 'Manuals', subtitle: '%{count} manuals for your cabinets', emptyTitle: 'No manuals available', emptyDescription: 'Manuals added to your cabinet products will appear here.',

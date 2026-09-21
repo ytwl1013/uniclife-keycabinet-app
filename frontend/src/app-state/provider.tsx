@@ -25,6 +25,11 @@ import {
   loadSessionToken,
   saveSessionToken,
 } from '@/api/session-token';
+import {
+  clearSessionUser,
+  loadSessionUser,
+  saveSessionUser,
+} from '@/api/session-user-storage';
 
 import { uniqueById } from './collections';
 import { AppSelectors, createAppSelectors } from './selectors';
@@ -64,6 +69,7 @@ const emptyState = (): AppState => ({
 });
 
 const AppContext = createContext<AppContextValue | null>(null);
+const SESSION_RESTORE_TIMEOUT_MS = 4_000;
 
 function isSessionError(error: unknown): boolean {
   return isApiError(error) &&
@@ -105,6 +111,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     offlineOverrideRef.current = false;
     locallyReadSupportAtRef.current.clear();
     await clearSessionToken();
+    await clearSessionUser();
     await clearRegisteredPushToken();
     updateState((current) => ({
       ...emptyState(),
@@ -116,6 +123,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [updateState]);
 
   const loadWorkspace = useCallback(async (token: string, currentUser: CurrentUserAccount) => {
+    await saveSessionUser(currentUser).catch(() => undefined);
     let summaries;
     try {
       summaries = await backendApi.listCabinets(token);
@@ -318,14 +326,20 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (hydratePromiseRef.current) return hydratePromiseRef.current;
 
     const operation = (async () => {
+      let cachedUser: CurrentUserAccount | null = null;
       try {
-        const token = await loadSessionToken();
+        const [token, storedUser] = await Promise.all([
+          loadSessionToken(),
+          loadSessionUser().catch(() => null),
+        ]);
+        cachedUser = storedUser;
         if (!token) {
+          await clearSessionUser().catch(() => undefined);
           updateState((current) => ({ ...current, hydrated: true, online: true, sessionStatus: 'anonymous' }));
           return;
         }
         tokenRef.current = token;
-        const { user } = await backendApi.session(token);
+        const { user } = await backendApi.session(token, SESSION_RESTORE_TIMEOUT_MS);
         await loadWorkspace(token, await withLocalProfileAvatar(user));
       } catch (error) {
         if (isSessionError(error)) {
@@ -335,11 +349,12 @@ export function AppProvider({ children }: PropsWithChildren) {
 
         updateState((current) => ({
           ...current,
-          // Keep a potentially valid token, but never block navigation indefinitely
-          // when the backend cannot confirm it. A later sign-in can replace it.
           hydrated: true,
+          currentUserId: cachedUser?.id ?? current.currentUserId,
+          currentUser: cachedUser ?? current.currentUser,
           online: false,
-          sessionStatus: 'anonymous',
+          sessionStatus: 'authenticated',
+          users: cachedUser ? uniqueById([cachedUser, ...current.users]) : current.users,
         }));
       }
     })();
@@ -365,6 +380,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       await saveSessionToken(result.session.token);
       tokenRef.current = result.session.token;
       const user = await withLocalProfileAvatar(result.user);
+      await saveSessionUser(user).catch(() => undefined);
       await loadWorkspace(result.session.token, user);
       return user;
     },
@@ -373,6 +389,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       await saveSessionToken(result.session.token);
       tokenRef.current = result.session.token;
       const user = await withLocalProfileAvatar(result.user);
+      await saveSessionUser(user).catch(() => undefined);
       await loadWorkspace(result.session.token, user);
       return user;
     },
@@ -397,6 +414,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           requestId: 'home-guide-prompted',
         });
         const user = await withLocalProfileAvatar(remoteUser);
+        await saveSessionUser(user).catch(() => undefined);
         updateState((current) => ({
           ...current,
           currentUser: user,
@@ -444,6 +462,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         const user = localAvatarUri
           ? { ...userWithoutAvatar, avatarUri: localAvatarUri }
           : userWithoutAvatar;
+        await saveSessionUser(user).catch(() => undefined);
         updateState((current) => ({
           ...current,
           currentUser: user,
@@ -460,6 +479,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       try {
         const remoteUser = await backendApi.updateEmail(token, input);
         const user = await withLocalProfileAvatar(remoteUser);
+        await saveSessionUser(user).catch(() => undefined);
         updateState((current) => ({
           ...current,
           currentUser: user,

@@ -133,7 +133,10 @@ export async function registerAdminRoutes(
     const [sessionMetrics] = await database
       .select({ value: count() })
       .from(sessions)
-      .where(and(isNull(sessions.revokedAt), gt(sessions.expiresAt, nowIso)));
+      .where(and(
+        isNull(sessions.revokedAt),
+        or(isNull(sessions.expiresAt), gt(sessions.expiresAt, nowIso)),
+      ));
     const [cabinetMetrics] = await database
       .select({
         total: count(),
@@ -248,7 +251,10 @@ export async function registerAdminRoutes(
         activeSessionCount: count().as('active_session_count'),
       })
       .from(sessions)
-      .where(and(isNull(sessions.revokedAt), gt(sessions.expiresAt, now)))
+      .where(and(
+        isNull(sessions.revokedAt),
+        or(isNull(sessions.expiresAt), gt(sessions.expiresAt, now)),
+      ))
       .groupBy(sessions.userId)
       .as('active_session_counts');
     const [user] = await database

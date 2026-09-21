@@ -43,6 +43,11 @@ import {
   users,
 } from '../../db/schema.js';
 import { appendAudit } from '../audit/service.js';
+import type { ExpoPushNotifier } from '../../integrations/notifications/expo-push-notifier.js';
+import {
+  deletePushTokensByValue,
+  listUserPushTokens,
+} from '../users/push-token-service.js';
 import { parseJoinQrPayload, parseProductQrPayload } from './qr.js';
 import {
   getCabinetSummary,
@@ -92,7 +97,7 @@ async function recordFailure(
 
 export async function registerCabinetRoutes(
   app: FastifyInstance,
-  options: { realtime: RealtimePublisher },
+  options: { pushNotifier?: ExpoPushNotifier; realtime: RealtimePublisher },
 ): Promise<void> {
   app.get('/', async (request) => {
     const currentUser = await requireAuth(request);
@@ -458,6 +463,11 @@ export async function registerCabinetRoutes(
     const currentUser = await requireAuth(request);
     const database = requireDatabase();
     let realtimeChange: CabinetRealtimeChange | undefined;
+    let memberJoinedPush: {
+      cabinetId: string;
+      eventId: string;
+      superAdminUserId: string;
+    } | undefined;
     try {
       const response = await executeIdempotent(
         database,
@@ -531,8 +541,32 @@ export async function registerCabinetRoutes(
             cabinetId: row.cabinet.id,
             actorId: currentUser.id,
             type: 'member_joined',
-            summaryData: { membershipId: membership.id, invitationId: row.invitation.id },
+            summaryData: {
+              invitationCreatedBy: row.invitation.createdBy,
+              invitationId: row.invitation.id,
+              membershipId: membership.id,
+            },
           });
+          const [superAdmin] = await transaction
+            .select({ userId: cabinetMemberships.userId })
+            .from(cabinetMemberships)
+            .where(and(
+              eq(cabinetMemberships.cabinetId, row.cabinet.id),
+              eq(cabinetMemberships.role, 'super_admin'),
+              eq(cabinetMemberships.active, true),
+            ))
+            .limit(1);
+          if (
+            superAdmin &&
+            superAdmin.userId !== currentUser.id &&
+            superAdmin.userId !== row.invitation.createdBy
+          ) {
+            memberJoinedPush = {
+              cabinetId: row.cabinet.id,
+              eventId,
+              superAdminUserId: superAdmin.userId,
+            };
+          }
           const touched = await touchCabinet(transaction, row.cabinet.id);
           await appendAudit(transaction, {
             actorId: currentUser.id,
@@ -554,6 +588,25 @@ export async function registerCabinetRoutes(
         },
       );
       publishRealtimeChange(app, options.realtime, realtimeChange);
+      if (memberJoinedPush && options.pushNotifier) {
+        const push = memberJoinedPush;
+        try {
+          const registeredTokens = await listUserPushTokens(database, push.superAdminUserId);
+          if (registeredTokens.length) {
+            const result = await options.pushNotifier.sendCabinetMemberJoined({
+              cabinetId: push.cabinetId,
+              eventId: push.eventId,
+              tokens: registeredTokens.map(({ token }) => token),
+            });
+            await deletePushTokensByValue(database, result.invalidTokens);
+          }
+        } catch (pushError) {
+          request.log.warn(
+            { err: pushError, cabinetId: push.cabinetId, userId: push.superAdminUserId },
+            'cabinet member joined push delivery failed',
+          );
+        }
+      }
       return response;
     } catch (error) {
       await recordFailure(

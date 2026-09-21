@@ -118,7 +118,10 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
 
   const notifications = useMemo<AppNotification[]>(() => {
     const eventNotifications: AppNotification[] = app.events
-      .filter(isNotifiableEvent)
+      .filter((event) => isNotifiableEvent(event, {
+        cabinetRole: app.cabinets.find((cabinet) => cabinet.id === event.cabinetId)?.role,
+        currentUserId: app.currentUserId,
+      }))
       .map((event) => ({
       id: event.id,
       title: event.title,
@@ -127,7 +130,27 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
       icon: eventIcon[event.kind].icon,
       tone: eventIcon[event.kind].tone,
       read: readIds.has(event.id),
+      href: `/(details)/cabinets/${event.cabinetId}` as Href,
     }));
+    const overdueNotifications: AppNotification[] = app.keys
+      .filter((key) => key.status === 'overdue' && key.activeLoan?.expectedReturnAt)
+      .map((key) => {
+        const cabinet = app.cabinets.find((candidate) => candidate.id === key.cabinetId);
+        const id = `overdue:${key.activeLoan!.id}:${key.activeLoan!.expectedReturnAt}`;
+        return {
+          id,
+          title: t('notifications.overdueTitle', { key: key.name }),
+          body: t('notifications.overdueBody', { cabinet: cabinet?.name ?? '' }),
+          createdAt: key.activeLoan!.expectedReturnAt!,
+          icon: 'key',
+          tone: 'danger',
+          read: readIds.has(id),
+          href: {
+            pathname: '/cabinets/[cabinetId]/keys/[keyId]',
+            params: { cabinetId: key.cabinetId, keyId: key.id },
+          } as Href,
+        };
+      });
     const supportNotifications: AppNotification[] = state.feedbackThreads
       .filter((thread) => thread.supportMessageCount > 0 && thread.latestSupportMessageAt)
       .map((thread) => ({
@@ -142,14 +165,20 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
         read: thread.unreadMessageCount === 0 || readIds.has(supportReadId(thread)),
         href: `/(details)/account/feedback/${thread.id}` as Href,
       }));
-    return [...supportNotifications, ...eventNotifications].sort(
+    return [...supportNotifications, ...overdueNotifications, ...eventNotifications].sort(
       (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
     );
-  }, [app.events, readIds, state.feedbackThreads, t]);
+  }, [app.cabinets, app.currentUserId, app.events, app.keys, readIds, state.feedbackThreads, t]);
 
   const markAllRead = useCallback(() => {
     saveReadIds(new Set([
-      ...app.events.filter(isNotifiableEvent).map((event) => event.id),
+      ...app.events.filter((event) => isNotifiableEvent(event, {
+        cabinetRole: app.cabinets.find((cabinet) => cabinet.id === event.cabinetId)?.role,
+        currentUserId: app.currentUserId,
+      })).map((event) => event.id),
+      ...app.keys
+        .filter((key) => key.status === 'overdue' && key.activeLoan?.expectedReturnAt)
+        .map((key) => `overdue:${key.activeLoan!.id}:${key.activeLoan!.expectedReturnAt}`),
       ...state.feedbackThreads.map(supportReadId),
     ]));
     for (const thread of state.feedbackThreads) {
@@ -157,7 +186,7 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
         void actions.markFeedbackThreadRead({ feedbackId: thread.id }).catch(() => undefined);
       }
     }
-  }, [actions, app.events, saveReadIds, state.feedbackThreads]);
+  }, [actions, app.cabinets, app.currentUserId, app.events, app.keys, saveReadIds, state.feedbackThreads]);
 
   const value = useMemo<NotificationsContextValue>(() => ({
     notifications,

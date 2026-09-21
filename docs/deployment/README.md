@@ -19,7 +19,7 @@
 - `FRONTEND_ORIGIN`：允许跨域访问的前端地址
 - `ADMIN_API_TOKEN`：可选的服务端管理 API 令牌，至少 32 字符；本地 Backend 与 Admin 的 `ADMIN_API_TOKEN_DEV` 一致，Render 与 Admin 的 `ADMIN_API_TOKEN_PRO` 一致。只能由 Secret 注入，不得加 `NEXT_PUBLIC_` 前缀
 - `AUTH_TOKEN_PEPPER`：至少 32 字符的独立随机密钥，用于会话、验证码和重置 Token 摘要；开发和生产环境都必填且不得随意轮换，否则全部会话与重置挑战会失效
-- `AUTH_SESSION_TTL_DAYS`：会话有效天数，范围 1–90
+- `AUTH_SESSION_TTL_DAYS`：非持久会话（当前为 Web）的有效天数，范围 1–90；移动端会话由客户端显式请求持久化，不按天过期，但仍可主动撤销
 - `AUTH_RESET_TTL_MINUTES`：验证码和重置 Token 有效分钟数，范围 5–60
 - `AUTH_ALLOW_RESET_CODE_PREVIEW`：仅本地开发可设为 `true`；生产环境设为 `true` 会导致启动失败
 - `MAIL_SERVER`、`MAIL_PORT`：反馈邮件 SMTP 主机与端口
@@ -54,11 +54,11 @@
 - `EXPO_PUBLIC_EAS_PROJECT_ID`：EAS project UUID；仅在构建未自动注入 `extra.eas.projectId` 时作为系统推送注册的公开回退值
 - `EXPO_PUBLIC_SUPPORT_EMAIL`：账户页“邮箱联系”展示和复制的公开客服邮箱地址
 
-Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。pro 模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地命令通过 `EXPO_PUBLIC_APP_ENV` 选择地址，EAS 构建使用 EAS production 环境中的 pro 变量。切换本地环境时必须先停止旧 Metro，再运行目标命令并完整重新加载客户端；仓库启动命令会清理 Metro 缓存。客户端 API 请求最长等待 20 秒，session 恢复遇到超时或网络错误后进入可操作的登录页，只有后端明确返回 401 才删除本地会话。
+Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。pro 模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地命令通过 `EXPO_PUBLIC_APP_ENV` 选择地址，EAS 构建使用 EAS production 环境中的 pro 变量。切换本地环境时必须先停止旧 Metro，再运行目标命令并完整重新加载客户端；仓库启动命令会清理 Metro 缓存。客户端普通 API 请求最长等待 20 秒；启动时的 session 恢复最多等待 4 秒。设备已有本地移动登录态时，超时或网络错误会直接进入应用并显示离线重试入口，只有后端明确返回 401 才删除本地会话；从未登录或已主动退出的设备仍进入登录页。
 
 ### 手机系统通知
 
-客服回复的横幅和角标使用 `expo-notifications` 与 Expo Push Service。首次配置需执行 `eas init` 关联项目，并分别在 EAS Credentials 配置 iOS APNs push key 与 Android FCM v1；构建中必须能读取 EAS project ID。`app.json` 的通知 config plugin 变更只在重新生成原生二进制后生效，因此远程推送必须使用新的 development build 或生产 build 测试，不能使用 Expo Go。推送令牌由 App 在用户授权后通过受鉴权 API 注册，服务端只向仍绑定有效登录会话的令牌发送；退出登录会移除当前会话令牌。
+客服回复和新增管理员横幅使用 `expo-notifications` 与 Expo Push Service；钥匙逾期由 App 根据已同步借用数据注册本机定时通知，因此网络中断后仍可按已知归还时间提醒。首次配置需执行 `eas init` 关联项目，并分别在 EAS Credentials 配置 iOS APNs push key 与 Android FCM v1；构建中必须能读取 EAS project ID。`app.json` 的通知 config plugin 变更只在重新生成原生二进制后生效，因此远程推送必须使用新的 development build 或生产 build 测试，不能使用 Expo Go；本机定时通知可在 Expo Go 中验证。推送令牌由 App 在用户授权后通过受鉴权 API 注册，服务端只向仍绑定有效登录会话的令牌发送；退出登录会移除当前会话令牌并取消尚未触发的逾期提醒。
 
 系统推送只承担提醒作用，App 内数据库消息是权威记录。Expo Push API 请求设置 10 秒超时且不自动重试，避免不确定响应造成重复横幅；失败不会回滚客服回复。`DeviceNotRegistered` 令牌会被删除。发布前必须用真机分别验证前台、后台、终止状态、通知权限拒绝、横幅点击深链和角标清零。
 

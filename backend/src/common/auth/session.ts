@@ -1,5 +1,5 @@
 import type { CurrentUserAccount } from '@uniclife/shared';
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNull, or } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
 
 import { env } from '../config/env.js';
@@ -66,7 +66,7 @@ export async function authenticateSessionToken(token: string): Promise<Authentic
       and(
         eq(sessions.tokenHash, digestToken(token)),
         isNull(sessions.revokedAt),
-        gt(sessions.expiresAt, now),
+        or(isNull(sessions.expiresAt), gt(sessions.expiresAt, now)),
         eq(users.status, 'active'),
       ),
     )
@@ -96,11 +96,14 @@ export async function authenticateSessionToken(token: string): Promise<Authentic
 export async function issueSession(
   executor: DbExecutor,
   userId: string,
-): Promise<{ token: string; expiresAt: string }> {
+  options: { persistent?: boolean } = {},
+): Promise<{ token: string; expiresAt: string | null }> {
   const token = createOpaqueToken();
-  const expiresAt = new Date(
-    Date.now() + env.AUTH_SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
-  ).toISOString();
+  const expiresAt = options.persistent
+    ? null
+    : new Date(
+      Date.now() + env.AUTH_SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
   await executor.insert(sessions).values({
     id: createEntityId('session'),
     userId,

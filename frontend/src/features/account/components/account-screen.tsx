@@ -236,20 +236,22 @@ export function AccountScreen() {
         size="fixed"
         title={t('account.languageTitle')}
         visible={languageOpen}>
-        <View accessibilityRole="radiogroup" className="gap-2 pb-2">
-          <ChoiceChip
-            label={t('account.systemLanguage')}
-            onPress={() => void updateLanguage('system')}
-            selected={preference === 'system'}
-          />
-          {supportedLocales.map((supportedLocale) => (
+        <View accessibilityRole="radiogroup">
+          <View className="gap-2 pb-2">
             <ChoiceChip
-              key={supportedLocale}
-              label={localeLabels[supportedLocale]}
-              onPress={() => void updateLanguage(supportedLocale)}
-              selected={preference === supportedLocale}
+              label={t('account.systemLanguage')}
+              onPress={() => void updateLanguage('system')}
+              selected={preference === 'system'}
             />
-          ))}
+            {supportedLocales.map((supportedLocale) => (
+              <ChoiceChip
+                key={supportedLocale}
+                label={localeLabels[supportedLocale]}
+                onPress={() => void updateLanguage(supportedLocale)}
+                selected={preference === supportedLocale}
+              />
+            ))}
+          </View>
         </View>
         {pending === 'language' ? (
           <AppText variant="caption" tone="muted">

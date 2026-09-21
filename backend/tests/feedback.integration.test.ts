@@ -23,6 +23,7 @@ databaseTest('feedback history API', () => {
         sendUserReply: async () => undefined,
       },
       pushNotifier: {
+        sendCabinetMemberJoined: async () => ({ invalidTokens: [] }),
         sendSupportReply: async (notification) => {
           supportPushes.push(notification);
           return { invalidTokens: [] };
