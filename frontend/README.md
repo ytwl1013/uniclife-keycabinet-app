@@ -2,6 +2,10 @@
 
 Expo SDK 57 React Native app for the UnicLife key cabinet product.
 
+Native build configuration helpers live in `plugins/`. The camera permission
+plugin runs last so photo-picker configuration cannot remove the Android camera
+permission required by the QR scanner.
+
 The app uses the unified backend request layer for accounts, cabinet access,
 loans, and audit events. Validated local mock data remains for isolated tests and
 prototype tooling; no production email or cabinet hardware service is connected.

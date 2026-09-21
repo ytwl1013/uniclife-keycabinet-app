@@ -5,7 +5,7 @@ import { AppState } from 'react-native';
 
 export function useCameraAccess() {
   const [permission, requestPermission, getPermission] = useCameraPermissions();
-  const [active, setActive] = useState(AppState.currentState === 'active');
+  const [active, setActive] = useState(false);
   const [generation, setGeneration] = useState(0);
 
   useFocusEffect(useCallback(() => {
@@ -29,6 +29,7 @@ export function useCameraAccess() {
     });
     return () => {
       disposed = true;
+      setActive(false);
       subscription.remove();
     };
   }, [getPermission]));
