@@ -1,10 +1,32 @@
 # App Store Connect 必填字段（复制粘贴版）
 
+按语言打开 [10 份独立复制清单](localized/README.md)，其中包含推广文本、描述、关键词、Google Play 简短说明，以及对应语言的隐私政策、隐私选择、删号和技术支持网址。
+
+以下内容按 App Store Connect 的“推广文本 / 描述 / 关键词”字段分开，可直接复制。推广文本不超过 170 字符，描述不超过 4,000 字符，关键词不超过 100 **字节**。关键词用英文逗号分隔，不加逗号后的空格；不要把三个字段一起粘贴。
+
+语言包含截图中的英语（美国）、德语、法语、简体中文、葡萄牙语（葡萄牙）、西班牙语（西班牙）、意大利语、英语（英国），并补充应用支持的荷兰语和波兰语。
+
 ## 所有本地化共用
 
-技术支持网址：尚未发布。必须先提供一个无需登录、可公开访问并包含联系邮箱 `ytwl1013@gmail.com` 的支持页面。
+技术支持网址（所有语言共用）：
 
-隐私政策网址：尚未发布。必须先提供一个无需登录、可公开访问的隐私政策页面。
+```text
+https://ytwl1013.github.io/uniclife-legal/support/
+```
+
+隐私政策网址（在“App 隐私”中填写，所有语言共用）：
+
+```text
+https://ytwl1013.github.io/uniclife-legal/privacy/
+```
+
+用户隐私选择网址（选填，已有页面）：
+
+```text
+https://ytwl1013.github.io/uniclife-legal/privacy-choices/
+```
+
+营销网址：选填；目前没有独立的产品介绍站，建议留空。上述网址在提交前应再次用无痕窗口确认可访问，并核对隐私政策的运营主体及联系方式。
 
 版权：
 
@@ -18,16 +40,43 @@
 Free
 ```
 
-销售地区（按当前审核备注“只服务美国用户”）：
-
-```text
-United States
-```
+销售地区：在 App Store Connect 的“定价与销售范围”单独设置。旧审核备注写的是“只服务美国用户”；如果本次扩大到欧洲，需同步更新审核备注、隐私政策与实际运营安排，不能只增加本地化文案。
 
 内容版权（仅在所有产品图片、图标及文案均由你拥有或已获许可时选择）：
 
 ```text
 No, it does not contain, show, or access third-party content.
+```
+
+## English (United States)
+
+Promotional Text:
+
+```text
+Manage key check-outs, returns, and overdue items in one place. Connect your UnicLife key cabinets and keep every action visible and accountable.
+```
+
+Description:
+
+```text
+UnicLife is a key management app designed for supported UnicLife key cabinets. Scan a QR code to connect a cabinet, then view key status, borrower information, and activity records in one place.
+
+KEY FEATURES
+• View multiple cabinets and key-slot availability
+• Register keys and borrowers, then check keys out and back in
+• Set expected return times and identify overdue keys
+• Filter records by key, borrower, cabinet, or status
+• Review activity records and important action history
+• Invite administrators to manage a specific cabinet
+• Receive overdue and account-management alerts
+
+A supported UnicLife key cabinet and a valid account are required. Some features require an internet connection and camera access. The camera is used only to scan supported QR codes.
+```
+
+Keywords:
+
+```text
+key,cabinet,checkout,return,borrower,overdue,audit,access,inventory,scanner
 ```
 
 ## English (United Kingdom)
@@ -254,6 +303,68 @@ UnicLife 是配合受支持的 UnicLife 智能钥匙柜使用的钥匙管理应�
 钥匙管理,钥匙柜,借用记录,归还登记,逾期提醒,钥匙追踪,扫码管理
 ```
 
-## English (United States)
+## Nederlands
 
-The existing description and keywords are usable. The only missing localized field shown in the validation error is the Support URL. Use the same valid public support page as every other localization.
+Promotietekst:
+
+```text
+Beheer sleuteluitgifte, teruggave en achterstallige sleutels op één plek. Koppel je UnicLife sleutelkasten en houd elke handeling inzichtelijk.
+```
+
+Beschrijving:
+
+```text
+UnicLife is een app voor sleutelbeheer met ondersteunde UnicLife sleutelkasten. Scan een QR-code om een kast te koppelen en bekijk de status van sleutels, gegevens van leners en activiteiten op één plek.
+
+BELANGRIJKSTE FUNCTIES
+• Bekijk meerdere kasten en beschikbare sleutelposities
+• Registreer sleutels en leners en leg uitgifte en teruggave vast
+• Stel verwachte retourtijden in en herken achterstallige sleutels
+• Filter gegevens op sleutel, lener, kast of status
+• Bekijk activiteiten en belangrijke handelingen
+• Nodig beheerders uit voor een specifieke kast
+• Ontvang meldingen over achterstallige sleutels en accountbeheer
+
+Een ondersteunde UnicLife sleutelkast en een geldig account zijn vereist. Voor sommige functies zijn internettoegang en cameratoestemming nodig. De camera wordt alleen gebruikt om ondersteunde QR-codes te scannen.
+```
+
+Trefwoorden:
+
+```text
+sleutel,kast,uitgifte,retour,lener,achterstallig,beheer,registratie,scanner
+```
+
+## Polski
+
+Tekst promocyjny:
+
+```text
+Zarządzaj wydawaniem i zwrotami kluczy oraz opóźnieniami w jednym miejscu. Połącz szafki UnicLife i śledź ważne działania.
+```
+
+Opis:
+
+```text
+UnicLife to aplikacja do zarządzania kluczami w obsługiwanych szafkach UnicLife. Zeskanuj kod QR, aby połączyć szafkę, a następnie sprawdzaj stan kluczy, dane osób wypożyczających i historię działań w jednym miejscu.
+
+NAJWAŻNIEJSZE FUNKCJE
+• Przeglądaj wiele szafek i dostępne miejsca na klucze
+• Rejestruj klucze i osoby wypożyczające oraz zapisuj wydania i zwroty
+• Ustawiaj planowany termin zwrotu i sprawdzaj opóźnienia
+• Filtruj wpisy według klucza, osoby, szafki lub stanu
+• Przeglądaj historię działań i ważnych operacji
+• Zapraszaj administratorów do zarządzania wybraną szafką
+• Otrzymuj powiadomienia o opóźnieniach i zmianach na koncie
+
+Wymagana jest obsługiwana szafka UnicLife i aktywne konto. Niektóre funkcje wymagają połączenia z internetem i dostępu do aparatu. Aparat służy wyłącznie do skanowania obsługiwanych kodów QR.
+```
+
+Słowa kluczowe:
+
+```text
+klucze,szafka,wydanie,zwrot,pożyczka,termin,rejestr,administrator,skaner
+```
+
+## Uwaga do wersji amerykańskiej
+
+Jeśli w amerykańskiej lokalizacji pola mają już poprawną treść, wystarczy uzupełnić adres wsparcia. W przeciwnym razie użyj pól English (United States) powyżej.
