@@ -1,0 +1,6 @@
+Routing App Coverage File: Not applicable. Leave this field empty in App Store Connect.
+
+UnicLife does not provide point-to-point or turn-by-turn directions, does not register as a routing app, and does not declare MKDirectionsApplicationSupportedModes. A geographic coverage GeoJSON file must therefore not be uploaded for this app.
+
+If App Store Connect unexpectedly requires this file, check whether the Maps routing capability or MKDirectionsApplicationSupportedModes was enabled accidentally in the iOS target and remove it before submitting a new build.
+
