@@ -1,0 +1,89 @@
+name: Android release
+
+on:
+  push:
+    tags:
+      - 'android-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and publish (for example android-v1.0.0)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    name: Build and publish Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Validate release tag and credentials
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          test -n "$EXPO_TOKEN" || { echo 'Repository secret EXPO_TOKEN is required.'; exit 1; }
+          tag="$RELEASE_TAG"
+          version="$(node -p "require('./frontend/app.json').expo.version")"
+          test "$tag" = "android-v$version" || {
+            echo "Tag $tag must match frontend/app.json version $version (android-v$version)."
+            exit 1
+          }
+          git fetch origin main
+          release_sha="$(git rev-list -n1 "$tag")"
+          git merge-base --is-ancestor "$release_sha" origin/main || {
+            echo 'Android releases must be tagged from a commit already merged to main.'
+            exit 1
+          }
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build signed release APK with EAS
+        working-directory: frontend
+        shell: bash
+        run: pnpm dlx eas-cli@latest build --platform android --profile apk --wait --json > ../eas-build.json
+
+      - name: Download APK artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          build_url="$(node scripts/extract-eas-build-url.mjs eas-build.json)"
+          curl --fail --location --retry 3 --output dist/uniclife-android.apk "$build_url"
+          unzip -t dist/uniclife-android.apk >/dev/null
+
+      - name: Publish GitHub Release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          tag="$RELEASE_TAG"
+          title="UnicLife Android $tag"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/uniclife-android.apk --clobber
+          else
+            gh release create "$tag" dist/uniclife-android.apk --title "$title" --generate-notes
+          fi

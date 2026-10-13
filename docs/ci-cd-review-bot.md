@@ -1,6 +1,6 @@
 # CI/CD 与 Review 流程
 
-GitHub `nimo07126/uniclife-keycabinet-app` 是权威主仓库，负责日常开发、Pull Request、CI 和生产发布。自建 GitLab 仓库只作为备份与历史流程保留，不再作为日常合并入口。
+GitHub `ytwl1013/uniclife-keycabinet-app` 是权威主仓库，负责日常开发、Pull Request、CI 和生产发布。自建 GitLab 仓库只作为备份与历史流程保留，不再作为日常合并入口。
 
 ## 分支职责
 
@@ -29,6 +29,21 @@ GitHub `nimo07126/uniclife-keycabinet-app` 是权威主仓库，负责日常开�
 - Require status checks to pass，选择 `CI / check`。
 - Require branches to be up to date before merging。
 - 禁止绕过规则直接推送；如仓库协作人数允许，至少要求 1 次审核。
+
+## Android Release 与 EAS Update
+
+`.github/workflows/android-release.yml` 只响应 `android-vX.Y.Z` 标签（也支持手动
+输入已有标签）。它校验标签与 `frontend/app.json` 的 `expo.version` 一致，调用
+EAS `apk` profile 生成签名 release APK，并将文件以固定名称
+`uniclife-android.apk` 上传到 GitHub Release。打印二维码使用 GitHub 的
+`releases/latest/download/uniclife-android.apk` 地址，因此不需要随着版本更换。
+
+`.github/workflows/eas-update.yml` 是手动触发的 production OTA 发布流程。它向
+EAS `production` channel 发布 JavaScript 和资源更新；已安装的 release APK 会在
+启动时自动检查并在下次启动应用。两个工作流都需要仓库 Secret `EXPO_TOKEN`，该
+Secret 只配置在 GitHub Actions 中，不得提交到仓库。
+
+APK、二维码和首次发布步骤见 [`docs/android-release/README.md`](android-release/README.md)。
 
 ## Render 发布门禁
 

@@ -56,6 +56,11 @@
 
 Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。pro 模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地命令通过 `EXPO_PUBLIC_APP_ENV` 选择地址，EAS 构建使用 EAS production 环境中的 pro 变量。切换本地环境时必须先停止旧 Metro，再运行目标命令并完整重新加载客户端；仓库启动命令会清理 Metro 缓存。客户端普通 API 请求最长等待 20 秒；启动时的 session 恢复最多等待 4 秒。设备已有本地移动登录态时，超时或网络错误会直接进入应用并显示离线重试入口，只有后端明确返回 401 才删除本地会话；从未登录或已主动退出的设备仍进入登录页。
 
+Android 直接分发、固定二维码和 EAS Update 的完整操作见
+[`docs/android-release/README.md`](../android-release/README.md)。EAS production
+环境必须配置 `EXPO_TOKEN`（仅放在 GitHub Actions Secret 或本地安全环境中），不能
+写入仓库。
+
 ### 手机系统通知
 
 客服回复和新增管理员横幅使用 `expo-notifications` 与 Expo Push Service；钥匙逾期由 App 根据已同步借用数据注册本机定时通知，因此网络中断后仍可按已知归还时间提醒。首次配置需执行 `eas init` 关联项目，并分别在 EAS Credentials 配置 iOS APNs push key 与 Android FCM v1；构建中必须能读取 EAS project ID。`app.json` 的通知 config plugin 变更只在重新生成原生二进制后生效，因此远程推送必须使用新的 development build 或生产 build 测试，不能使用 Expo Go；本机定时通知可在 Expo Go 中验证。推送令牌由 App 在用户授权后通过受鉴权 API 注册，服务端只向仍绑定有效登录会话的令牌发送；退出登录会移除当前会话令牌并取消尚未触发的逾期提醒。
@@ -102,7 +107,7 @@ Health Check Path:  /api/v1/health
 
 1. 在 Render 中确认已创建的 PostgreSQL 可用，并复制它的 **Internal Database URL**。不要把连接串写入仓库、Issue、Pull Request 或日志。
 2. 将部署改动通过 GitHub Pull Request 依次合入 `dev` 和 `main`，确认 `CI / check` 通过，禁止直接推送这两个分支。
-3. 在 Render Dashboard 选择 **New > Blueprint**，关联 GitHub 仓库 `nimo07126/uniclife-keycabinet-app` 和根目录 `render.yaml`。若已有同名 Web Service，应更新现有服务而不是再创建一个重复服务。
+3. 在 Render Dashboard 选择 **New > Blueprint**，关联 GitHub 仓库 `ytwl1013/uniclife-keycabinet-app` 和根目录 `render.yaml`。若已有同名 Web Service，应更新现有服务而不是再创建一个重复服务。
 4. Blueprint 首次创建时填写 `DATABASE_URL` 和 `FRONTEND_ORIGIN`。`DATABASE_URL` 使用第 1 步的内部连接串；`FRONTEND_ORIGIN` 只填写允许使用浏览器访问 API 的 HTTPS Origin。
 5. 确认服务的 Repository Branch 为 `main`，Auto-Deploy 为 **After CI Checks Pass**。
 6. 等待迁移和 API 部署完成，再访问 `https://<service>.onrender.com/api/v1/health`。成功响应必须为 `code: "OK"`。

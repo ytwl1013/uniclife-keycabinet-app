@@ -3,6 +3,15 @@
     "name": "UnicLife",
     "slug": "keycabinet-app",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": true,
+      "url": "https://u.expo.dev/aa160265-87d7-4d13-8ea8-c13bc69b6f26",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./src/assets/images/keycabinet_app_logo.png",
     "scheme": "uniclife-keycabinet",
