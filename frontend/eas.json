@@ -9,7 +9,8 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "preview"
     },
     "apk": {
       "extends": "production",
@@ -20,6 +21,7 @@
     },
     "production": {
       "environment": "production",
+      "channel": "production",
       "node": "22.23.1",
       "pnpm": "11.5.2",
       "autoIncrement": true

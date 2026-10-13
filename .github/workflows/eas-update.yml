@@ -1,0 +1,42 @@
+name: Publish EAS Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: Update message shown in EAS
+        required: true
+        default: Production OTA update
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish production OTA update
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      UPDATE_MESSAGE: ${{ inputs.message }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check EAS credentials
+        run: test -n "$EXPO_TOKEN" || { echo 'Repository secret EXPO_TOKEN is required.'; exit 1; }
+
+      - name: Publish to production channel
+        working-directory: frontend
+        run: pnpm dlx eas-cli@latest update --channel production --message "$UPDATE_MESSAGE" --environment production --non-interactive

@@ -31,7 +31,7 @@ tests/            跨端契约测试和集成测试预留
 GitHub 是日常开发和发布的主仓库，GitLab 只保留为备份仓库。本地远端固定为：
 
 ```text
-origin  -> git@github.com:nimo07126/uniclife-keycabinet-app.git
+origin  -> git@github.com:ytwl1013/uniclife-keycabinet-app.git
 gitlab  -> https://gitlab.uniclife.cn/ai-strategy-department/uniclife-keycabinet-app.git
 ```
 
@@ -61,6 +61,13 @@ git push -u origin feat/short-description
 3. `CI / check` 通过并审核后合并；不要直接推送 `main`。
 4. 若本次提交涉及 `backend/`、`shared/` 或 `render.yaml`，Render 会在 GitHub 检查通过后自动部署。
 5. 部署结束后访问 `https://<service>.onrender.com/api/v1/health`，确认响应中的 `code` 为 `OK`。
+
+### Android release 与固定二维码
+
+Android APK 发布、固定下载二维码和无需重新扫码的 EAS Update 流程见
+[`docs/android-release/README.md`](docs/android-release/README.md)。二维码对应的
+GitHub Release 下载地址始终使用 `latest` 和固定资产名；打印前必须确认下载仓库
+对最终用户公开可读。
 
 ### 偶尔备份到 GitLab
 
