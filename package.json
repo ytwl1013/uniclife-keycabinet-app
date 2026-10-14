@@ -29,7 +29,7 @@
     "pro:admin:build": "pnpm --filter @uniclife/admin build:pro",
     "pro:admin:start": "pnpm --filter @uniclife/admin start:pro",
     "pro:frontend:start": "pnpm --filter @uniclife/frontend start:pro",
-    "android:qr": "node scripts/generate-android-download-qr.mjs"
+    "download:qr": "node scripts/generate-download-qr.mjs"
   },
   "devDependencies": {
     "qrcode": "^1.5.4"
