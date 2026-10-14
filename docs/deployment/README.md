@@ -57,7 +57,7 @@
 Expo 会把所有 `EXPO_PUBLIC_*` 值编译进客户端，因此这些变量不得包含密钥。pro 模式会强制 API Base URL 使用 HTTPS。不要使用 `NODE_ENV` 为 Expo 切换 API 环境；本地命令通过 `EXPO_PUBLIC_APP_ENV` 选择地址，EAS 构建使用 EAS production 环境中的 pro 变量。切换本地环境时必须先停止旧 Metro，再运行目标命令并完整重新加载客户端；仓库启动命令会清理 Metro 缓存。客户端普通 API 请求最长等待 20 秒；启动时的 session 恢复最多等待 4 秒。设备已有本地移动登录态时，超时或网络错误会直接进入应用并显示离线重试入口，只有后端明确返回 401 才删除本地会话；从未登录或已主动退出的设备仍进入登录页。
 
 Android 直接分发、固定二维码和 EAS Update 的完整操作见
-[`docs/android-release/README.md`](../android-release/README.md)。EAS production
+[`docs/download-qr/README.md`](../download-qr/README.md)。EAS production
 环境必须配置 `EXPO_TOKEN`（仅放在 GitHub Actions Secret 或本地安全环境中），不能
 写入仓库。
 

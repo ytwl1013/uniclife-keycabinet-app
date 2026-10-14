@@ -35,15 +35,21 @@ GitHub `ytwl1013/uniclife-keycabinet-app` 是权威主仓库，负责日常开�
 `.github/workflows/android-release.yml` 只响应 `android-vX.Y.Z` 标签（也支持手动
 输入已有标签）。它校验标签与 `frontend/app.json` 的 `expo.version` 一致，调用
 EAS `apk` profile 生成签名 release APK，并将文件以固定名称
-`uniclife-android.apk` 上传到 GitHub Release。打印二维码使用 GitHub 的
-`releases/latest/download/uniclife-android.apk` 地址，因此不需要随着版本更换。
+`uniclife-android.apk` 上传到 GitHub Release。打印的二维码不直接指向该文件，
+而是指向本仓库的 GitHub Pages 下载页（`https://ytwl1013.github.io/uniclife-keycabinet-app/`），
+下载页的 Android 按钮再指向 `releases/latest/download/uniclife-android.apk`，因此二维码
+不需要随着版本更换，下载页也可以随时补充说明。
+
+`.github/workflows/pages.yml` 只构建并发布 `site/` 目录生成的下载页：`site/**` 的改动合并
+到 `main` 后自动部署，也可手动触发。仓库 Pages 设置必须选择 **GitHub Actions** 作为 Source，
+不得选择“从分支部署”，否则整个仓库（含 `docs/` 与其中的 `.ipa`）都会被发布。
 
 `.github/workflows/eas-update.yml` 是手动触发的 production OTA 发布流程。它向
 EAS `production` channel 发布 JavaScript 和资源更新；已安装的 release APK 会在
 启动时自动检查并在下次启动应用。两个工作流都需要仓库 Secret `EXPO_TOKEN`，该
 Secret 只配置在 GitHub Actions 中，不得提交到仓库。
 
-APK、二维码和首次发布步骤见 [`docs/android-release/README.md`](android-release/README.md)。
+APK、二维码和首次发布步骤见 [`docs/download-qr/README.md`](download-qr/README.md)。
 
 ## Render 发布门禁
 

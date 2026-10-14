@@ -62,12 +62,13 @@ git push -u origin feat/short-description
 4. 若本次提交涉及 `backend/`、`shared/` 或 `render.yaml`，Render 会在 GitHub 检查通过后自动部署。
 5. 部署结束后访问 `https://<service>.onrender.com/api/v1/health`，确认响应中的 `code` 为 `OK`。
 
-### Android release 与固定二维码
+### 下载页、固定二维码与 Android release
 
-Android APK 发布、固定下载二维码和无需重新扫码的 EAS Update 流程见
-[`docs/android-release/README.md`](docs/android-release/README.md)。二维码对应的
-GitHub Release 下载地址始终使用 `latest` 和固定资产名；打印前必须确认下载仓库
-对最终用户公开可读。
+打印的二维码只指向 GitHub Pages 下载页 `https://ytwl1013.github.io/uniclife-keycabinet-app/`，
+页面再分别引导 iPhone 用户到 App Store（上架前先提示搜索 UnicLife）、Android 用户下载 APK。页面源码在 `site/`，合并到 `main` 后由 `pages.yml` 发布。二维码、下载页
+和 Android APK 发布、无需重新扫码的 EAS Update 流程见
+[`docs/download-qr/README.md`](docs/download-qr/README.md)。Android APK 仍发布在本仓库
+GitHub Release，下载页使用 `latest` 和固定资产名；打印前必须确认本仓库对最终用户公开可读。
 
 ### 偶尔备份到 GitLab
 
