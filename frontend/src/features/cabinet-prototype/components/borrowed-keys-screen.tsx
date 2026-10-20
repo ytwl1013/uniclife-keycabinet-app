@@ -8,9 +8,10 @@ import { DateRangePickerModal } from '@/components/ui/date-range-picker-modal';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { BorrowedKeysDateFilterButton, BorrowedKeysFilterMenu } from '@/features/cabinet-prototype/components/borrowed-keys-filter-menu';
 import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
-import { Notice, SearchInput, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
+import { SearchInput, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
 import { CabinetView, KeyView } from '@/features/cabinet-prototype/types';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
+import { OfflineModeBadge, OfflineSyncBanner } from '@/features/app-refresh/offline-sync-banner';
 import { TranslationKey, useTranslation } from '@/i18n';
 
 const trKey = (key: string) => key as TranslationKey;
@@ -131,6 +132,7 @@ export function BorrowedKeysScreen() {
           <AppIcon name="back" size={23} tone="brand" />
         </Pressable>
         <SearchInput onChangeText={setQuery} placeholder={t(trKey('borrowed.searchPlaceholder'))} value={query} />
+        <OfflineModeBadge />
       </View>
 
       <ScrollView
@@ -178,15 +180,16 @@ export function BorrowedKeysScreen() {
               />
             </View>
           )}
-          ListHeaderComponent={app.isOffline ? (
+          ListHeaderComponent={app.isOffline || app.offlinePendingCount > 0 || app.offlineConflictCount > 0 || app.offlineSyncStatus !== 'idle' ? (
             <View className="px-screen pb-2 pt-2">
-              <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" />
+              <OfflineSyncBanner compact />
             </View>
           ) : null}
           renderItem={({ item }) => (
             <View className="px-screen pb-2">
               <BorrowedKeyCard
                 appOffline={app.isOffline}
+                offlineWriteAllowed={app.offlineWritableCabinetIds.includes(item.cabinetId)}
                 busy={busyKeyId === item.id}
                 item={item}
                 onReturn={() => void returnKey(item)}
@@ -241,11 +244,13 @@ function CabinetSectionHeader({ cabinet, count }: { cabinet: CabinetView; count:
 
 function BorrowedKeyCard({
   appOffline,
+  offlineWriteAllowed,
   busy,
   item,
   onReturn,
 }: {
   appOffline: boolean;
+  offlineWriteAllowed: boolean;
   busy: boolean;
   item: KeyView;
   onReturn: () => void;
@@ -279,9 +284,9 @@ function BorrowedKeyCard({
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ busy, disabled: busy || appOffline }}
-        className={`min-h-10 items-center justify-center rounded-control bg-brand px-3 ${busy || appOffline ? 'opacity-40' : 'active:opacity-75'}`}
-        disabled={busy || appOffline}
+        accessibilityState={{ busy, disabled: busy || (appOffline && !offlineWriteAllowed) }}
+        className={`min-h-10 items-center justify-center rounded-control bg-brand px-3 ${busy || (appOffline && !offlineWriteAllowed) ? 'opacity-40' : 'active:opacity-75'}`}
+        disabled={busy || (appOffline && !offlineWriteAllowed)}
         onPress={onReturn}>
         <AppText variant="caption" tone="onBrand">{t(trKey(busy ? 'borrowed.returning' : 'borrowed.returnAction'))}</AppText>
       </Pressable>

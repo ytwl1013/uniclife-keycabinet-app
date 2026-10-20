@@ -320,6 +320,7 @@ export function CabinetSettings({
   const visibleMembers = app.members.filter((member) => member.cabinetId === cabinet.id);
   const configuredKeys = app.keys.filter((key) => key.cabinetId === cabinet.id);
   const isSuperAdmin = cabinet.role === 'superAdmin';
+  const offlineWriteAllowed = app.offlineWritableCabinetIds.includes(cabinet.id);
   const confirmation = usePrototypeDialog();
 
   if (cabinetNameSource !== cabinet.name) {
@@ -492,7 +493,7 @@ export function CabinetSettings({
             <SectionCard>
               <SectionTitle description={t(trKey('cabinet.renameDescription'))} title={t(trKey('cabinet.renameTitle'))} />
               <FormField label={t(trKey('cabinet.cabinetNameLabel'))} onChangeText={setCabinetName} placeholder={t(trKey('scan.cabinetNamePlaceholder'))} value={cabinetName} />
-              <ActionButton disabled={Boolean(busyId) || !cabinetName.trim() || cabinetName.trim() === cabinet.name} icon="settings" label={t(trKey('cabinet.renameAction'))} onPress={() => void rename()} tone="neutral" />
+              <ActionButton disabled={Boolean(busyId) || !cabinetName.trim() || cabinetName.trim() === cabinet.name || (app.isOffline && !offlineWriteAllowed)} icon="settings" label={t(trKey('cabinet.renameAction'))} onPress={() => void rename()} tone="neutral" />
             </SectionCard>
             <SectionCard>
               <SectionTitle

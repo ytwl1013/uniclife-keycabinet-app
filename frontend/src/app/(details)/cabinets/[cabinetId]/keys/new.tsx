@@ -22,6 +22,7 @@ export default function AddKeyRoute() {
   const app = usePrototypeApp();
   const cabinet = app.cabinets.find((candidate) => candidate.id === cabinetId);
   const slot = app.slots.find((candidate) => candidate.id === slotId && candidate.cabinetId === cabinetId);
+  const offlineWriteAllowed = app.offlineWritableCabinetIds.includes(cabinetId);
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
   const [nameError, setNameError] = useState<string>();
@@ -99,7 +100,7 @@ export default function AddKeyRoute() {
         contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        {app.isOffline ? <Notice description={t(trKey('key.offlineDescription'))} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
+        {app.isOffline ? <Notice description={offlineWriteAllowed ? t('common.offlineSingleUser') : t('common.offlineSharedReadOnly')} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
         <SectionCard>
           <AppText variant="title" tone="foreground">{t(trKey('key.detailsTitle'))}</AppText>
           <AppText variant="body" tone="muted">{t(trKey('key.addDescription'))}</AppText>
@@ -125,7 +126,7 @@ export default function AddKeyRoute() {
       </ScrollView>
 
       <AddKeyKeyboardAccessories
-        disabled={busy || app.isOffline}
+        disabled={busy || (app.isOffline && !offlineWriteAllowed)}
         label={busy ? t(trKey('key.saving')) : t(trKey('key.addAction'))}
         nativeIDs={[keyNameKeyboardAccessoryId, keyNoteKeyboardAccessoryId]}
         onPress={() => void submit()}
@@ -133,7 +134,7 @@ export default function AddKeyRoute() {
 
       <SafeAreaView className="border-t border-line bg-background" edges={['bottom']}>
         <View className={`mx-auto w-full max-w-content px-screen ${keyboardVisible ? 'py-2' : 'pt-3'}`}>
-          <ActionButton disabled={busy || app.isOffline} icon="key" label={busy ? t(trKey('key.saving')) : t(trKey('key.addAction'))} onPress={() => void submit()} />
+          <ActionButton disabled={busy || (app.isOffline && !offlineWriteAllowed)} icon="key" label={busy ? t(trKey('key.saving')) : t(trKey('key.addAction'))} onPress={() => void submit()} />
         </View>
       </SafeAreaView>
     </SafeAreaView>

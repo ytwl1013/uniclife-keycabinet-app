@@ -103,6 +103,11 @@ export type PrototypeSnapshot = {
   currentUserId: string;
   now: string;
   isOffline: boolean;
+  offlineMode: boolean;
+  offlineSyncStatus: 'idle' | 'syncing' | 'success' | 'conflict';
+  offlinePendingCount: number;
+  offlineConflictCount: number;
+  offlineWritableCabinetIds: string[];
   isLoading: boolean;
   sessionExpired: boolean;
 };

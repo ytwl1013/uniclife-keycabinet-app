@@ -36,6 +36,7 @@ export type {
 } from '@uniclife/shared';
 
 export type SessionStatus = 'anonymous' | 'authenticated' | 'expired';
+export type OfflineSyncStatus = 'idle' | 'syncing' | 'success' | 'conflict';
 
 export type AppState = {
   hydrated: boolean;
@@ -43,6 +44,11 @@ export type AppState = {
   currentUser: CurrentUserAccount | null;
   sessionStatus: SessionStatus;
   online: boolean;
+  offlineMode: boolean;
+  offlineSyncStatus: OfflineSyncStatus;
+  offlineSnapshotAt: string | null;
+  offlinePendingCount: number;
+  offlineConflictCount: number;
   now: string;
   version: number;
   users: UserAccount[];
@@ -77,6 +83,9 @@ export type AppActions = {
   hydrate(): Promise<void>;
   refresh(): Promise<void>;
   refreshIfStale(input?: { staleAfterMs?: number }): Promise<void>;
+  setOfflineMode(input: { enabled: boolean }): Promise<void>;
+  retryOfflineConflicts(): Promise<void>;
+  discardOfflineConflicts(): Promise<void>;
   signIn(input: { email: string; password: string }): Promise<CurrentUserAccount>;
   register(input: RegisterRequest): Promise<CurrentUserAccount>;
   signOut(): Promise<void>;

@@ -120,6 +120,13 @@ export function usePrototypeApp(): PrototypeApp {
       return rawMemberships.some((membership) => text(membership.cabinetId) === cabinetId && text(membership.userId) === currentUserId);
     });
     const visibleCabinetIds = new Set(rawCabinets.map((cabinet) => text(cabinet.id)));
+    const offlineWritableCabinetIds = (state.online === false || state.offlineMode === true)
+      ? rawCabinets
+        .filter((cabinet) => rawMemberships.filter(
+          (membership) => text(membership.cabinetId) === text(cabinet.id),
+        ).length === 1)
+        .map((cabinet) => text(cabinet.id))
+      : [];
     const cabinetVersionById = new Map(
       rawCabinets.map((cabinet) => [text(cabinet.id), number(cabinet.version)]),
     );
@@ -334,6 +341,13 @@ export function usePrototypeApp(): PrototypeApp {
       currentUserId,
       now: new Date().toISOString(),
       isOffline: state.online === false,
+      offlineMode: state.offlineMode === true,
+      offlineSyncStatus: state.offlineSyncStatus === 'syncing' || state.offlineSyncStatus === 'success' || state.offlineSyncStatus === 'conflict'
+        ? state.offlineSyncStatus
+        : 'idle',
+      offlinePendingCount: number(state.offlinePendingCount),
+      offlineConflictCount: number(state.offlineConflictCount),
+      offlineWritableCabinetIds,
       isLoading: state.hydrated === false,
       sessionExpired: state.sessionStatus === 'expired',
       ...actions,

@@ -28,6 +28,7 @@ export default function CheckOutKeyRoute() {
   const app = usePrototypeApp();
   const cabinet = app.cabinets.find((candidate) => candidate.id === cabinetId);
   const key = app.keys.find((candidate) => candidate.id === keyId && candidate.cabinetId === cabinetId);
+  const offlineWriteAllowed = app.offlineWritableCabinetIds.includes(cabinetId);
   const defaultCheckedOutAt = useMemo(() => {
     const now = new Date();
     now.setSeconds(0, 0);
@@ -164,7 +165,7 @@ export default function CheckOutKeyRoute() {
                 : t(trKey('loan.keyNoteEmptyReminder'))}
             </AppText>
           </View>
-          {app.isOffline ? <Notice description={t(trKey('loan.offlineDescription'))} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
+          {app.isOffline ? <Notice description={offlineWriteAllowed ? t('common.offlineSingleUser') : t('common.offlineSharedReadOnly')} title={t(trKey('loan.offlineTitle'))} tone="warning" /> : null}
           <SectionCard>
             <FormField
               error={errors.borrowerName}
@@ -232,7 +233,7 @@ export default function CheckOutKeyRoute() {
       </View>
 
       <CheckoutKeyboardAccessories
-        disabled={busy || app.isOffline}
+        disabled={busy || (app.isOffline && !offlineWriteAllowed)}
         label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))}
         nativeIDs={[borrowerNameKeyboardAccessoryId, borrowerContactKeyboardAccessoryId]}
         onPress={() => void submit()}
@@ -242,7 +243,7 @@ export default function CheckOutKeyRoute() {
         <View className={`mx-auto w-full max-w-content px-screen ${keyboardVisible ? 'items-end py-2' : 'pt-3'}`}>
           <ActionButton
             compact={keyboardVisible}
-            disabled={busy || app.isOffline}
+            disabled={busy || (app.isOffline && !offlineWriteAllowed)}
             icon="checkOut"
             label={busy ? t(trKey('loan.submitting')) : t(trKey('loan.confirmCheckout'))}
             onPress={() => void submit()}

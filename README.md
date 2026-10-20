@@ -24,6 +24,9 @@ deploy/           Docker、环境模板和部署说明
 tests/            跨端契约测试和集成测试预留
 ```
 
+离线使用、单管理员离线写入、多管理员只读和同步冲突规则见
+[`docs/offline-sync.md`](docs/offline-sync.md)。
+
 前端页面实现和布局直接放在 `src/app`，较大的业务组件放在 `src/features/<domain>/components`，共享 UI 放在 `src/components/ui`。Stack 和 Tab 的路由选项由最近的 `_layout.tsx` 统一声明；国际化文案和设计令牌分别集中在 `src/i18n` 与 `design-tokens.json`。
 
 ## 仓库与日常流程

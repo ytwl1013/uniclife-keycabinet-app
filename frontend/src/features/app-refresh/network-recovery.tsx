@@ -31,7 +31,22 @@ export function NetworkRecovery() {
     };
 
     const networkSubscription = addNetworkStateListener((network) => {
-      if (network.isConnected && network.isInternetReachable !== false) void recover();
+      const connected = Boolean(network.isConnected && network.isInternetReachable !== false);
+      if (!connected) {
+        if (online && typeof actions.setOnline === 'function') {
+          void actions.setOnline({ online: false }).catch(() => undefined);
+        }
+        return;
+      }
+      if (!online) {
+        if (typeof actions.setOnline === 'function') {
+          void actions.setOnline({ online: true }).catch(() => undefined);
+        } else {
+          void recover();
+        }
+        return;
+      }
+      void recover();
     });
     const appSubscription = AppState.addEventListener('change', (next) => {
       if (next === 'active' && !online) void recover();

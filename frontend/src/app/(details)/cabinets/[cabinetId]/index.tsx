@@ -10,6 +10,8 @@ import { CabinetActivity, CabinetKeys, CabinetSettings } from '@/features/cabine
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
 import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { ActionButton, Notice, ScreenHeader, SegmentControl, StatePanel } from '@/features/cabinet-prototype/components/prototype-ui';
+import { usePrototypeDialog } from '@/features/cabinet-prototype/components/prototype-dialog';
+import { OfflineModeBadge, OfflineSyncBanner } from '@/features/app-refresh/offline-sync-banner';
 import { usePrototypeApp } from '@/features/cabinet-prototype/use-prototype-app';
 import { TranslationKey, useTranslation } from '@/i18n';
 
@@ -27,7 +29,9 @@ export default function CabinetDetailRoute() {
   const [segment, setSegment] = useState<CabinetSegment>('keys');
   const [guideRect, setGuideRect] = useState<SpotlightRect>();
   const [guideVisible, setGuideVisible] = useState(params.guide === 'register-key');
+  const restrictionDialog = usePrototypeDialog();
   const cabinet = app.cabinets.find((candidate) => candidate.id === cabinetId);
+  const offlineWriteAllowed = app.offlineWritableCabinetIds.includes(cabinetId);
   const guideSlot = app.slots.find((slot) => slot.cabinetId === cabinetId && !slot.keyId);
 
   if (app.isLoading) {
@@ -117,12 +121,36 @@ export default function CabinetDetailRoute() {
         <View className="mx-auto w-full max-w-content px-screen py-3">
         <View className="gap-3">
           <ScreenHeader
+            action={<OfflineModeBadge />}
             onBack={() => router.back()}
             subtitle={cabinet.location}
             title={cabinet.name}
           />
 
-          {app.isOffline ? <Notice description={t(trKey('cabinet.offlineDescription'))} title={t(trKey('cabinet.offlineTitle'))} tone="warning" /> : null}
+          <OfflineSyncBanner compact />
+
+          {app.isOffline || app.offlineMode ? (
+            <Notice
+              action={!offlineWriteAllowed ? (
+                <ActionButton
+                  compact
+                  label={t('common.viewLimits')}
+                  onPress={() => void restrictionDialog.present({
+                    title: t('common.offlineUse'),
+                    description: t('common.offlineUseSharedDescription'),
+                    confirmLabel: t('common.done'),
+                  })}
+                  tone="neutral"
+                />
+              ) : undefined}
+              compact={Boolean(app.offlineMode)}
+              description={offlineWriteAllowed
+                ? app.offlineMode ? t('common.offlineSingleUser') : t(trKey('cabinet.offlineDescription'))
+                : t('common.offlineSharedReadOnly')}
+              title={offlineWriteAllowed && app.offlineMode ? t('common.offlineUseActive') : t(trKey('cabinet.offlineTitle'))}
+              tone="warning"
+            />
+          ) : null}
           {app.sessionExpired ? <Notice description={t(trKey('cabinet.sessionExpiredDescription'))} title={t(trKey('cabinet.sessionExpiredTitle'))} tone="danger" /> : null}
 
           <SegmentControl items={segments} onChange={setSegment} value={segment} />
@@ -155,6 +183,7 @@ export default function CabinetDetailRoute() {
         total={3}
         visible={guideVisible}
       />
+      {restrictionDialog.dialog}
     </SafeAreaView>
   );
 }

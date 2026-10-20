@@ -118,10 +118,13 @@ notice instead of displaying an indefinite loader. The stored token is only
 removed when the backend explicitly rejects it, so a temporary outage is not
 misreported as an expired session.
 
-When connectivity returns, `NetworkRecovery` refreshes read-only workspace data or
-rechecks a stored session. While offline and in the foreground, it retries every
-five seconds with at most one recovery request in flight; it also handles returning
-from system settings. It never resubmits registration or cabinet write actions.
+When connectivity returns, `NetworkRecovery` refreshes workspace data or rechecks a
+stored session. While offline and in the foreground, it retries every five seconds
+with at most one recovery request in flight; it also handles returning from system
+settings. A single-admin cabinet may keep key creation/editing, loan, rename, clear-keys, and
+delete-cabinet actions in a per-account Outbox and replay them in order after the session is restored.
+Shared cabinets remain read-only offline, and registration, membership, permission,
+invitation, and hardware actions are never queued.
 The scanner rechecks camera permission and recreates its preview after returning
 to the foreground, clears stale camera failures, and offers an offline retry action.
 Registration links to public Privacy Policy and Terms of Use screens; opening a

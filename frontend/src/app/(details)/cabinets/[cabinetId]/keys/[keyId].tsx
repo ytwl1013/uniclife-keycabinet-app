@@ -49,6 +49,7 @@ export default function KeyDetailRoute() {
   }
 
   const statusTone = key.status === 'available' ? 'green' : key.status === 'overdue' ? 'red' : 'orange';
+  const offlineWriteAllowed = app.offlineWritableCabinetIds.includes(cabinetId);
   const dirty = name.trim() !== key.name || note.trim() !== key.note;
 
   const update = async () => {
@@ -145,7 +146,7 @@ export default function KeyDetailRoute() {
   };
 
   const primaryAction = key.status === 'available' ? null : (
-    <ActionButton disabled={busy || app.isOffline} icon="return" label={t(trKey('loan.returnAction'))} onPress={() => void returnKey()} />
+    <ActionButton disabled={busy || (app.isOffline && !offlineWriteAllowed)} icon="return" label={t(trKey('loan.returnAction'))} onPress={() => void returnKey()} />
   );
 
   return (
@@ -163,7 +164,7 @@ export default function KeyDetailRoute() {
 
       <View className="mx-auto min-w-0 w-full max-w-content flex-1 px-screen pb-screen pt-screen">
         <ScrollView className="min-w-0 flex-1" contentContainerClassName="gap-4 pb-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          {app.isOffline ? <Notice description={t(trKey('key.offlineDescription'))} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
+          {app.isOffline ? <Notice description={offlineWriteAllowed ? t('common.offlineSingleUser') : t('common.offlineSharedReadOnly')} title={t(trKey('key.offlineTitle'))} tone="warning" /> : null}
           {key.activeLoan ? (
             <SectionCard>
               <SectionTitle title={t(trKey('loan.activeDetailTitle'))} />
@@ -188,9 +189,9 @@ export default function KeyDetailRoute() {
               <>
                 <FormField label={t(trKey('key.nameLabel'))} onChangeText={setName} placeholder={t(trKey('key.namePlaceholder'))} value={name} />
                 <FormField label={t(trKey('key.noteLabel'))} multiline onChangeText={setNote} placeholder={t(trKey('key.notePlaceholder'))} value={note} />
-                <ActionButton disabled={!dirty || busy || app.isOffline} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
+                <ActionButton disabled={!dirty || busy || (app.isOffline && !offlineWriteAllowed)} icon="settings" label={busy ? t(trKey('key.saving')) : t(trKey('key.saveChanges'))} onPress={() => void update()} tone="neutral" />
                 <ActionButton
-                  disabled={busy || app.isOffline}
+                  disabled={busy || (app.isOffline && !offlineWriteAllowed)}
                   icon="error"
                   label={t(trKey('key.deleteAction'))}
                   onPress={() => void deleteKey()}

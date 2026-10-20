@@ -1,7 +1,7 @@
 import { Href, router, useLocalSearchParams } from 'expo-router';
 import { Dialog } from 'heroui-native/dialog';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { LayoutChangeEvent, Pressable, ScrollView, View } from 'react-native';
+import { Alert, LayoutChangeEvent, Pressable, ScrollView, View } from 'react-native';
 
 import { Cabinet, ProductSku, useApp } from '@/app-state';
 import { AppIcon } from '@/components/ui/app-icon';
@@ -11,6 +11,7 @@ import { ProductImage } from '@/components/ui/product-image';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { UserAvatar } from '@/features/account/components/account-ui';
 import { useAppRefresh } from '@/features/app-refresh/use-app-refresh';
+import { OfflineModeBadge, OfflineSyncBanner } from '@/features/app-refresh/offline-sync-banner';
 import { shouldAutomaticallyPromptHomeGuide } from '@/features/home/home-guide';
 import { HomeSpotlightGuide, SpotlightRect } from '@/features/home/components/home-spotlight-guide';
 import { selectCabinetManuals } from '@/features/manuals/select-cabinet-manuals';
@@ -47,6 +48,11 @@ export default function HomeRoute() {
     const loan = state.loans.find((candidate) => candidate.keyId === key.id && candidate.status === 'active');
     return Boolean(loan?.expectedReturnAt && Date.parse(loan.expectedReturnAt) < Date.parse(state.now));
   }).length;
+  const offlineStatusLabel = state.offlineConflictCount > 0
+    ? t('common.syncConflictCount', { count: state.offlineConflictCount })
+    : state.offlinePendingCount > 0
+      ? t('common.syncPending', { count: state.offlinePendingCount })
+      : t('common.offline');
 
   const prepareGuideStep = useCallback((step: number) => {
     const request = ++guideRequest.current;
@@ -159,6 +165,20 @@ export default function HomeRoute() {
       setReconnecting(false);
     }
   }, [actions, reconnecting]);
+  const reviewSyncConflict = useCallback(() => {
+    Alert.alert(
+      t('common.syncConflictTitle'),
+      t('common.syncConflictDescription'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.syncDiscard'),
+          style: 'destructive',
+          onPress: () => void actions.discardOfflineConflicts(),
+        },
+      ],
+    );
+  }, [actions, t]);
 
   if (!state.hydrated) {
     return (
@@ -193,15 +213,15 @@ export default function HomeRoute() {
               )}
             </Pressable>
             <View className="min-w-0 flex-1 items-center justify-center">
-              {!state.online ? (
+              {state.offlineMode ? <OfflineModeBadge /> : !state.online ? (
                 <Pressable
-                  accessibilityLabel={`${t('common.offline')}, ${t('common.retry')}`}
+                  accessibilityLabel={`${offlineStatusLabel}, ${t('common.retry')}`}
                   accessibilityRole="button"
                   className="min-h-11 min-w-20 items-center justify-center rounded-control px-2 active:bg-surface"
                   disabled={reconnecting}
-                  onPress={() => void retryConnection()}
+                  onPress={() => state.offlineConflictCount > 0 ? reviewSyncConflict() : void retryConnection()}
                   testID="home-offline-retry">
-                  <AppText variant="label" tone="danger">{t('common.offline')}</AppText>
+                  <AppText variant="label" tone="danger">{offlineStatusLabel}</AppText>
                   <AppText className="text-[10px] leading-3" tone="muted">
                     {reconnecting ? t('common.loading') : t('common.retry')}
                   </AppText>
@@ -253,6 +273,7 @@ export default function HomeRoute() {
         ref={scrollRef}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}>
+        <OfflineSyncBanner />
         <View className="gap-3" collapsable={false} onLayout={handleActiveLoansLayout} ref={activeLoansGuideRef}>
           <AppText className="px-1" variant="title" tone="foreground">{t('home.activeLoansTitle')}</AppText>
           <Pressable

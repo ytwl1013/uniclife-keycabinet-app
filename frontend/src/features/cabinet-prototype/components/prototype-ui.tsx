@@ -139,7 +139,7 @@ export function FilterChip({ label, selected, onPress }: { label: string; select
   );
 }
 
-export function Notice({ title, description, tone = 'brand' }: { title: string; description: string; tone?: 'brand' | 'warning' | 'danger' | 'success' }) {
+export function Notice({ title, description, tone = 'brand', action, compact = false }: { title: string; description: string; tone?: 'brand' | 'warning' | 'danger' | 'success'; action?: ReactNode; compact?: boolean }) {
   const classes = {
     brand: { container: 'border-brand/25 bg-brand-soft', icon: 'shield' as const, iconTone: 'brand' as const },
     warning: { container: 'border-warning/25 bg-warning-soft', icon: 'error' as const, iconTone: 'warning' as const },
@@ -147,11 +147,12 @@ export function Notice({ title, description, tone = 'brand' }: { title: string; 
     success: { container: 'border-success/25 bg-success-soft', icon: 'shield' as const, iconTone: 'success' as const },
   }[tone];
   return (
-    <View className={`flex-row gap-3 rounded-card border p-3.5 ${classes.container}`}>
-      <AppIcon name={classes.icon} size={22} tone={classes.iconTone} />
+    <View className={`flex-row gap-3 rounded-card border ${compact ? 'p-2.5' : 'p-3.5'} ${classes.container}`}>
+      <AppIcon name={classes.icon} size={compact ? 18 : 22} tone={classes.iconTone} />
       <View className="flex-1 gap-1">
         <AppText variant="label" tone="foreground">{title}</AppText>
         <AppText variant="caption" tone="content">{description}</AppText>
+        {action ? <View className="items-start pt-1">{action}</View> : null}
       </View>
     </View>
   );
